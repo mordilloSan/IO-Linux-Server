@@ -1,3 +1,0 @@
-import{j as t,T as e,p as n,L as o,B as r,q as a}from"./index-DbTWBLWr.js";const i=n(r)(a),s=n.div`
-  text-align: center;
-`;function u(){return t.jsxs(s,{children:[t.jsx(e,{component:"h1",variant:"h1",align:"center",gutterBottom:!0,children:"404"}),t.jsx(e,{component:"h2",variant:"h4",align:"center",gutterBottom:!0,children:"Page not found."}),t.jsx(e,{component:"h2",variant:"subtitle1",align:"center",gutterBottom:!0,children:"The page you are looking for might have been removed."}),t.jsx(i,{component:o,to:"/",variant:"contained",color:"secondary",mt:2,children:"Return to website"})]})}export{u as default};
