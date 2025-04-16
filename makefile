@@ -81,7 +81,7 @@ prod: build
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
 clean:
-	rm -f .setup-complete .nvmrc go-backend/server
+	rm -f .setup-complete go-backend/server
 	rm -rf react/node_modules go-backend/frontend
 	@echo "🧹 Cleaned workspace."
 

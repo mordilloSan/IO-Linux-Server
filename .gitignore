@@ -6,6 +6,7 @@ react/node_modules/
 
 # Build output
 go-backend/frontend/
+.setup-complete
 
 # Logs and misc
 *.log
