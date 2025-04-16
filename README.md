@@ -1,6 +1,6 @@
 # I/O Linux Server
 
-![Alt text](assets/logo.png)
+![Alt text](react/assets/logo.png)
 
 **I/O Linux Server** is a modern dashboard for managing your Linux system using native tools.  
 It aims to unify essential functionality in a single web-based interface without reinventing the wheel.  
