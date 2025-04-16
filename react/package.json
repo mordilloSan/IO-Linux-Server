@@ -1,0 +1,57 @@
+{
+  "name": "I/O Linux Server",
+  "version": "0.1.0",
+  "description": "Linux server managment tool",
+  "author": "Mordillo <miguelgalizamariz@gmail.com>",
+  "private": true,
+  "type": "module",
+  "license": "https://mui.com/store/license/",
+  "scripts": {
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "type-check": "tsc"
+  },
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "Firefox ESR",
+    "not dead",
+    "not IE 11"
+  ],
+  "dependencies": {
+    "@emotion/cache": "11.14.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/server": "11.11.0",
+    "@emotion/styled": "11.14.0",
+    "@mui/icons-material": "7.0.1",
+    "@mui/lab": "7.0.0-beta.10",
+    "@mui/material": "7.0.1",
+    "@mui/system": "7.0.1",
+    "@svgr/rollup": "8.1.0",
+    "@vitejs/plugin-react-swc": "3.8.1",
+    "axios": "0.30.0",
+    "lucide-react": "0.487.0",
+    "polished": "4.3.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "7.5.0",
+    "vite": "^6.2.6",
+    "web-vitals": "3.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.1",
+    "@types/react-router-dom": "^5.3.3",
+    "@types/styled-components": "5.1.34",
+    "@typescript-eslint/eslint-plugin": "^8.30.1",
+    "@typescript-eslint/parser": "^8.30.1",
+    "eslint": "8.57.1",
+    "eslint-config-prettier": "8.10.0",
+    "eslint-plugin-prettier": "4.2.1",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "prettier": "2.8.8",
+    "typescript": "5.8.3",
+    "vite-tsconfig-paths": "5.1.4"
+  },
+  "overrides": {}
+}

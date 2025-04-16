@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
+    "typeRoots": ["src/types", "node_modules/@types", "node_modules"],
+    "types": ["vite/client"],
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": "src/",
+    "paths": {
+      // Folders
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/contexts/*": [
+        "contexts/*"
+      ],
+      "@/hooks/*": [
+        "hooks/*"
+      ],
+      "@/layouts/*": [
+        "layouts/*"
+      ],
+      "@/pages/*": [
+        "pages/*"
+      ],
+      "@/theme/*": [
+        "theme/*"
+      ],
+      "@/types/*": [
+        "types/*"
+      ],
+      "@/utils/*": [
+        "utils/*"
+      ],
+      "@/vendor/*": [
+        "vendor/*"
+      ],
+      // Files
+      "@/constants": [
+        "constants"
+      ],
+      "@/config": [
+        "config"
+      ],
+      "@/theme": [
+        "theme/index"
+      ]
+    },
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,16 @@
+# Go backend
+go-backend/server
+go-backend/dist/
+
+# React frontend
+react/node_modules/
+
+# VSCode
+.vscode/
+
+# macOS / Linux
+.DS_Store
+*.swp
+
+# Logs
+*.log
