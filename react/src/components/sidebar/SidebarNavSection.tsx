@@ -6,7 +6,7 @@ import { SidebarItemsType } from "@/types/sidebar";
 import SidebarNavListItem from "./SidebarNavListItem";
 
 const Title = styled(Typography)`
-  color: ${(props) => props.theme.palette.text.primary};
+  color: ${(props) => props.theme.sidebar.color};
   font-size: ${(props) => props.theme.typography.caption.fontSize};
   padding: ${(props) => props.theme.spacing(4)}
     ${(props) => props.theme.spacing(7)} ${(props) => props.theme.spacing(1)};

@@ -1,32 +1,37 @@
 import "@mui/lab/themeAugmentation";
+
 import { createTheme as createMuiTheme } from "@mui/material/styles";
-import { variants } from "@/theme/variants";
+import variants from "@/theme/variants";
 import typography from "@/theme/typography";
 import breakpoints from "@/theme/breakpoints";
 import components from "@/theme/components";
 import shadows from "@/theme/shadows";
 
 const createTheme = (name: string) => {
-  const themeConfig = variants.find((v) => v.name === name) ?? variants[0];
+  let themeConfig = variants.find((variant) => variant.name === name);
 
-  // First object: MUI ThemeOptions
-  const baseTheme = createMuiTheme({
-    spacing: 4,
-    breakpoints,
-    components,
-    typography,
-    shadows,
-    palette: themeConfig.palette,
-  });
+  if (!themeConfig) {
+    console.warn(new Error(`The theme ${name} is not valid`));
+    themeConfig = variants[0];
+  }
 
-  // Merge in custom props
-  return {
-    ...baseTheme,
-    name: themeConfig.name,
-    header: themeConfig.header,
-    footer: themeConfig.footer,
-    sidebar: themeConfig.sidebar,
-  };
+  return createMuiTheme(
+    {
+      spacing: 4,
+      breakpoints: breakpoints,
+      // @ts-expect-error Incompatible types
+      components: components,
+      typography: typography,
+      shadows: shadows,
+      palette: themeConfig.palette,
+    },
+    {
+      name: themeConfig.name,
+      header: themeConfig.header,
+      footer: themeConfig.footer,
+      sidebar: themeConfig.sidebar,
+    }
+  );
 };
 
 export default createTheme;

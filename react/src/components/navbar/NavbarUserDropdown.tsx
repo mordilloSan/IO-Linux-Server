@@ -1,28 +1,13 @@
-import React from "react";
-import styled from "@emotion/styled";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  Divider,
-  Tooltip,
-  Menu,
-  MenuItem,
-  IconButton as MuiIconButton,
-} from "@mui/material";
-import { spacing } from "@mui/system";
+import { Divider, Tooltip, Menu, MenuItem, IconButton } from "@mui/material";
 
 import useAuth from "@/hooks/useAuth";
 import { LucidePower } from "lucide-react";
 
-const IconButton = styled(MuiIconButton)`
-  ${spacing};
-
-  &:hover {
-    background-color: transparent;
-  }
-`;
-
 function NavbarUserDropdown() {
+  const ref = useRef(null);
   const [anchorMenu, setAnchorMenu] = React.useState<any>(null);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -43,14 +28,7 @@ function NavbarUserDropdown() {
   return (
     <React.Fragment>
       <Tooltip title="Account">
-        <IconButton
-          aria-owns={anchorMenu ? "menu-appbar" : undefined}
-          aria-haspopup="true"
-          onClick={toggleMenu}
-          color="inherit"
-          p={0}
-          mx={1}
-        >
+        <IconButton color="inherit" ref={ref} onClick={toggleMenu} size="large">
           <LucidePower />
         </IconButton>
       </Tooltip>

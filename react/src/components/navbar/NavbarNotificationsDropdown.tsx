@@ -26,8 +26,8 @@ const Popover = styled(MuiPopover)`
 
 const Indicator = styled(Badge)`
   .MuiBadge-badge {
-    background: ${(props) => props.theme.palette.secondary.main};
-    color: ${(props) => props.theme.palette.secondary.contrastText};
+    background: ${(props) => props.theme.header.indicator.background};
+    color: ${(props) => props.theme.palette.common.white};
   }
 `;
 
@@ -48,11 +48,13 @@ function Notification({
     <ListItem divider component={Link} to="#">
       <ListItemText
         primary={title}
-        primaryTypographyProps={{
-          variant: "subtitle2",
-          color: "textPrimary",
-        }}
         secondary={description}
+        slotProps={{
+          primary: {
+            variant: "subtitle2",
+            color: "text.primary",
+          },
+        }}
       />
     </ListItem>
   );

@@ -6,7 +6,8 @@ import { SidebarItemsType } from "@/types/sidebar";
 import SidebarNavSection from "./SidebarNavSection";
 
 const Wrapper = styled.div`
-  background-color: ${(props) => props.theme.palette.background.default};
+  background-color: ${(props) => props.theme.sidebar.background};
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
   flex-grow: 1;
 `;
 

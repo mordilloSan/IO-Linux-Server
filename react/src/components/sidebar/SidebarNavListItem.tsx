@@ -27,7 +27,7 @@ const Item = styled(ListItemButton)<ItemType>`
   padding-right: ${(props) => props.theme.spacing(7)};
   font-weight: ${(props) => props.theme.typography.fontWeightRegular};
   svg {
-    color: ${(props) => props.theme.palette.text.secondary};
+    color: ${(props) => props.theme.sidebar.color};
     font-size: 20px;
     width: 20px;
     height: 20px;
@@ -36,11 +36,9 @@ const Item = styled(ListItemButton)<ItemType>`
 
   &.${(props) => props.activeclassname} {
     background-color: ${(props) =>
-      props.theme.palette.mode === "dark"
-        ? darken(0.07, props.theme.palette.background.paper) // slightly darker in dark mode
-        : darken(0.14, props.theme.palette.background.paper)};
+      darken(0.03, props.theme.sidebar.background)};
     span {
-      color: ${(props) => props.theme.palette.text.primary};
+      color: ${(props) => props.theme.sidebar.color};
     }
   }
 `;
@@ -48,7 +46,7 @@ const Item = styled(ListItemButton)<ItemType>`
 const Title = styled(ListItemText)`
   margin: 0;
   span {
-    color: ${(props) => rgba(props.theme.palette.text.primary, 1)};
+    color: ${(props) => rgba(props.theme.sidebar.color, 1)};
     font-size: ${(props) => props.theme.typography.body1.fontSize}px;
     padding: 0 ${(props) => props.theme.spacing(4)};
   }

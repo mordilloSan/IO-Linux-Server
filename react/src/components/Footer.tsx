@@ -7,12 +7,18 @@ import {
   ListItemText as MuiListItemText,
   ListItemButtonProps as MuiListItemButtonProps,
   ListItemButton as MuiListItemButton,
-  Box,
 } from "@mui/material";
 
 interface ListItemButtonProps extends MuiListItemButtonProps {
   href?: string;
 }
+
+const Wrapper = styled.div`
+  padding: ${(props) => props.theme.spacing(0.25)}
+    ${(props) => props.theme.spacing(4)};
+  background: ${(props) => props.theme.footer.background};
+  position: relative;
+`;
 
 const ListItemButton = styled(MuiListItemButton)<ListItemButtonProps>`
   display: inline-block;
@@ -29,22 +35,13 @@ const ListItemButton = styled(MuiListItemButton)<ListItemButtonProps>`
 
 const ListItemText = styled(MuiListItemText)`
   span {
-    color: ${(props) => props.theme.palette.text.secondary};
+    color: ${(props) => props.theme.footer.color};
   }
 `;
 
 function Footer() {
   return (
-    <Box
-      sx={{
-        position: "fixed",
-        bottom: 0,
-        left: { xs: 0, md: "220px" },
-        width: { xs: "100%", md: "calc(100% - 220px)" },
-        zIndex: 1000,
-        background: (theme) => theme.palette.background.default,
-      }}
-    >
+    <Wrapper>
       <Grid container spacing={0}>
         <Grid
           sx={{ display: { xs: "none", md: "block" } }}
@@ -79,14 +76,12 @@ function Footer() {
         >
           <List>
             <ListItemButton>
-              <ListItemText
-                primary={`© ${new Date().getFullYear()} - I/O Linux Server`}
-              />
+              <ListItemText primary={`© ${new Date().getFullYear()} - Mira`} />
             </ListItemButton>
           </List>
         </Grid>
       </Grid>
-    </Box>
+    </Wrapper>
   );
 }
 

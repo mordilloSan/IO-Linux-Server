@@ -19,8 +19,8 @@ import NavbarUserDropdown from "./NavbarUserDropdown";
 import Settings from "./NavbarThemeToggle";
 
 const AppBar = styled(MuiAppBar)`
-  background-color: ${(props) => props.theme.palette.background.default};
-  color: ${(props) => props.theme.palette.text.primary};
+  background: ${(props) => props.theme.header.background};
+  color: ${(props) => props.theme.header.color};
 `;
 
 const IconButton = styled(MuiIconButton)`
@@ -32,17 +32,13 @@ const IconButton = styled(MuiIconButton)`
 
 const Search = styled.div`
   border-radius: 2px;
-  background-color: ${(props) => props.theme.palette.background.default};
+  background-color: ${(props) => props.theme.header.background};
   display: none;
   position: relative;
   width: 100%;
 
   &:hover {
-    background-color: ${(props) =>
-      darken(
-        props.theme.palette.mode === "dark" ? 0.02 : 0.05,
-        props.theme.palette.background.default
-      )};
+    background-color: ${(props) => darken(0.05, props.theme.header.background)};
   }
 
   ${(props) => props.theme.breakpoints.up("md")} {
@@ -70,7 +66,7 @@ const Input = styled(InputBase)`
   width: 100%;
 
   > input {
-    color: ${(props) => props.theme.palette.text.primary};
+    color: ${(props) => props.theme.header.search.color};
     padding-top: ${(props) => props.theme.spacing(2.5)};
     padding-right: ${(props) => props.theme.spacing(2.5)};
     padding-bottom: ${(props) => props.theme.spacing(2.5)};

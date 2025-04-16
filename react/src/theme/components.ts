@@ -1,4 +1,3 @@
-import { TypographyProps } from "@mui/material";
 import { Theme } from "@mui/system";
 
 const components = {
@@ -17,14 +16,13 @@ const components = {
   },
   MuiLink: {
     defaultProps: {
-      underline: "hover" as "hover", // 👈 fix
+      underline: "hover",
     },
   },
-  
   MuiCardHeader: {
     defaultProps: {
       titleTypographyProps: {
-        variant: "h6" as const,
+        variant: "h6",
       },
     },
     styleOverrides: {
@@ -65,7 +63,27 @@ const components = {
       },
     },
   },
-
+  MuiPickersCalendar: {
+    styleOverrides: {
+      transitionContainer: {
+        marginTop: "6px",
+      },
+    },
+  },
+  MuiPickersCalendarHeader: {
+    styleOverrides: {
+      iconButton: {
+        backgroundColor: "transparent",
+        "& > *": {
+          backgroundColor: "transparent",
+        },
+      },
+      switchHeader: {
+        marginTop: "2px",
+        marginBottom: "4px",
+      },
+    },
+  },
   MuiPickersClock: {
     styleOverrides: {
       container: {
