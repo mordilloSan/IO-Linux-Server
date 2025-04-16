@@ -16,7 +16,7 @@ const customBlue = {
 };
 
 const defaultVariant = {
-  name: THEMES.DEFAULT,
+  name: THEMES.LIGHT,
   palette: {
     mode: "light",
     primary: {

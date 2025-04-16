@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { THEMES } from "@/constants";
 
 const initialState = {
-  theme: THEMES.DEFAULT,
+  theme: THEMES.DARK,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setTheme: (theme: string) => {},
 };

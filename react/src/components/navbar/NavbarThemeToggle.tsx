@@ -10,7 +10,7 @@ function NavbarThemeToggle() {
   const isDark = theme === THEMES.DARK;
 
   const toggleTheme = () => {
-    setTheme(isDark ? THEMES.DEFAULT : THEMES.DARK);
+    setTheme(isDark ? THEMES.LIGHT : THEMES.DARK);
   };
 
   return (
