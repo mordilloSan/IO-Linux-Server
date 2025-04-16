@@ -1,5 +1,7 @@
 import "@emotion/react";
 
 declare module "@emotion/react" {
-  export interface Theme extends Record<string, any> {}
+  /* eslint-disable @typescript-eslint/no-empty-interface */
+  export interface Theme extends CustomTheme {}
+  /* eslint-enable @typescript-eslint/no-empty-interface */
 }

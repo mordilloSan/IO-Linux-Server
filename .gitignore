@@ -1,9 +1,16 @@
-# Go backend
+# Go binaries
 go-backend/server
-go-backend/dist/
 
-# React frontend
+# Node modules
 react/node_modules/
+
+# Build output
+go-backend/frontend/
+
+# Logs and misc
+*.log
+.DS_Store
+.vscode/
 
 # VSCode
 .vscode/

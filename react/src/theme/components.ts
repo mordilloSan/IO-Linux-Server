@@ -1,3 +1,4 @@
+import { TypographyProps } from "@mui/material";
 import { Theme } from "@mui/system";
 
 const components = {
@@ -16,13 +17,14 @@ const components = {
   },
   MuiLink: {
     defaultProps: {
-      underline: "hover",
+      underline: "hover" as "hover", // 👈 fix
     },
   },
+  
   MuiCardHeader: {
     defaultProps: {
       titleTypographyProps: {
-        variant: "h6",
+        variant: "h6" as const,
       },
     },
     styleOverrides: {
