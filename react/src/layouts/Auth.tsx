@@ -24,7 +24,7 @@ const Root = styled.div`
 
 const Brand = styled(Logo)`
   fill: ${(props) => props.theme.palette.primary.main};
-  width: 64px;
+  width: 150px;
   height: 64px;
   margin-bottom: 32px;
 `;

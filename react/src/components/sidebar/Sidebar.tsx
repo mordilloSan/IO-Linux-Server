@@ -2,7 +2,7 @@ import React from "react";
 import styled from "@emotion/styled";
 import { NavLink } from "react-router-dom";
 
-import { Box, Drawer as MuiDrawer, ListItemButton } from "@mui/material";
+import { Drawer as MuiDrawer, ListItemButton } from "@mui/material";
 
 import { ReactComponent as Logo } from "@/vendor/logo.svg";
 import { SidebarItemsType } from "@/types/sidebar";
@@ -46,8 +46,7 @@ const BrandIcon = styled(Logo)`
   margin-right: ${(props) => props.theme.spacing(2)};
   color: ${(props) => props.theme.sidebar.header.brand.color};
   fill: ${(props) => props.theme.sidebar.header.brand.color};
-  width: 32px;
-  height: 32px;
+  height: 42px;
 `;
 
 export type SidebarProps = {
@@ -69,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
   return (
     <Drawer variant="permanent" {...rest}>
       <Brand component={NavLink as any} to="/">
-        <BrandIcon /> <Box ml={1}>Mira</Box>
+        <BrandIcon />
       </Brand>
       <SidebarNav items={items} />
     </Drawer>
