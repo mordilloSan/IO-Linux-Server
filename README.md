@@ -19,30 +19,29 @@ Instead of replacing the Linux experience, **IO Linux Server visualizes it.**
 
 ## 🚀 Features
 
-- 🖥️ System stats dashboard (CPU, memory, disk, network)
-- 🧠 Process viewer
-- 📦 Live terminal output from standard Linux commands
-- 🔐 Login/authentication (via PAM or pluggable systems)
-- 🧱 Serve React frontend statically in production
+- 🖥️ System stats dashboard (CPU, memory, disk, network)  
+- 🧠 Process viewer  
+- 📦 Live terminal output from standard Linux commands  
+- 🔐 Login/authentication (via PAM or pluggable systems)  
+- 🧱 Serve React frontend statically in production  
 
 ## 📦 Getting Started
 
 Clone the repo:
 
-git clone https://github.com/mordilloSan/IO-Linux-Server
-
+git clone https://github.com/mordilloSan/IO-Linux-Server  
 cd IO-Linux-Server
 
 Available Commands:
 
-make setup - Install Node.js (via NVM) and frontend dependencies
-make dev - Run both backend and frontend in development mode
-make build - Build both frontend and backend
-make build-frontend - Build only the React frontend
-make build-backend - Build only the Go backend
-make prod - Starts go binary in production mode (serves React build)
-make clean - Clean all build artifacts and dependencies
-make ensure-node - Ensure Node.js is installed via NVM
+make setup - Install Node.js (via NVM) and frontend dependencies  
+make dev - Run both backend and frontend in development mode  
+make build - Build both frontend and backend  
+make build-frontend - Build only the React frontend  
+make build-backend - Build only the Go backend  
+make prod - Starts go binary in production mode (serves React build)  
+make clean - Clean all build artifacts and dependencies  
+make ensure-node - Ensure Node.js is installed via NVM  
 
 ✅ Both make dev and make prod will run all necessary setup automatically.
 
