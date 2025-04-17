@@ -36,28 +36,15 @@ cd IO-Linux-Server
 
 Install dependencies:
 
-📦 Installation
-bash
-Copiar
-Editar
 # Update package list
 sudo apt update
 
 # Install required tools
 sudo apt install make lm-sensors
-🔐 PAM Development Dependencies
-For Debian/Ubuntu:
 
-bash
-Copiar
-Editar
-sudo apt install libpam0g-dev
-For Fedora / RHEL / CentOS:
 
-bash
-Copiar
-Editar
-sudo dnf install pam-devel
+sudo apt install libpam0g-dev (for Debian based distros)  
+sudo dnf install pam-devel (for RHEL based distros)
 
 🛠️  Available commands:
 
