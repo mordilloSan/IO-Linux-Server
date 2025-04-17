@@ -1,14 +1,11 @@
 {
   "name": "I/O Linux Server",
-  "version": "0.1.0",
   "description": "Linux server managment tool",
   "author": "Mordillo <miguelgalizamariz@gmail.com>",
   "private": true,
   "type": "module",
   "license": "https://mui.com/store/license/",
   "scripts": {
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
-    "tsc": "tsc"
   },
   "browserslist": [
     "> 0.5%",

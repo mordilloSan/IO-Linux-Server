@@ -34,7 +34,7 @@ const defaultVariant = {
   },
   header: {
     color: grey[500],
-    background: "#FFF",
+    background: "#F7F9FC",
     search: {
       color: grey[800],
     },
@@ -44,7 +44,7 @@ const defaultVariant = {
   },
   footer: {
     color: grey[500],
-    background: "#FFF",
+    background: "#F7F9FC",
   },
   sidebar: {
     color: grey[200],

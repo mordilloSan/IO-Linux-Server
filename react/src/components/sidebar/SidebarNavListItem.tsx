@@ -55,7 +55,7 @@ const Title = styled(ListItemText)`
 type SidebarNavListItemProps = ListItemProps & {
   className?: string;
   href: string;
-  icon: React.FC<any>;
+  icon?: React.ElementType | string;
   title: string;
 };
 

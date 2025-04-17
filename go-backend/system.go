@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os/exec"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
@@ -31,9 +34,51 @@ func getHostInfo(c *gin.Context) {
 }
 
 func getCPUInfo(c *gin.Context) {
+	// Basic CPU info
 	info, _ := cpu.Info()
-	usage, _ := cpu.Percent(0, false)
-	c.JSON(200, gin.H{"info": info, "usage": usage})
+	percent, _ := cpu.Percent(0, true)
+	counts, _ := cpu.Counts(true)
+	loadAvg, _ := load.Avg()
+
+	// Fallback check
+	if len(info) == 0 {
+		c.JSON(500, gin.H{"error": "no CPU info available"})
+		return
+	}
+
+	// Get temperature via `sensors` command (optional)
+	temp := getTemperature()
+
+	cpuData := info[0]
+
+	c.JSON(200, gin.H{
+		"vendorId":     cpuData.VendorID,
+		"modelName":    cpuData.ModelName,
+		"family":       cpuData.Family,
+		"model":        cpuData.Model,
+		"mhz":          cpuData.Mhz,
+		"cores":        counts,
+		"loadAverage":  loadAvg,
+		"perCoreUsage": percent,
+		"temperature":  temp,
+	})
+}
+
+func getTemperature() string {
+	out, err := exec.Command("sensors").Output()
+	if err != nil {
+		return "N/A"
+	}
+
+	// Basic parsing: look for line containing "Package id 0" or similar
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Package id 0:") || strings.Contains(line, "Tctl:") {
+			return strings.TrimSpace(line)
+		}
+	}
+
+	return "N/A"
 }
 
 func getMemInfo(c *gin.Context) {

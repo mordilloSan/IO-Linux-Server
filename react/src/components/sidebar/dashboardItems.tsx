@@ -6,7 +6,6 @@ import {
   HardDrive,
   Users,
   Share2,
-  Shield,
   Cpu,
   Folder,
   Grid,
@@ -59,7 +58,7 @@ const pagesSection: SidebarItemsType[] = [
   },
   {
     href: "/wireguard",
-    icon: () => <Icon icon="cib:wireguard" width="48" height="48"/>,
+    icon: () => <Icon icon="cib:wireguard" width="48" height="48" />,
     title: "Wireguard",
   },
   {
@@ -94,4 +93,3 @@ const navItems = [
 ];
 
 export default navItems;
-

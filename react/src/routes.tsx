@@ -9,7 +9,7 @@ import DashboardLayout from "@/layouts/Dashboard";
 // Guards
 import AuthGuard from "@/components/guards/AuthGuard";
 import GuestGuard from "./components/guards/GuestGuard";
-import Loader from "./components/Loader";
+import Loader from "./components/PageLoader";
 
 const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
   const Wrapped = (props: any) => (
@@ -44,7 +44,7 @@ const Settings = Loadable(
   "Settings"
 );
 const Default = Loadable(
-  lazy(() => import("@/pages/dashboards")),
+  lazy(() => import("@/pages/dashboards/home")),
   "Default"
 );
 
