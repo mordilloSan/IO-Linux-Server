@@ -11,6 +11,9 @@ import { AuthContextType, ActionMap, AuthState, AuthUser } from "@/types/auth";
 import { useContext } from "react";
 import { WebSocketContext } from "@/contexts/WebSocketContext";
 
+import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/getErrorMessage"; // Optional helper
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const INITIALIZE = "INITIALIZE";
@@ -84,15 +87,25 @@ function AuthProvider({ children }: { children: ReactNode }) {
   ]);
 
   const signIn = async (username: string, password: string) => {
-    await axios.post(`${API_URL}/auth/login`, { username, password });
-    const user = await fetchUser();
-    dispatch({ type: SIGN_IN, payload: { user } });
+    try {
+      await axios.post(`${API_URL}/auth/login`, { username, password });
+      const user = await fetchUser();
+      dispatch({ type: SIGN_IN, payload: { user } });
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+      throw err;
+    }
   };
 
   const signOut = async () => {
-    await axios.get(`${API_URL}/auth/logout`);
-    disconnect(); // 👈 explicitly close the socket
-    dispatch({ type: SIGN_OUT });
+    try {
+      await axios.get(`${API_URL}/auth/logout`);
+      disconnect();
+      dispatch({ type: SIGN_OUT });
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+      throw err;
+    }
   };
 
   return (
