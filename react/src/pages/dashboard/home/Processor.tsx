@@ -10,7 +10,6 @@ import axios from "@/utils/axios";
 import ErrorMessage from "@/components/Error";
 import Loader from "@/components/Loader";
 
-// Match Go backend response shape
 interface CPUInfoResponse {
   vendorId: string;
   modelName: string;
@@ -24,7 +23,7 @@ interface CPUInfoResponse {
     load15: number;
   };
   perCoreUsage: number[];
-  temperature: string;
+  temperature: { [core: string]: number };
 }
 
 const Processor: React.FC = () => {
@@ -46,7 +45,17 @@ const Processor: React.FC = () => {
       CPUInfo.perCoreUsage.length
     : 0;
 
-  const IconText = CPUInfo?.temperature || "--°C";
+  const temperatures = CPUInfo?.temperature
+    ? Object.values(CPUInfo.temperature)
+    : [];
+
+  const avgTemp = temperatures.length
+    ? (
+        temperatures.reduce((sum, t) => sum + t, 0) / temperatures.length
+      ).toFixed(1)
+    : "--";
+
+  const IconText = `${avgTemp}°C`;
 
   const data = {
     title: "Processor",

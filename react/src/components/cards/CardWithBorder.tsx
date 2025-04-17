@@ -75,14 +75,46 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: "bold",
+                transform: "translateY(-1px)", // subtle upward shift
+              }}
+            >
               {title}
             </Typography>
-            {IconComponent && <IconComponent {...iconProps} />}
-            <Typography variant="body2" sx={{ color: "grey" }}>
-              {icon_text}
-            </Typography>
+            {IconComponent && icon_text && (
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0,
+                  lineHeight: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    mr: "-4px", // trims space between icon and text
+                  }}
+                >
+                  <IconComponent
+                    {...iconProps}
+                    sx={{ verticalAlign: "middle", ...iconProps?.sx }}
+                  />
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "grey", ml: 0, lineHeight: 1 }}
+                >
+                  {icon_text}
+                </Typography>
+              </Box>
+            )}
           </Box>
+
           <CustomAvatar color={color} transparent size={40}>
             <Icon icon={avatarIcon} width="32px" height="32px" />
           </CustomAvatar>

@@ -34,6 +34,14 @@ Clone the repo:
 git clone https://github.com/mordilloSan/IO-Linux-Server  
 cd IO-Linux-Server
 
+Install dependencies:
+
+sudo apt update
+sudo apt install make lm-sensors 
+
+sudo apt install libpam0g-dev (for Debian based distros)
+sudo dnf install pam-devel (for RHEL based distros)
+
 🛠️  Available commands:
 
 make setup            Install frontend deps and Node.js (22)

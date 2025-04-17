@@ -4,7 +4,7 @@
   "author": "Mordillo <miguelgalizamariz@gmail.com>",
   "private": true,
   "type": "module",
-  "license": "https://mui.com/store/license/",
+  "license": "MIT",
   "scripts": {
   },
   "browserslist": [

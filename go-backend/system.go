@@ -2,6 +2,8 @@ package main
 
 import (
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -47,7 +49,7 @@ func getCPUInfo(c *gin.Context) {
 	}
 
 	// Get temperature via `sensors` command (optional)
-	temp := getTemperature()
+	temp := getTemperatureMap()
 
 	cpuData := info[0]
 
@@ -64,21 +66,37 @@ func getCPUInfo(c *gin.Context) {
 	})
 }
 
-func getTemperature() string {
+func getTemperatureMap() map[string]float64 {
 	out, err := exec.Command("sensors").Output()
 	if err != nil {
-		return "N/A"
+		return map[string]float64{}
 	}
 
-	// Basic parsing: look for line containing "Package id 0" or similar
+	temps := make(map[string]float64)
 	lines := strings.Split(string(out), "\n")
+
+	re := regexp.MustCompile(`\+([0-9]+(?:\.[0-9])?)°C`)
+	cpuIndex := 1
+
 	for _, line := range lines {
-		if strings.Contains(line, "Package id 0:") || strings.Contains(line, "Tctl:") {
-			return strings.TrimSpace(line)
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Core ") ||
+			strings.HasPrefix(line, "Package id") ||
+			strings.HasPrefix(line, "Tctl:") {
+
+			match := re.FindStringSubmatch(line)
+			if len(match) > 1 {
+				temp, err := strconv.ParseFloat(match[1], 64)
+				if err == nil {
+					key := "cpu" + strconv.Itoa(cpuIndex)
+					temps[key] = temp
+					cpuIndex++
+				}
+			}
 		}
 	}
 
-	return "N/A"
+	return temps
 }
 
 func getMemInfo(c *gin.Context) {
