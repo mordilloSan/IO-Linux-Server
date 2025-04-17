@@ -18,7 +18,7 @@ import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";
 import Footer from "@/components/Footer";
 
-const drawerWidth = 220;
+import { drawerWidth } from "@/constants";
 
 const Root = styled.div`
   display: flex;
@@ -59,11 +59,7 @@ const MainContent = styled(Paper)`
   }
 `;
 
-interface DashboardType {
-  children?: React.ReactNode;
-}
-
-const Dashboard: React.FC<DashboardType> = ({ children }) => {
+const Dashboard: React.FC = () => {
   const router = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 

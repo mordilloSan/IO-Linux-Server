@@ -4,7 +4,7 @@ import styled from "@emotion/styled";
 
 import { CssBaseline, Paper } from "@mui/material";
 
-import { ReactComponent as Logo } from "@/vendor/logo.svg";
+import { ReactComponent as Logo } from "@/assets/logo.svg";
 
 import GlobalStyle from "@/components/GlobalStyle";
 

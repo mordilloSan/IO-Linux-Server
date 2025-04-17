@@ -45,8 +45,8 @@
       "@/utils/*": [
         "utils/*"
       ],
-      "@/vendor/*": [
-        "vendor/*"
+      "@/assets/*": [
+        "assets/*"
       ],
       // Files
       "@/constants": [

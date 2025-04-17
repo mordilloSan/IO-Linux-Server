@@ -4,7 +4,7 @@ import { NavLink } from "react-router-dom";
 
 import { Drawer as MuiDrawer, ListItemButton } from "@mui/material";
 
-import { ReactComponent as Logo } from "@/vendor/logo.svg";
+import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { SidebarItemsType } from "@/types/sidebar";
 import SidebarNav from "./SidebarNav";
 

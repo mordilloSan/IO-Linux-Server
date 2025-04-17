@@ -32,19 +32,19 @@ const Page404 = Loadable(
   "Page404"
 );
 const Blank = Loadable(
-  lazy(() => import("@/pages/pages/Blank")),
+  lazy(() => import("@/pages/dashboards/Blank")),
   "Blank"
 );
 const Orders = Loadable(
-  lazy(() => import("@/pages/pages/Orders")),
+  lazy(() => import("@/pages/dashboards/Orders")),
   "Orders"
 );
 const Settings = Loadable(
-  lazy(() => import("@/pages/pages/Settings")),
+  lazy(() => import("@/pages/dashboards/Settings")),
   "Settings"
 );
 const Default = Loadable(
-  lazy(() => import("@/pages/dashboards/Default")),
+  lazy(() => import("@/pages/dashboards")),
   "Default"
 );
 
