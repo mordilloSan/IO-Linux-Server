@@ -74,7 +74,7 @@ const Processor: React.FC = () => {
     stats2: (
       <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
         <Typography variant="body1">
-          <strong>CPU:</strong> {CPUInfo?.vendorId} {CPUInfo?.modelName}
+          <strong>CPU:</strong> {CPUInfo?.modelName}
         </Typography>
         <Typography variant="body1">
           <strong>Cores:</strong> {CPUInfo?.cores} Threads

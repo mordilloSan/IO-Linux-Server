@@ -1,41 +1,39 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Typography, Box, useTheme } from "@mui/material";
+import { Typography, Box, useTheme, Link } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import SecurityUpdateWarningIcon from "@mui/icons-material/SecurityUpdateWarning";
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import RouterLink from "@/components/RouterLink";
-import { useAuthenticatedFetch } from "@/utils/customFetch";
+import axios from "@/utils/axios";
 
 const SystemHealth = () => {
   const theme = useTheme();
-  const customFetch = useAuthenticatedFetch();
 
-  const { data: SystemHealth } = useQuery({
+  const { data: systemHealth } = useQuery({
     queryKey: ["SystemHealth"],
-    queryFn: () => customFetch("/api/updates/status"),
+    queryFn: () => axios.get("/updates/status").then((res) => res.data),
     refetchInterval: 50000,
   });
 
   const { data: systemStatus } = useQuery({
     queryKey: ["SystemStatus"],
-    queryFn: () => customFetch("/api/system-status/status"),
+    queryFn: () => axios.get("/services/status").then((res) => res.data),
     refetchInterval: 50000,
   });
 
   const { data: distroInfo } = useQuery({
     queryKey: ["DistroInfo"],
-    queryFn: () => customFetch("/api/systeminfo/os"),
+    queryFn: () => axios.get("/system/info").then((res) => res.data),
     refetchInterval: 50000,
   });
 
-  const updates = SystemHealth?.updates || [];
+  const updates = systemHealth?.updates || [];
   const units = systemStatus?.units || 0;
   const failed = systemStatus?.failed || 0;
-  const distro = distroInfo?.os?.distro || "Unknown";
+  const distro = distroInfo?.platform || "Unknown";
 
-  // Determine status based on the number of failed units and available updates
+  // Status logic
   let statusColor = "green";
   let IconComponent = CheckCircleOutlineIcon;
   let iconLink = "/updates";
@@ -62,33 +60,30 @@ const SystemHealth = () => {
         color: statusColor,
       }}
     >
-      <RouterLink href={iconLink}>
+      <Link href={iconLink} underline="none">
         <IconComponent sx={{ fontSize: 80 }} />
-      </RouterLink>
+      </Link>
     </Box>
   );
 
   const stats2 = (
     <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
       <Typography variant="body1">
-        <Box component="span">
-          <strong>Distro:</strong>
-        </Box>{" "}
-        {distro}
+        <strong>Distro:</strong> {distro}
       </Typography>
       <Typography variant="body1">
-        <RouterLink href="/updates">
+        <Link href="/updates" underline="hover">
           <strong>Updates:</strong>{" "}
           {updates.length > 0
             ? `${updates.length} available`
             : "None available"}
-        </RouterLink>
+        </Link>
       </Typography>
       <Typography variant="body1">
-        <RouterLink href="/services">
-          <strong>Services: </strong>
+        <Link href="/services" underline="hover">
+          <strong>Services:</strong>{" "}
           {failed > 0 ? `${failed} failed` : `${units} running`}
-        </RouterLink>
+        </Link>
       </Typography>
     </Box>
   );
@@ -98,7 +93,7 @@ const SystemHealth = () => {
       title="System Health"
       stats={stats}
       stats2={stats2}
-      avatarIcon={`simple-icons:${distroInfo?.os?.logofile || "linux"}`}
+      avatarIcon={`simple-icons:${distroInfo?.platform || "linux"}`}
     />
   );
 };

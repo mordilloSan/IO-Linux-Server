@@ -1,0 +1,12 @@
+root = "."
+include_ext = ["go"]
+exclude_dir = ["assets", "node_modules", "frontend"]
+
+[build]
+cmd = "go run ."
+full_bin = "false"
+exclude_regex = ["_test.go"]
+
+[log]
+main_only = true
+color = true
