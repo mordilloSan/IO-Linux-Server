@@ -36,24 +36,41 @@ cd IO-Linux-Server
 
 Install dependencies:
 
+📦 Installation
+bash
+Copiar
+Editar
+# Update package list
 sudo apt update
-sudo apt install make lm-sensors 
 
-sudo apt install libpam0g-dev (for Debian based distros)
-sudo dnf install pam-devel (for RHEL based distros)
+# Install required tools
+sudo apt install make lm-sensors
+🔐 PAM Development Dependencies
+For Debian/Ubuntu:
+
+bash
+Copiar
+Editar
+sudo apt install libpam0g-dev
+For Fedora / RHEL / CentOS:
+
+bash
+Copiar
+Editar
+sudo dnf install pam-devel
 
 🛠️  Available commands:
 
-make setup            Install frontend deps and Node.js (22)
-make dev              Start frontend (Vite) and backend (Go) in dev mode
-make test             Run frontend lint + type checks
-make build            Run full build (frontend + backend)
-make build-frontend   Build React app using Vite
-make build-backend    Compile Go backend with version metadata
-make prod             Run production backend
-make clean            Remove build artifacts
+make setup            Install frontend deps and Node.js (22)  
+make dev              Start frontend (Vite) and backend (Go) in dev mode  
+make test             Run frontend lint + type checks  
+make build            Run full build (frontend + backend)  
+make build-frontend   Build React app using Vite  
+make build-backend    Compile Go backend with version metadata  
+make prod             Run production backend  
+make clean            Remove build artifacts  
 make check-env        Verify .env and required variables 
-make help             This help menu
+make help             This help menu  
 
 ✅ Both "make dev" and "make prod" will run all necessary setup automatically.
 
