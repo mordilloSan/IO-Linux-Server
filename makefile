@@ -52,12 +52,13 @@ dev: setup check-env
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 	@bash -c '\
 	$(NVM_SETUP); \
-		cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
+	cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
 	' & \
 	bash -c '\
-		cd go-backend && \
-		GO_ENV=development SERVER_PORT=$(SERVER_PORT) VITE_DEV_PORT=$(VITE_DEV_PORT) go run . \
+	cd go-backend && \
+	echo "$(SUDO_PASSWORD)" | sudo -E -S GO_ENV=development SERVER_PORT=$(SERVER_PORT) VITE_DEV_PORT=$(VITE_DEV_PORT) $(shell which go) run . \
 	'
+
 lint:
 	@echo "🔍 Running ESLint..."
 	@bash -c '$(NVM_SETUP); \

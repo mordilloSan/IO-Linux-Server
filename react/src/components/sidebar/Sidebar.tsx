@@ -44,8 +44,7 @@ const Brand = styled(ListItemButton)<{
 
 const BrandIcon = styled(Logo)`
   margin-right: ${(props) => props.theme.spacing(2)};
-  color: ${(props) => props.theme.sidebar.header.brand.color};
-  fill: ${(props) => props.theme.sidebar.header.brand.color};
+  fill: ${(props) => props.theme.palette.primary.main};
   height: 42px;
 `;
 

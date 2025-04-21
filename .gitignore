@@ -22,3 +22,4 @@ go-backend/frontend/
 
 # Logs
 *.log
+secret.env
