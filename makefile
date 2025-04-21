@@ -4,6 +4,8 @@
 SERVER_PORT     ?= 8080
 VITE_DEV_PORT   ?= 3000
 NODE_VERSION    ?= 22
+GO_VERSION ?= 1.22.2
+GO_INSTALL_DIR := $(HOME)/.go
 NVM_SETUP = export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"
 VERSION_FROM_ENV ?= 1.0.0
 GO_BIN := $(shell which go)
@@ -38,9 +40,27 @@ ensure-node: .nvmrc
 	'
 	@echo "✅ Node.js environment ready!"
 
+ensure-go:
+	@echo ""
+	@echo "📦 Ensuring Go $(GO_VERSION) is available..."
+	@if ! command -v go >/dev/null 2>&1; then \
+		echo "⬇ Installing Go (no sudo)..."; \
+		curl -LO https://go.dev/dl/go$(GO_VERSION).linux-amd64.tar.gz; \
+		rm -rf $(GO_INSTALL_DIR); \
+		mkdir -p $(GO_INSTALL_DIR); \
+		tar -C $(GO_INSTALL_DIR) -xzf go$(GO_VERSION).linux-amd64.tar.gz --strip-components=1; \
+		rm go$(GO_VERSION).linux-amd64.tar.gz; \
+		if ! grep -q 'export PATH=$(GO_INSTALL_DIR)/bin' $$HOME/.bashrc; then \
+			echo 'export PATH=$(GO_INSTALL_DIR)/bin:$$PATH' >> $$HOME/.bashrc; \
+		fi; \
+		echo "✔ Go installed at $(GO_INSTALL_DIR)"; \
+	fi
+	@bash -c 'export PATH=$(GO_INSTALL_DIR)/bin:$$PATH && go version'
+	@echo "✅ Go is ready!"
+
 setup: .setup-complete
 
-.setup-complete: ensure-node
+.setup-complete: ensure-node ensure-go
 	@echo ""
 	@echo "📦 Installing frontend dependencies..."
 	@bash -c '\
@@ -111,7 +131,6 @@ build-backend: setup
 	echo "⏱ Build Time: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" && \
 	echo "📦 Size: $$(du -h server | cut -f1)" && \
 	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
-
 
 build: build-frontend build-backend
 

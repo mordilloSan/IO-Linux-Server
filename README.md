@@ -48,34 +48,28 @@ cd IO-Linux-Server
 
 ### Install dependencies
 
-```bash
-# Update package list
-sudo apt update
-
-# Install required tools
-sudo apt install make lm-sensors
-```
-
-#### 🔐 PAM Dependencies
-
 **For Debian/Ubuntu:**
 
 ```bash
-sudo apt install libpam0g-dev
+
+sudo apt update # Update package list
+sudo apt install -y make curl git lm-sensors libpam0g-dev # Install required tools
 ```
 
 **For Fedora / RHEL / CentOS:**
 
 ```bash
-sudo dnf install pam-devel
+sudo dnf install -y make curl git lm_sensors pam-devel # Install required tools
 ```
+
+✅ make setup will auto-install Node.js and Go if missing.
 
 ---
 
 ## 🛠️ Available Commands
 
 ```bash
-make setup            # Install frontend deps and Node.js (v22)
+make setup            # Install Node.js, Go (if missing) and frontend deps
 make dev              # Start frontend + backend in dev mode
 make test             # Lint and type check frontend
 make build            # Build frontend + backend
