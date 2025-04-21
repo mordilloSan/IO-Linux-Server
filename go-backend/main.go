@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	env       = "development" // default for go run
-	version   = "dev"         // default version
-	buildTime = "unknown"     // default time
+	env       = "development" // default
+	version   = "dev"
+	buildTime = "unknown"
 )
 
 func getDevPort() string {
@@ -28,10 +28,12 @@ func main() {
 	// Load .env variables into os.Environ()
 	godotenv.Load("../.env")
 
-	// Override env only in development (e.g., when using `go run`)
-	if env == "development" && os.Getenv("GO_ENV") != "" {
-		env = os.Getenv("GO_ENV")
+	// Override env from GO_ENV if set
+	if goEnv := os.Getenv("GO_ENV"); goEnv != "" {
+		env = goEnv
 	}
+
+	log.Printf("🌱 Starting server in %s mode...\n", env)
 
 	if env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -39,9 +41,8 @@ func main() {
 
 	router := gin.New()
 
-	// Only in development: relaxed proxy & CORS
 	if env == "development" {
-		router.SetTrustedProxies(nil) // or a list of known proxy IPs
+		router.SetTrustedProxies(nil)
 		router.Use(corsMiddleware())
 		router.Use(gin.Logger())
 	}
@@ -54,7 +55,6 @@ func main() {
 	registerServiceRoutes(router)
 	startSessionGC()
 
-	// Dev-only debug route
 	if env != "production" {
 		router.GET("/debug/benchmark", func(c *gin.Context) {
 			cookie, err := c.Cookie("session_id")
@@ -63,7 +63,6 @@ func main() {
 				return
 			}
 
-			// ✅ Pass `router` into the benchmark function
 			results := RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
 
 			var output []gin.H
@@ -83,10 +82,9 @@ func main() {
 			}
 			c.JSON(http.StatusOK, output)
 		})
-
 	}
 
-	// Production-only: serve built frontend
+	// Serve frontend in production
 	if env == "production" {
 		router.Static("/assets", "./frontend/assets")
 		router.NoRoute(func(c *gin.Context) {
@@ -103,7 +101,6 @@ func main() {
 	})
 
 	port := os.Getenv("SERVER_PORT")
-
 	if port == "" {
 		port = "8080"
 		log.Println("⚠️  SERVER_PORT not set, defaulting to 8080")

@@ -12,7 +12,7 @@ const SystemHealth = () => {
 
   const { data: systemHealth } = useQuery({
     queryKey: ["SystemHealth"],
-    queryFn: () => axios.get("/updates/status").then((res) => res.data),
+    queryFn: () => axios.get("system/updates").then((res) => res.data),
     refetchInterval: 50000,
   });
 

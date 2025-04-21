@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
-	"log"
 	"net/http"
-	"time"
+	"os/exec"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/godbus/dbus/v5"
 )
 
 func registerUpdateRoutes(router *gin.Engine) {
@@ -18,64 +16,54 @@ func registerUpdateRoutes(router *gin.Engine) {
 }
 
 func getUpdatesHandler(c *gin.Context) {
-	conn, err := dbus.SystemBus()
+	cmd := exec.Command("pkcon", "get-updates")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Println("Failed to connect to system D-Bus:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "dbus connection failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to get updates",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	obj := conn.Object("org.freedesktop.PackageKit", "/org/freedesktop/PackageKit")
-	call := obj.CallWithContext(context.Background(),
-		"org.freedesktop.PackageKit.Modify.GetUpdates",
-		0, "hide-finished")
-
-	if call.Err != nil {
-		log.Println("Failed to call GetUpdates:", call.Err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get updates"})
-		return
-	}
-
-	var transPath dbus.ObjectPath
-	if err := call.Store(&transPath); err != nil {
-		log.Println("Failed to parse transaction path:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid response from PackageKit"})
-		return
-	}
-
-	// Listen to update signals from the transaction
-	signalChan := make(chan *dbus.Signal, 10)
-	conn.Signal(signalChan)
-	conn.AddMatchSignal(dbus.WithMatchObjectPath(transPath))
-
-	timeout := time.After(10 * time.Second)
+	lines := strings.Split(string(output), "\n")
 	var updates []gin.H
 
-	for {
-		select {
-		case sig := <-signalChan:
-			switch sig.Name {
-			case "org.freedesktop.PackageKit.Transaction.Package":
-				var infoType uint32
-				var pkgID, summary string
-				if err := dbus.Store(sig.Body, &infoType, &pkgID, &summary); err == nil {
+	for _, line := range lines {
+		if strings.HasPrefix(line, "Normal") || strings.HasPrefix(line, "Important") || strings.HasPrefix(line, "Security") {
+			fields := strings.Fields(line)
+			if len(fields) >= 3 {
+				severity := fields[0]
+				rawID := fields[1]
+				summary := strings.Join(fields[2:], " ")
+
+				// Split rawID like name-version-arch
+				parts := strings.Split(rawID, "-")
+				if len(parts) >= 3 {
+					arch := parts[len(parts)-1]
+					version := parts[len(parts)-2]
+					name := strings.Join(parts[:len(parts)-2], "-")
+
 					updates = append(updates, gin.H{
-						"package": pkgID,
-						"summary": summary,
+						"name":     name,
+						"version":  version,
+						"arch":     arch,
+						"summary":  summary,
+						"severity": severity,
+					})
+				} else {
+					// fallback if split failed
+					updates = append(updates, gin.H{
+						"packageID": rawID,
+						"summary":   summary,
+						"severity":  severity,
 					})
 				}
-			case "org.freedesktop.PackageKit.Transaction.Finished":
-				c.JSON(http.StatusOK, gin.H{
-					"updates": updates,
-				})
-				return
 			}
-		case <-timeout:
-			c.JSON(http.StatusGatewayTimeout, gin.H{
-				"error":   "timeout waiting for update info",
-				"updates": updates,
-			})
-			return
 		}
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"updates": updates,
+	})
 }

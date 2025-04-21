@@ -1,12 +1,31 @@
 root = "."
+
+tmp_dir = "tmp"
+
 include_ext = ["go"]
-exclude_dir = ["assets", "node_modules", "frontend"]
 
 [build]
-cmd = "go run ."
-full_bin = "false"
-exclude_regex = ["_test.go"]
+cmd = "go build -o ./tmp/main ."
+bin = "tmp/main"
+full_bin = "GO_ENV=development ./tmp/main"
+
+exclude_dir = ["frontend", "tmp", "bin", "pkg"]
+
+exclude_regex = [
+  "^pkg/mod/",
+  "@v[0-9]",
+  "testdata",
+  ".*_test\\.go$"
+]
 
 [log]
 main_only = true
 color = true
+time = false
+
+[color]
+# Customize each part's color. If no color found, use the raw app log.
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"

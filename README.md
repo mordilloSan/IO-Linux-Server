@@ -18,20 +18,22 @@ Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
 
 ## ⚙️ Stack
 
-- **Frontend:** React + Vite + MUI (based on [Mira Pro theme](https://mira.bootlab.io/))  
-- **Backend:** Go + Gin + gorilla  
+- **Frontend:** React (Vite + MUI - based on [Mira Pro theme](https://mira.bootlab.io/))  
+- **Backend:** Go + Air (for development)
+- **Go Rest API:** Gin
+- **Go Websocket:** gorilla
 
 ---
 
 ## 🚀 Features
 
-- 🖥️ System stats dashboard (CPU, memory, disk, network)  
-- 🧠 Process viewer  
-- 💻 Live terminal output from standard Linux commands  
-- 🔐 Login/authentication (via PAM or pluggable systems)  
-- 🧱 Serve React frontend statically in production  
-- 🛡️ Wireguard management  
-- 🐳 Docker Manager (via Docker Compose)
+- 🖥️ System stats dashboard: CPU, memory, disk, network
+- 🧠 Process viewer: see running processes live
+- 💻 Terminal output: view real-time output of Linux commands
+- 🔐 Authentication via PAM (or other pluggable systems)
+- 🧱 Static frontend serving in production
+- 🛡️ WireGuard management UI
+- 🐳 Docker Compose manager
 
 ---
 
@@ -54,7 +56,7 @@ sudo apt update
 sudo apt install make lm-sensors
 ```
 
-#### 🔐 PAM Development Dependencies
+#### 🔐 PAM Dependencies
 
 **For Debian/Ubuntu:**
 
@@ -73,16 +75,16 @@ sudo dnf install pam-devel
 ## 🛠️ Available Commands
 
 ```bash
-make setup            # Install frontend deps and Node.js (22)
-make dev              # Start frontend (Vite) and backend (Go) in dev mode
-make test             # Run frontend lint + type checks
-make build            # Run full build (frontend + backend)
-make build-frontend   # Build React app using Vite
-make build-backend    # Compile Go backend with version metadata
+make setup            # Install frontend deps and Node.js (v22)
+make dev              # Start frontend + backend in dev mode
+make test             # Lint and type check frontend
+make build            # Build frontend + backend
+make build-frontend   # Build Vite React app
+make build-backend    # Compile Go backend with version info
 make prod             # Run production backend
 make clean            # Remove build artifacts
-make check-env        # Verify .env and required variables
-make help             # This help menu
+make check-env        # Validate .env configuration
+
 ```
 
 ✅ Both `make dev` and `make prod` will run all necessary setup automatically.
@@ -92,6 +94,37 @@ make help             # This help menu
 ## 🔐 Logging In
 
 This project uses **PAM authentication** to log in directly to your Linux system using your own username and password.
+
+---
+
+## 👨‍💼 Development Workflow
+
+The development environment is fully set up with a **hot-reloading backend** (Go + Gin) and a **fast-refresh frontend** (Vite + React).
+
+### 📆 Start Development
+
+```bash
+make dev
+```
+
+This will:
+
+1. Start the **Go backend** using [Air] — any code changes automatically rebuild and restart the server.
+2. Start the **React frontend** using Vite’s dev server with HMR (Hot Module Replacement).
+3. Proxy frontend API requests to the backend, so everything just works.
+
+---
+
+### 🔪 How It Works
+
+Under the hood:
+
+- **Air** watches Go files and rebuilds the backend on changes.
+- The **Air config** lives in `go-backend/.air.toml`.
+- The **React frontend** runs in `react/` and talks to the backend via Vite's proxy (see `vite.config.ts`).
+- **Makefile** handles all orchestration — use `make dev` as your single command to launch both.
+
+💡 Tip: You can edit `.env` files for dev-specific settings (like ports, proxy targets, etc.).
 
 ---
 
@@ -118,3 +151,4 @@ MIT License — feel free to use, fork, or contribute!
 
 Created by [@mordilloSan](https://github.com/mordilloSan)  
 📧 miguelgalizamariz@gmail.com  
+

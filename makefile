@@ -1,10 +1,13 @@
 -include .env
+-include secret.env
 
 SERVER_PORT     ?= 8080
 VITE_DEV_PORT   ?= 3000
 NODE_VERSION    ?= 22
 NVM_SETUP = export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"
 VERSION_FROM_ENV ?= 1.0.0
+GO_BIN := $(shell which go)
+AIR_BIN := $(shell which air)
 
 default: help
 
@@ -56,7 +59,7 @@ dev: setup check-env
 	' & \
 	bash -c '\
 	cd go-backend && \
-	echo "$(SUDO_PASSWORD)" | sudo -E -S GO_ENV=development SERVER_PORT=$(SERVER_PORT) VITE_DEV_PORT=$(VITE_DEV_PORT) $(shell which go) run . \
+	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="$(shell dirname $(GO_BIN)):/usr/bin:/bin" $(AIR_BIN) \
 	'
 
 lint:
@@ -116,9 +119,8 @@ binary: build-backend
 	@cd go-backend && \
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
-prod: check-env build 
-	@cd go-backend && \
-	@GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
+prod: check-env build-frontend 
+	@cd go-backend && GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
 
 clean:
 	@rm -f .setup-complete go-backend/server || true
@@ -130,13 +132,13 @@ help:
 	@echo "🛠️  Available commands:"
 	@echo ""
 	@echo "  make setup            Install frontend deps and Node.js ($(NODE_VERSION))"
-	@echo "  make dev              Start frontend (Vite) and backend (Go) in dev mode"
 	@echo "  make test             Run frontend lint + type checks"
 	@echo "  make build            Run full build (frontend + backend)"
 	@echo "  make build-frontend   Build React app using Vite"
 	@echo "  make build-backend    Compile Go backend with version metadata"
-	@echo "  make binary           Compile Go backend and run binary"
+	@echo "  make dev              Start frontend (Vite) and backend (Go) in dev mode"
 	@echo "  make prod             Build react production files and run production backend"
+	@echo "  make binary           Compile Go backend and run binary"
 	@echo "  make clean            Remove build artifacts"
 	@echo "  make check-env        Verify .env and required variables"
 	@echo ""
