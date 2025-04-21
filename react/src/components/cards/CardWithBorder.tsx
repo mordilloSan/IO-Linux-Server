@@ -3,12 +3,10 @@ import MuiCard from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import { styled, alpha } from "@mui/material/styles";
+import { styled, alpha, useTheme } from "@mui/material/styles";
 import CustomAvatar from "@/components/Avatar";
 import { cardHeight, cardBorderRadius } from "@/constants";
 import { Icon } from "@iconify/react";
-
-type AllowedColor = "primary" | "secondary";
 
 interface CardWithBorderProps {
   title: string;
@@ -18,25 +16,22 @@ interface CardWithBorderProps {
   icon?: React.ElementType;
   iconProps?: Record<string, any>;
   icon_text?: string;
-  color?: AllowedColor;
 }
 
 // Styled card with hover border animation
-const HoverableCard = styled(MuiCard, {
-  shouldForwardProp: (prop) => prop !== "color",
-})<{ color?: AllowedColor }>(({ theme, color = "primary" }) => {
-  const palette = theme.palette[color];
+const HoverableCard = styled(MuiCard)(({ theme }) => {
+  const mainColor = theme.palette.primary.main;
 
   return {
     transition:
       "border 0.3s ease-in-out, box-shadow 0.3s ease-in-out, margin 0.3s ease-in-out",
     borderBottomWidth: "2px",
     borderBottomStyle: "solid",
-    borderBottomColor: alpha(palette.main, 0.3),
+    borderBottomColor: alpha(mainColor, 0.3),
 
     "&:hover": {
       borderBottomWidth: "3px",
-      borderBottomColor: palette.main,
+      borderBottomColor: mainColor,
       boxShadow: theme.shadows[10],
       marginBlockEnd: "-1px",
     },
@@ -51,11 +46,12 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
   icon: IconComponent,
   iconProps,
   icon_text,
-  color = "primary",
 }) => {
+  const theme = useTheme();
+  const primaryColor = theme.palette.primary.main;
+
   return (
     <HoverableCard
-      color={color}
       elevation={2}
       sx={{
         minHeight: cardHeight,
@@ -79,11 +75,12 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
               variant="h4"
               sx={{
                 fontWeight: "bold",
-                transform: "translateY(-1px)", // subtle upward shift
+                transform: "translateY(-1px)",
               }}
             >
               {title}
             </Typography>
+
             {IconComponent && icon_text && (
               <Box
                 sx={{
@@ -97,12 +94,16 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
-                    mr: "-4px", // trims space between icon and text
+                    mr: "-4px",
                   }}
                 >
                   <IconComponent
                     {...iconProps}
-                    sx={{ verticalAlign: "middle", ...iconProps?.sx }}
+                    sx={{
+                      verticalAlign: "middle",
+                      color: primaryColor,
+                      ...iconProps?.sx,
+                    }}
                   />
                 </Box>
                 <Typography
@@ -115,8 +116,13 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             )}
           </Box>
 
-          <CustomAvatar color={color} transparent size={40}>
-            <Icon icon={avatarIcon} width="32px" height="32px" />
+          <CustomAvatar transparent size={40}>
+            <Icon
+              icon={avatarIcon}
+              width="32px"
+              height="32px"
+              color={primaryColor}
+            />
           </CustomAvatar>
         </Box>
 

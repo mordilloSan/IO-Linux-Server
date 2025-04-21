@@ -1,13 +1,15 @@
 import React, { useEffect } from "react";
-
 import { THEMES } from "@/constants";
+import { ThemeContextType } from "@/types/theme";
 
-const initialState = {
+const initialState: ThemeContextType = {
   theme: THEMES.DARK,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setTheme: (theme: string) => {},
+  setTheme: () => {},
+  primaryColor: undefined,
+  setPrimaryColor: () => {},
 };
-const ThemeContext = React.createContext(initialState);
+
+const ThemeContext = React.createContext<ThemeContextType>(initialState);
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -15,22 +17,32 @@ type ThemeProviderProps = {
 
 function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, _setTheme] = React.useState<string>(initialState.theme);
+  const [primaryColor, _setPrimaryColor] = React.useState<string | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
+    const storedColor = localStorage.getItem("primaryColor");
 
-    if (storedTheme) {
-      _setTheme(JSON.parse(storedTheme));
-    }
+    if (storedTheme) _setTheme(JSON.parse(storedTheme));
+    if (storedColor) _setPrimaryColor(JSON.parse(storedColor));
   }, []);
 
-  const setTheme = (theme: string) => {
-    localStorage.setItem("theme", JSON.stringify(theme));
-    _setTheme(theme);
+  const setTheme = (newTheme: string) => {
+    localStorage.setItem("theme", JSON.stringify(newTheme));
+    _setTheme(newTheme);
+  };
+
+  const setPrimaryColor = (color: string) => {
+    localStorage.setItem("primaryColor", JSON.stringify(color));
+    _setPrimaryColor(color);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider
+      value={{ theme, setTheme, primaryColor, setPrimaryColor }}
+    >
       {children}
     </ThemeContext.Provider>
   );

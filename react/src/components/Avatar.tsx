@@ -1,26 +1,19 @@
 import { forwardRef } from "react";
 import MuiAvatar, { AvatarProps as MuiAvatarProps } from "@mui/material/Avatar";
 import { styled } from "@mui/material/styles";
-import { OverridableStringUnion } from "@mui/types";
-import { Theme } from "@mui/material/styles";
 
 interface CustomAvatarProps extends MuiAvatarProps {
-  color?: OverridableStringUnion<"primary" | "secondary" | "error", object>;
   size?: number;
   transparent?: boolean;
 }
 
-const Avatar = styled(MuiAvatar, {
+// Styled Avatar
+const StyledAvatar = styled(MuiAvatar, {
   shouldForwardProp: (prop) =>
-    !["color", "size", "transparent"].includes(prop as string),
-})<CustomAvatarProps>(
-  ({
-    color = "primary",
-    size,
-    transparent,
-    theme,
-  }: CustomAvatarProps & { theme: Theme }) => {
-    const palette = theme.palette[color];
+    !["size", "transparent"].includes(prop as string),
+})<Pick<CustomAvatarProps, "size" | "transparent">>(
+  ({ size, transparent, theme }) => {
+    const palette = theme.palette.primary;
 
     return {
       backgroundColor: transparent ? "transparent" : palette.main,
@@ -34,16 +27,11 @@ const Avatar = styled(MuiAvatar, {
   }
 );
 
+// Component
 const CustomAvatar = forwardRef<HTMLDivElement, CustomAvatarProps>(
-  ({ color = "primary", size, transparent = false, ...rest }, ref) => {
+  ({ size, transparent = false, ...rest }, ref) => {
     return (
-      <Avatar
-        ref={ref}
-        color={color}
-        size={size}
-        transparent={transparent}
-        {...rest}
-      />
+      <StyledAvatar ref={ref} size={size} transparent={transparent} {...rest} />
     );
   }
 );

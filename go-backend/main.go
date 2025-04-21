@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -24,6 +25,8 @@ func getDevPort() string {
 }
 
 func main() {
+	// Load .env variables into os.Environ()
+	godotenv.Load("../.env")
 
 	// Override env only in development (e.g., when using `go run`)
 	if env == "development" && os.Getenv("GO_ENV") != "" {
@@ -47,6 +50,8 @@ func main() {
 	registerAuthRoutes(router)
 	registerSystemRoutes(router)
 	registerWebSocketRoutes(router)
+	registerUpdateRoutes(router)
+	registerServiceRoutes(router)
 	startSessionGC()
 
 	// Dev-only debug route
@@ -58,7 +63,9 @@ func main() {
 				return
 			}
 
-			results := RunBenchmark("http://localhost:8080", fmt.Sprintf("session_id=%s", cookie), 8)
+			// ✅ Pass `router` into the benchmark function
+			results := RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
+
 			var output []gin.H
 			for _, r := range results {
 				if r.Error != nil {
@@ -76,6 +83,7 @@ func main() {
 			}
 			c.JSON(http.StatusOK, output)
 		})
+
 	}
 
 	// Production-only: serve built frontend

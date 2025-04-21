@@ -7,13 +7,21 @@ import breakpoints from "@/theme/breakpoints";
 import components from "@/theme/components";
 import shadows from "@/theme/shadows";
 
-const createTheme = (name: string) => {
+const createTheme = (name: string, primaryColor?: string) => {
   let themeConfig = variants.find((variant) => variant.name === name);
 
   if (!themeConfig) {
     console.warn(new Error(`The theme ${name} is not valid`));
     themeConfig = variants[0];
   }
+
+  const palette = {
+    ...themeConfig.palette,
+    primary: {
+      ...themeConfig.palette.primary,
+      ...(primaryColor && { main: primaryColor }),
+    },
+  };
 
   return createMuiTheme(
     {
@@ -23,7 +31,7 @@ const createTheme = (name: string) => {
       components: components,
       typography: typography,
       shadows: shadows,
-      palette: themeConfig.palette,
+      palette,
     },
     {
       name: themeConfig.name,

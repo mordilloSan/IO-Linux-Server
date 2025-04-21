@@ -33,13 +33,13 @@ const SystemHealth = () => {
   const failed = systemStatus?.failed || 0;
   const distro = distroInfo?.platform || "Unknown";
 
-  // Status logic
-  let statusColor = "green";
+  // Determine icon + color
+  let statusColor = theme.palette.success.dark;
   let IconComponent = CheckCircleOutlineIcon;
   let iconLink = "/updates";
 
   if (failed > 0) {
-    statusColor = "red";
+    statusColor = theme.palette.error.main;
     IconComponent = HighlightOffIcon;
     iconLink = "/services";
   } else if (updates.length > 0) {
@@ -47,6 +47,7 @@ const SystemHealth = () => {
     IconComponent = SecurityUpdateWarningIcon;
   }
 
+  // Main icon display
   const stats = (
     <Box
       sx={{
@@ -57,31 +58,32 @@ const SystemHealth = () => {
         width: 120,
         height: 120,
         borderRadius: "50%",
-        color: statusColor,
       }}
     >
       <Link href={iconLink} underline="none">
-        <IconComponent sx={{ fontSize: 80 }} />
+        <IconComponent sx={{ fontSize: 80, color: statusColor }} />
       </Link>
     </Box>
   );
 
+  // Right-hand side text
   const stats2 = (
     <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
       <Typography variant="body1">
         <strong>Distro:</strong> {distro}
       </Typography>
       <Typography variant="body1">
-        <Link href="/updates" underline="hover">
-          <strong>Updates:</strong>{" "}
+        <strong>Updates:</strong>{" "}
+        <Link href="/updates" underline="hover" color="inherit">
           {updates.length > 0
             ? `${updates.length} available`
             : "None available"}
         </Link>
       </Typography>
+
       <Typography variant="body1">
-        <Link href="/services" underline="hover">
-          <strong>Services:</strong>{" "}
+        <strong>Services:</strong>{" "}
+        <Link href="/services" underline="hover" color="inherit">
           {failed > 0 ? `${failed} failed` : `${units} running`}
         </Link>
       </Typography>

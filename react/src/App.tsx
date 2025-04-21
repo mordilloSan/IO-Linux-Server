@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useRoutes } from "react-router-dom";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
@@ -18,11 +18,15 @@ const clientSideEmotionCache = createEmotionCache();
 
 function App({ emotionCache = clientSideEmotionCache }) {
   const content = useRoutes(routes);
-  const { theme } = useTheme();
+  const { theme: themeName, primaryColor } = useTheme();
+  const theme = useMemo(
+    () => createTheme(themeName, primaryColor),
+    [themeName, primaryColor]
+  );
 
   return (
     <CacheProvider value={emotionCache}>
-      <MuiThemeProvider theme={createTheme(theme)}>
+      <MuiThemeProvider theme={theme}>
         <ReactQueryProvider>
           <AuthProvider>
             <WebSocketProvider>{content}</WebSocketProvider>

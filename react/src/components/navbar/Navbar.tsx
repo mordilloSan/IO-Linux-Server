@@ -17,6 +17,7 @@ import { Menu as MenuIcon } from "@mui/icons-material";
 import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
 import NavbarUserDropdown from "./NavbarUserDropdown";
 import Settings from "./NavbarThemeToggle";
+import Customizer from "./NavbarCustomizer";
 
 const AppBar = styled(MuiAppBar)`
   background: ${(props) => props.theme.header.background};
@@ -107,6 +108,7 @@ const Navbar: React.FC<NavbarProps> = ({ onDrawerToggle }) => {
             <Grid>
               <NavbarNotificationsDropdown />
               <Settings />
+              <Customizer />
               <NavbarUserDropdown />
             </Grid>
           </Grid>

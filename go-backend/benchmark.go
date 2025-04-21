@@ -1,4 +1,3 @@
-// benchmark.go
 package main
 
 import (
@@ -6,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type BenchmarkResult struct {
@@ -15,25 +16,16 @@ type BenchmarkResult struct {
 	Error    error
 }
 
-var benchmarkEndpoints = []string{
-	"/system/info",
-	"/system/cpu",
-	"/system/mem",
-	"/system/disk",
-	"/system/load",
-	"/system/uptime",
-	"/system/network",
-	"/system/processes",
-}
+// RunBenchmark performs parallel benchmarking of all GET /system/* endpoints
+func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, concurrency int) []BenchmarkResult {
+	endpoints := getSystemEndpoints(router)
 
-// RunBenchmark performs parallel benchmarking of all endpoints
-func RunBenchmark(baseURL string, sessionCookie string, concurrency int) []BenchmarkResult {
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
-	results := make([]BenchmarkResult, len(benchmarkEndpoints))
-	resultChan := make(chan BenchmarkResult, len(benchmarkEndpoints))
+	results := make([]BenchmarkResult, len(endpoints))
+	resultChan := make(chan BenchmarkResult, len(endpoints))
 
-	for _, endpoint := range benchmarkEndpoints {
+	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go func(endpoint string) {
 			defer wg.Done()
@@ -74,4 +66,15 @@ func RunBenchmark(baseURL string, sessionCookie string, concurrency int) []Bench
 	}
 
 	return results
+}
+
+// getSystemEndpoints returns all GET routes starting with /system/
+func getSystemEndpoints(router *gin.Engine) []string {
+	var endpoints []string
+	for _, route := range router.Routes() {
+		if route.Method == "GET" && len(route.Path) > 7 && route.Path[:8] == "/system/" {
+			endpoints = append(endpoints, route.Path)
+		}
+	}
+	return endpoints
 }

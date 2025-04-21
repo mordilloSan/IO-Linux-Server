@@ -4,6 +4,7 @@ SERVER_PORT     ?= 8080
 VITE_DEV_PORT   ?= 3000
 NODE_VERSION    ?= 22
 NVM_SETUP = export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"
+VERSION_FROM_ENV ?= 1.0.0
 
 default: help
 
@@ -94,28 +95,33 @@ build-backend: setup
 	@cd go-backend && \
 	go build \
 	-ldflags "\
-		-X 'main.env=production' \
-		-X 'main.version=1.0.0' \
+		-X 'main.version=$(VERSION_FROM_ENV)' \
+		-X 'main.env=$(GO_ENV)' \
 		-X 'main.buildTime=$$(date -u +%Y-%m-%dT%H:%M:%SZ)'" \
 	-o server && \
 	echo "✅ Backend built successfully!" && \
 	echo "" && \
 	echo "Summary:" && \
 	echo "📄 Path: go-backend/server" && \
-	echo "🔖 Version: 1.0.0" && \
+	echo "🔖 Version: $(VERSION_FROM_ENV)" && \
 	echo "⏱ Build Time: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" && \
 	echo "📦 Size: $$(du -h server | cut -f1)" && \
 	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
 
+
 build: build-frontend build-backend
 
-prod: check-env build 
+binary: build-backend
 	@cd go-backend && \
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
+prod: check-env build 
+	@cd go-backend && \
+	@GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
+
 clean:
-	rm -f .setup-complete go-backend/server
-	rm -rf react/node_modules go-backend/frontend
+	@rm -f .setup-complete go-backend/server || true
+	@rm -rf react/node_modules go-backend/frontend || true
 	@echo "🧹 Cleaned workspace."
 
 help:
@@ -128,9 +134,10 @@ help:
 	@echo "  make build            Run full build (frontend + backend)"
 	@echo "  make build-frontend   Build React app using Vite"
 	@echo "  make build-backend    Compile Go backend with version metadata"
-	@echo "  make prod             Run production backend"
+	@echo "  make binary           Compile Go backend and run binary"
+	@echo "  make prod             Build react production files and run production backend"
 	@echo "  make clean            Remove build artifacts"
 	@echo "  make check-env        Verify .env and required variables"
 	@echo ""
 
-.PHONY: all ensure-node setup dev test build-frontend build-backend build prod clean help lint tsc
+.PHONY: all ensure-node setup dev test build-frontend build-backend build binary prod clean help lint tsc check-env
