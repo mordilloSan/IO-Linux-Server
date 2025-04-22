@@ -12,19 +12,22 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      if (status === 401) {
-        // Redirect to signin on Unauthorized
-        window.location.href = "/auth/signin";
-        return; // prevent further handling
+      if (
+        status === 401 &&
+        !error.config?.url?.includes("/auth/me") // ⛔️ Don't redirect if the request was to /auth/me
+      ) {
+        const redirectPath = window.location.pathname + window.location.search;
+        window.location.href = `/auth/sign-in?redirect=${encodeURIComponent(
+          redirectPath
+        )}`;
+        return;
       }
 
       if (status === 500) {
-        // Redirect to generic error page
         window.location.href = "/error/500";
         return;
       }
 
-      // Reject for React Query to handle (e.g. toast)
       return Promise.reject(error);
     }
 
