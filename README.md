@@ -62,12 +62,14 @@ git clone https://github.com/mordilloSan/IO-Linux-Server
 cd IO-Linux-Server
 ```
 
+---
+
 ## 🛠️ Available Commands
 
 This repo uses `make` to simplify standard operations.
 
-✅ Run `make` inside the project directory to view available commands
-✅ Both `make dev` and `make prod` will run all necessary setup automatically.
+✅ Run `make` inside the project directory to view available commands  
+✅ Both `make dev` and `make prod` will run all necessary setup automatically.  
 
 ```bash
 make setup            # Install Node.js, Go (if missing) and frontend deps
@@ -114,7 +116,6 @@ Runs Vite dev server with proxying to Go API
 
 Outputs all API paths and logs (from Gin)
 
----
 
 ### 🚀 Production Mode
 
@@ -128,7 +129,6 @@ make prod
 
 - No logging enabled by default
 
----
 
 ### 📦 Binary Mode
 
@@ -143,8 +143,6 @@ make binary
 - Suitable for systemd and production deployment
 
 - No .env or secret files needed after build
-
----
 
 ### 🔪 How It Works
 
