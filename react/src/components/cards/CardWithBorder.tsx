@@ -131,7 +131,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             sx={{
               mt: 3,
               display: "flex",
-              flexDirection: { xs: "column", sm: "column", xl: "row" },
+              flexDirection: { xs: "column", sm: "row", xl: "row" },
             }}
           >
             <Box

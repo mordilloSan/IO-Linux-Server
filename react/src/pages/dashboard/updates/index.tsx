@@ -7,7 +7,7 @@ const Updates: React.FC = () => {
   return (
     <Box>
       <UpdateStatus />
-      <UpdateHistory/>
+      <UpdateHistory />
     </Box>
   );
 };

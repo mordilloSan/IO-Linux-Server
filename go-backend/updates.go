@@ -13,6 +13,7 @@ func registerUpdateRoutes(router *gin.Engine) {
 	{
 		system.GET("/updates", getUpdatesHandler)
 		system.POST("/update", updatePackageHandler)
+		system.GET("/updates/update-history", getUpdateHistoryHandler)
 	}
 }
 

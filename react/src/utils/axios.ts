@@ -12,16 +12,23 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      if (status === 500) {
-        // Only redirect — let React Query handle the rest (toast, retry, etc.)
-        window.location.href = "/error/500";
+      if (status === 401) {
+        // Redirect to signin on Unauthorized
+        window.location.href = "/auth/signin";
+        return; // prevent further handling
       }
 
-      // Reject full error for React Query to catch and show via toast
+      if (status === 500) {
+        // Redirect to generic error page
+        window.location.href = "/error/500";
+        return;
+      }
+
+      // Reject for React Query to handle (e.g. toast)
       return Promise.reject(error);
     }
 
-    // Optional: toast only for low-level network failure (React Query won't catch this)
+    // Low-level network or timeout error
     console.error("Network error:", error.message);
     return Promise.reject(error);
   }

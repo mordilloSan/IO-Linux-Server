@@ -21,14 +21,15 @@ const CollapsibleTable = <T extends Record<string, any>>({
 }: CollapsibleTableProps<T>) => {
   const CollapsibleRow = ({ row, isLast }: { row: T; isLast: boolean }) => {
     const [open, setOpen] = useState(false);
-  
+
     return (
       <>
         <TableRow>
           <TableCell
             sx={{
               width: "50px",
-              borderBottom: open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
+              borderBottom:
+                open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
             }}
           >
             <IconButton
@@ -44,14 +45,15 @@ const CollapsibleTable = <T extends Record<string, any>>({
               key={index}
               align={column.align || "left"}
               sx={{
-                borderBottom: open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
+                borderBottom:
+                  open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
               }}
             >
               {row[column.field]}
             </TableCell>
           ))}
         </TableRow>
-  
+
         {open && (
           <TableRow>
             <TableCell
@@ -59,7 +61,9 @@ const CollapsibleTable = <T extends Record<string, any>>({
               sx={{
                 paddingTop: 0,
                 paddingBottom: 0,
-                borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
+                borderBottom: isLast
+                  ? "none"
+                  : "1px solid rgba(255,255,255,0.1)",
               }}
             >
               <Collapse in={open} timeout="auto" unmountOnExit>
@@ -76,7 +80,10 @@ const CollapsibleTable = <T extends Record<string, any>>({
 
   return (
     <Box sx={{ padding: 2 }}>
-      <TableContainer component={Paper} sx={{ paddingLeft: "16px", paddingRight: "16px" }}>
+      <TableContainer
+        component={Paper}
+        sx={{ paddingLeft: "16px", paddingRight: "16px" }}
+      >
         <Table aria-label="collapsible table">
           <TableHead>
             <TableRow>
@@ -89,23 +96,22 @@ const CollapsibleTable = <T extends Record<string, any>>({
             </TableRow>
           </TableHead>
           <TableBody>
-  {rows.length > 0 ? (
-    rows.map((row, index) => (
-      <CollapsibleRow
-        key={index}
-        row={row}
-        isLast={index === rows.length - 1}
-      />
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={columns.length + 1} align="center">
-        <Loader />
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
-
+            {rows.length > 0 ? (
+              rows.map((row, index) => (
+                <CollapsibleRow
+                  key={index}
+                  row={row}
+                  isLast={index === rows.length - 1}
+                />
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} align="center">
+                  <Loader />
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </TableContainer>
     </Box>

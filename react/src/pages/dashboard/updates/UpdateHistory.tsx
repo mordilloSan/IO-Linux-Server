@@ -18,9 +18,7 @@ interface UpdateHistoryRow {
   upgrades: UpgradeItem[];
 }
 
-const columns: CollapsibleColumn[] = [
-  { field: "date", headerName: "Date" },
-];
+const columns: CollapsibleColumn[] = [{ field: "date", headerName: "Date" }];
 
 const chunkArray = <T,>(array: T[], chunkSize: number): T[][] => {
   const result: T[][] = [];
@@ -50,18 +48,29 @@ const UpdateHistoryCard: React.FC = () => {
         <Typography variant="h6" gutterBottom>
           Packages Installed
         </Typography>
-        <Table size="small">
+        <Table size="small" sx={{ borderCollapse: "collapse" }}>
           <TableBody>
             {chunked.map((group, i) => (
               <TableRow key={i}>
                 {group.map((pkg, j) => (
-                  <TableCell key={j} sx={{ width: "20%" }}>
+                  <TableCell
+                    key={j}
+                    sx={{
+                      width: "20%",
+                      border: "none", // remove cell borders
+                      padding: "8px 12px", // optional: add cleaner spacing
+                      color: "text.secondary",
+                    }}
+                  >
                     {pkg.package}
                   </TableCell>
                 ))}
                 {group.length < 5 &&
                   [...Array(5 - group.length)].map((_, j) => (
-                    <TableCell key={`empty-${j}`} sx={{ width: "20%" }} />
+                    <TableCell
+                      key={`empty-${j}`}
+                      sx={{ width: "20%", border: "none" }}
+                    />
                   ))}
               </TableRow>
             ))}
@@ -73,11 +82,7 @@ const UpdateHistoryCard: React.FC = () => {
 
   return (
     <Box>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ pl: 2, pr: 2, pt: 3 }}
-      >
+      <Typography variant="h4" gutterBottom sx={{ pl: 2, pr: 2, pt: 3 }}>
         Update History
       </Typography>
       <CollapsibleTable

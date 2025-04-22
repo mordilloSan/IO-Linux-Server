@@ -1,12 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
-import {
-  Typography,
-  Box,
-  Button,
-  LinearProgress,
-  Card,
-} from "@mui/material";
+import { Typography, Box, Button, LinearProgress, Card } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CollapsibleTable from "@/components/tables/CollapsibleTable";
 import Loader from "@/components/Loader";
@@ -38,16 +32,19 @@ const UpdateStatus: React.FC = () => {
   const [updateProgress, setUpdateProgress] = useState(0);
   const [currentPackage, setCurrentPackage] = useState("");
 
-  const { data: updateInfo, isLoading: loadingSystemInfo, refetch } =
-    useQuery<UpdateInfo>({
-      queryKey: ["updateInfo"],
-      queryFn: async () => {
-        const res = await axios.get("/system/updates");
-        return res.data;
-      },
-      refetchInterval: 50000,
-      enabled: !isUpdating,
-    });
+  const {
+    data: updateInfo,
+    isLoading: loadingSystemInfo,
+    refetch,
+  } = useQuery<UpdateInfo>({
+    queryKey: ["updateInfo"],
+    queryFn: async () => {
+      const res = await axios.get("/system/updates");
+      return res.data;
+    },
+    refetchInterval: 50000,
+    enabled: !isUpdating,
+  });
 
   const handleUpdateAll = async () => {
     if (!updateInfo || isUpdating) return;
@@ -66,7 +63,9 @@ const UpdateStatus: React.FC = () => {
         await axios.post("/api/updates/update-package", { packageName });
         setUpdateProgress(((i + 1) / totalPackages) * 100);
       } catch (error: any) {
-        console.error(`Error updating package ${packageName}: ${error.message}`);
+        console.error(
+          `Error updating package ${packageName}: ${error.message}`
+        );
         continue;
       }
     }
@@ -78,7 +77,7 @@ const UpdateStatus: React.FC = () => {
 
   const rows = updateInfo?.updates || [];
 
-  const renderCollapseContent = (row: Update) => (
+  const renderCollapseContent = () => (
     <Box>
       <Typography variant="body2" color="textSecondary">
         No additional details available.

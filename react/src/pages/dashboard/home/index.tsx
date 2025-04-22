@@ -9,16 +9,16 @@ const Dashboard: React.FC = () => {
   return (
     <Grid container spacing={4}>
       <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <SystemHealth />
+        <SystemHealth />
       </Grid>
       <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Processor />
+        <Processor />
       </Grid>
       <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Memory />
+        <Memory />
       </Grid>
       <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <FileSystem />
+        <FileSystem />
       </Grid>
     </Grid>
   );

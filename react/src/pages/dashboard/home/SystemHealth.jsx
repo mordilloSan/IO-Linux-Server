@@ -1,11 +1,13 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Typography, Box, useTheme, Link } from "@mui/material";
+import { Typography, Box, useTheme } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import SecurityUpdateWarningIcon from "@mui/icons-material/SecurityUpdateWarning";
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import axios from "@/utils/axios";
+import { Link as RouterLink } from "react-router-dom";
+import { Link } from "@mui/material";
 
 const SystemHealth = () => {
   const theme = useTheme();
@@ -74,7 +76,12 @@ const SystemHealth = () => {
       </Typography>
       <Typography variant="body1">
         <strong>Updates:</strong>{" "}
-        <Link href="/updates" underline="hover" color="inherit">
+        <Link
+          component={RouterLink}
+          to="/updates"
+          underline="hover"
+          color="inherit"
+        >
           {updates.length > 0
             ? `${updates.length} available`
             : "None available"}
@@ -83,7 +90,12 @@ const SystemHealth = () => {
 
       <Typography variant="body1">
         <strong>Services:</strong>{" "}
-        <Link href="/services" underline="hover" color="inherit">
+        <Link
+          component={RouterLink}
+          to="/services"
+          underline="hover"
+          color="inherit"
+        >
           {failed > 0 ? `${failed} failed` : `${units} running`}
         </Link>
       </Typography>
