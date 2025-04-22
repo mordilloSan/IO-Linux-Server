@@ -7,7 +7,7 @@ react/node_modules/
 # Go Folders
 go-backend/frontend/
 go-backend/tmp/
-go-backend/server/
+go-backend/server
 
 # Logs and misc
 *.log
@@ -27,4 +27,3 @@ go-backend/server/
 
 #password for dev mode
 secret.env
-
