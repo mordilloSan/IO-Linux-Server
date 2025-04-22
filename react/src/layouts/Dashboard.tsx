@@ -19,6 +19,7 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import Footer from "@/components/Footer";
 
 import { drawerWidth } from "@/constants";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Root = styled.div`
   display: flex;
@@ -100,7 +101,9 @@ const Dashboard: React.FC = () => {
         <Navbar onDrawerToggle={handleDrawerToggle} />
         <MainContent p={isLgUp ? 7 : 5}>
           <Container maxWidth="xl">
+          <ErrorBoundary>
             <Outlet />
+            </ErrorBoundary>
           </Container>
         </MainContent>
         <Footer />

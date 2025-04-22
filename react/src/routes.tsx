@@ -40,6 +40,11 @@ const Default = Loadable(
   "Default"
 );
 
+const Updates = Loadable(
+  lazy(() => import("@/pages/dashboard/updates")),
+  "Default"
+);
+
 const routes = [
   {
     path: "/",
@@ -51,6 +56,7 @@ const routes = [
     children: [
       { path: "", element: <Default /> },
       { path: "blank", element: <Blank /> },
+      { path: "updates", element: <Updates /> },
     ],
   },
   {

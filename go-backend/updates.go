@@ -12,6 +12,7 @@ func registerUpdateRoutes(router *gin.Engine) {
 	system := router.Group("/system", authMiddleware())
 	{
 		system.GET("/updates", getUpdatesHandler)
+		system.POST("/update", updatePackageHandler)
 	}
 }
 
@@ -65,5 +66,34 @@ func getUpdatesHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"updates": updates,
+	})
+}
+
+func updatePackageHandler(c *gin.Context) {
+	var req struct {
+		PackageName string `json:"package"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageName) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request. 'package' field is required.",
+		})
+		return
+	}
+
+	cmd := exec.Command("pkexec", "pkcon", "update", req.PackageName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to update package",
+			"details": err.Error(),
+			"output":  string(output),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Package update triggered",
+		"output":  string(output),
 	})
 }
