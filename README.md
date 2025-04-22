@@ -39,13 +39,6 @@ Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
 
 ## 📦 Getting Started
 
-### Clone the repo
-
-```bash
-git clone https://github.com/mordilloSan/IO-Linux-Server
-cd IO-Linux-Server
-```
-
 ### Install dependencies
 
 **For Debian/Ubuntu:**
@@ -53,31 +46,37 @@ cd IO-Linux-Server
 ```bash
 
 sudo apt update # Update package list
-sudo apt install -y make curl git lm-sensors libpam0g-dev # Install required tools
+sudo apt install -y make curl git lm-sensors libpam0g-dev git # Install required tools
 ```
 
 **For Fedora / RHEL / CentOS:**
 
 ```bash
-sudo dnf install -y make curl git lm_sensors pam-devel # Install required tools
+sudo dnf install -y make curl git lm_sensors pam-devel git # Install required tools
 ```
 
-✅ make setup will auto-install Node.js and Go if missing.
+### Clone the repo
 
----
+```bash
+git clone https://github.com/mordilloSan/IO-Linux-Server
+cd IO-Linux-Server
+```
 
 ## 🛠️ Available Commands
 
+This repo uses make to simplify standard operations.
+
 ```bash
 make setup            # Install Node.js, Go (if missing) and frontend deps
-make dev              # Start frontend + backend in dev mode
-make test             # Lint and type check frontend
-make build            # Build frontend + backend
+make test             # Run frontend lint + type checks
+make build            # Run full build (frontend + backend)
 make build-frontend   # Build Vite React app
-make build-backend    # Compile Go backend with version info
-make prod             # Run production backend
+make build-backend    # Compile Go backend with version metadata
+make dev              # Start frontend (Vite) and backend (Go) in dev mode
+make prod             # Build react production files and run production backend
+make binary           # Compile Go backend and run binary
 make clean            # Remove build artifacts
-make check-env        # Validate .env configuration
+make check-env        # Verify .env and required variables
 
 ```
 
