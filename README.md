@@ -64,7 +64,7 @@ cd IO-Linux-Server
 
 ## 🛠️ Available Commands
 
-This repo uses make to simplify standard operations.
+This repo uses `make` to simplify standard operations.
 
 ✅ Run `make` inside the project directory to view available commands
 ✅ Both `make dev` and `make prod` will run all necessary setup automatically.
