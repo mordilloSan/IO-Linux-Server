@@ -95,38 +95,49 @@ This project uses **PAM authentication** to log in directly to your Linux system
 
 The development environment is fully set up with a **hot-reloading backend** (Go + Gin) and a **fast-refresh frontend** (Vite + React).
 
-### 🧪 Modes
-
-#### React (Frontend)
-- **Development:** Uses Vite dev server with hot module reload (HMR)
-- **Production:** Compiled with Vite into static assets served by the Go backend
-
-#### Go (Backend)
-- **Development:** Uses Air for live reloading when running `make dev`
-- **Production:** Served with `make prod` using env `GO_ENV=production`
-- **Binary:** Built with `make binary` — runs compiled backend binary with version info and metadata
-
 ### 🛠️ Instructions for development and production mode
 
-For development mode, due to permissions, we have to type our password in a secret.env file. 
-Edit this file and put your password, from an account that has administrative privileges.
+Due to permissions, we have to type our password in a secret.env file both for development and production stages
+Edit this file and put your password of an account that has administrative privileges.
 
-Running make dev will install all necessary tools and dependencies, then launch both the React app and the Go backend in development mode.
-This is not needed when running binary as it uses systemd
 
-The backend (Gin) will log all available API endpoints and incoming API calls to the console.
-
-### 📆 Start Development
+### 📆 Start Development Options
 
 ```bash
 make dev
 ```
 
-This will:
+Runs Air for Go backend auto-reloads
 
-1. Start the **Go backend** using [Air] — any code changes automatically rebuild and restart the server.
-2. Start the **React frontend** using Vite’s dev server with HMR (Hot Module Replacement).
-3. Proxy frontend API requests to the backend, so everything just works.
+Runs Vite dev server with proxying to Go API
+
+Outputs all API paths and logs (from Gin)
+
+---
+
+```bash
+make prod
+```
+
+- Compiles frontend via Vite
+
+- Serves static assets using go run .
+
+- No logging enabled by default
+
+---
+
+```bash
+make binnary
+```
+
+- Produces a compiled, self-contained Go binary
+
+- Frontend is bundled inside
+
+- Suitable for systemd and production deployment
+
+- No .env or secret files needed after build
 
 ---
 
