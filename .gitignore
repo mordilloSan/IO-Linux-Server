@@ -1,17 +1,19 @@
 # Go binaries
-go-backend/server
+
 
 # Node modules
 react/node_modules/
 
-# Build output
+# Go Folders
 go-backend/frontend/
-.setup-complete
+go-backend/tmp/
+go-backend/server/
 
 # Logs and misc
 *.log
 .DS_Store
 .vscode/
+.setup-complete
 
 # VSCode
 .vscode/
@@ -22,4 +24,7 @@ go-backend/frontend/
 
 # Logs
 *.log
+
+#password for dev mode
 secret.env
+
