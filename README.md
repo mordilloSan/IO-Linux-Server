@@ -46,13 +46,13 @@ Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
 ```bash
 
 sudo apt update # Update package list
-sudo apt install -y make curl git lm-sensors libpam0g-dev git # Install required tools
+sudo apt install -y make curl git lm-sensors libpam0g-dev # Install required tools
 ```
 
 **For Fedora / RHEL / CentOS:**
 
 ```bash
-sudo dnf install -y make curl git lm_sensors pam-devel git # Install required tools
+sudo dnf install -y make curl git lm_sensors pam-devel # Install required tools
 ```
 
 ### Clone the repo
@@ -65,6 +65,9 @@ cd IO-Linux-Server
 ## 🛠️ Available Commands
 
 This repo uses make to simplify standard operations.
+
+✅ Run `make` inside the project directory to view available commands
+✅ Both `make dev` and `make prod` will run all necessary setup automatically.
 
 ```bash
 make setup            # Install Node.js, Go (if missing) and frontend deps
@@ -80,8 +83,6 @@ make check-env        # Verify .env and required variables
 
 ```
 
-✅ Both `make dev` and `make prod` will run all necessary setup automatically.
-
 ---
 
 ## 🔐 Logging In
@@ -93,6 +94,27 @@ This project uses **PAM authentication** to log in directly to your Linux system
 ## 👨‍💼 Development Workflow
 
 The development environment is fully set up with a **hot-reloading backend** (Go + Gin) and a **fast-refresh frontend** (Vite + React).
+
+### 🧪 Modes
+
+#### React (Frontend)
+- **Development:** Uses Vite dev server with hot module reload (HMR)
+- **Production:** Compiled with Vite into static assets served by the Go backend
+
+#### Go (Backend)
+- **Development:** Uses Air for live reloading when running `make dev`
+- **Production:** Served with `make prod` using env `GO_ENV=production`
+- **Binary:** Built with `make binary` — runs compiled backend binary with version info and metadata
+
+### 🛠️ Instructions for development and production mode
+
+For development mode, due to permissions, we have to type our password in a secret.env file. 
+Edit this file and put your password, from an account that has administrative privileges.
+
+Running make dev will install all necessary tools and dependencies, then launch both the React app and the Go backend in development mode.
+This is not needed when running binary as it uses systemd
+
+The backend (Gin) will log all available API endpoints and incoming API calls to the console.
 
 ### 📆 Start Development
 

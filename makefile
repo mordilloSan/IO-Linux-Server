@@ -56,6 +56,7 @@ ensure-go:
 		echo "✔ Go installed at $(GO_INSTALL_DIR)"; \
 	fi
 	@bash -c 'export PATH=$(GO_INSTALL_DIR)/bin:$$PATH && go version'
+	@echo "💡 Please run 'source ~/.bashrc' or restart your terminal to use Go globally."
 	@echo "✅ Go is ready!"
 
 setup: .setup-complete
