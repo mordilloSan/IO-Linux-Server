@@ -75,12 +75,12 @@ dev: setup check-env
 	@echo ""
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 	@bash -c '\
-	$(NVM_SETUP); \
-	cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
-	' & \
-	bash -c '\
 	cd go-backend && \
 	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="$(shell dirname $(GO_BIN)):/usr/bin:/bin" $(AIR_BIN) \
+	' & \
+	bash -c '\
+	$(NVM_SETUP); \
+	cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
 	'
 
 lint:

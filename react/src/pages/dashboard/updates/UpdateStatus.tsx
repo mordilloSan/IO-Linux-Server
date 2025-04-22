@@ -22,9 +22,7 @@ interface UpdateInfo {
 const columns: CollapsibleColumn[] = [
   { field: "name", headerName: "Name" },
   { field: "version", headerName: "Version" },
-  { field: "summary", headerName: "Summary" },
   { field: "severity", headerName: "Severity" },
-  { field: "arch", headerName: "Arch" },
 ];
 
 const UpdateStatus: React.FC = () => {
