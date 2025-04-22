@@ -91,17 +91,18 @@ This project uses **PAM authentication** to log in directly to your Linux system
 
 ---
 
-## 👨‍💼 Development Workflow
+## 👨‍💼 Development & Deployment Workflow
 
-The development environment is fully set up with a **hot-reloading backend** (Go + Gin) and a **fast-refresh frontend** (Vite + React).
+🔑 Secret File
+For development and production (unless running the binary), edit the file called secret.env:
 
-### 🛠️ Instructions for development and production mode
+```env
+SUDO_PASSWORD=your_password_here
+```
 
-Due to permissions, we have to type our password in a secret.env file both for development and production stages
-Edit this file and put your password of an account that has administrative privileges.
+This password is used for executing privileged operations via sudo.
 
-
-### 📆 Start Development Options
+### 🛠️ Development Mode
 
 ```bash
 make dev
@@ -115,6 +116,8 @@ Outputs all API paths and logs (from Gin)
 
 ---
 
+### 🚀 Production Mode
+
 ```bash
 make prod
 ```
@@ -127,8 +130,10 @@ make prod
 
 ---
 
+### 📦 Binary Mode
+
 ```bash
-make binnary
+make binary
 ```
 
 - Produces a compiled, self-contained Go binary
@@ -148,9 +153,8 @@ Under the hood:
 - **Air** watches Go files and rebuilds the backend on changes.
 - The **Air config** lives in `go-backend/.air.toml`.
 - The **React frontend** runs in `react/` and talks to the backend via Vite's proxy (see `vite.config.ts`).
-- **Makefile** handles all orchestration — use `make dev` as your single command to launch both.
 
-💡 Tip: You can edit `.env` files for dev-specific settings (like ports, proxy targets, etc.).
+💡 You can customize .env for ports, proxy settings, etc.
 
 ---
 
