@@ -15,11 +15,11 @@
   ],
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-empty-interface": "warn",
     "prettier/prettier": "error",
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
-    "react/no-unescaped-entities": "off",
+    "react/no-unescaped-entities": "warn",
     "@typescript-eslint/no-explicit-any": "off"
   },
   "parserOptions": {

@@ -46,7 +46,7 @@ Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
 ```bash
 
 sudo apt update
-sudo apt install -y make curl git lm-sensors libpam0g-dev
+sudo apt install -y make curl git lm-sensors libpam0g-dev policykit-1
 ```
 
 **For Fedora / RHEL / CentOS:**
