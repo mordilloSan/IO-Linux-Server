@@ -1,15 +1,18 @@
-package main
+package update
 
 import (
+	"go-backend/utils"
 	"net/http"
 	"os/exec"
 	"strings"
 
+	"go-backend/auth"
+
 	"github.com/gin-gonic/gin"
 )
 
-func registerUpdateRoutes(router *gin.Engine) {
-	system := router.Group("/system", authMiddleware())
+func RegisterUpdateRoutes(router *gin.Engine) {
+	system := router.Group("/system", auth.AuthMiddleware())
 	{
 		system.GET("/updates", getUpdatesHandler)
 		system.POST("/update", updatePackageHandler)
@@ -29,6 +32,11 @@ func getUpdatesHandler(c *gin.Context) {
 	cmd := exec.Command("pkcon", "get-updates")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		// Treat exit code 5 ("no updates") as success
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
+			c.JSON(http.StatusOK, gin.H{"updates": []UpdateGroup{}})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to get updates",
 			"details": err.Error(),
@@ -36,7 +44,7 @@ func getUpdatesHandler(c *gin.Context) {
 		return
 	}
 
-	distro, _ := getDistroID()
+	distro, _ := utils.GetDistroID()
 
 	groupMap := make(map[string]*UpdateGroup)
 	lines := strings.Split(string(output), "\n")
@@ -85,6 +93,7 @@ func getUpdatesHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"updates": updates})
 }
+
 func updatePackageHandler(c *gin.Context) {
 	var req struct {
 		PackageName string `json:"package"`

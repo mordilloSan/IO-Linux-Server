@@ -10,6 +10,8 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
+
+	"go-backend/auth"
 )
 
 var upgrader = websocket.Upgrader{
@@ -18,19 +20,18 @@ var upgrader = websocket.Upgrader{
 
 func registerWebSocketRoutes(router *gin.Engine) {
 	router.GET("/ws/system", func(c *gin.Context) {
-		// ✅ Auth: Check for session_id
 		cookie, err := c.Request.Cookie("session_id")
 		if err != nil || cookie.Value == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
-		var session Session
+		var session auth.Session
 		var exists bool
 		done := make(chan bool)
 
-		sessionMux <- func() {
-			session, exists = sessions[cookie.Value]
+		auth.SessionMux <- func() {
+			session, exists = auth.Sessions[cookie.Value]
 			done <- true
 		}
 		<-done

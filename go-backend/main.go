@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"go-backend/auth"
+	"go-backend/update"
 	"log"
 	"net/http"
 	"os"
@@ -15,14 +17,6 @@ var (
 	version   = "dev"
 	buildTime = "unknown"
 )
-
-func getDevPort() string {
-	port := os.Getenv("VITE_DEV_PORT")
-	if port == "" {
-		port = "3000"
-	}
-	return port
-}
 
 func main() {
 	// Load .env variables into os.Environ()
@@ -43,17 +37,17 @@ func main() {
 
 	if env == "development" {
 		router.SetTrustedProxies(nil)
-		router.Use(corsMiddleware())
+		router.Use(auth.CorsMiddleware())
 		router.Use(gin.Logger())
 	}
 
 	router.Use(gin.Recovery())
-	registerAuthRoutes(router)
+	auth.RegisterAuthRoutes(router)
 	registerSystemRoutes(router)
 	registerWebSocketRoutes(router)
-	registerUpdateRoutes(router)
+	update.RegisterUpdateRoutes(router)
 	registerServiceRoutes(router)
-	startSessionGC()
+	auth.StartSessionGC()
 
 	if env != "production" {
 		router.GET("/debug/benchmark", func(c *gin.Context) {

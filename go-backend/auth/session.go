@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"time"
@@ -10,27 +10,27 @@ type Session struct {
 }
 
 var (
-	sessions   = make(map[string]Session)
-	sessionMux = make(chan func())
+	Sessions   = make(map[string]Session)
+	SessionMux = make(chan func())
 )
 
 func init() {
 	go func() {
-		for f := range sessionMux {
+		for f := range SessionMux {
 			f()
 		}
 	}()
 }
 
-func startSessionGC() {
+func StartSessionGC() {
 	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
 		for range ticker.C {
 			now := time.Now()
-			sessionMux <- func() {
-				for id, s := range sessions {
+			SessionMux <- func() {
+				for id, s := range Sessions {
 					if s.ExpiresAt.Before(now) {
-						delete(sessions, id)
+						delete(Sessions, id)
 					}
 				}
 			}

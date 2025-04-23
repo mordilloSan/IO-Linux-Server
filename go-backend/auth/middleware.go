@@ -1,13 +1,15 @@
-package main
+package auth
 
 import (
 	"net/http"
 
+	"go-backend/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
-func corsMiddleware() gin.HandlerFunc {
-	devOrigin := "http://localhost:" + getDevPort()
+func CorsMiddleware() gin.HandlerFunc {
+	devOrigin := "http://localhost:" + utils.GetDevPort()
 
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")

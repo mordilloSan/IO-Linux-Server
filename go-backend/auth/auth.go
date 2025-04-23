@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"log"
@@ -22,12 +22,12 @@ type LoginRequest struct {
 
 const sessionDuration = 6 * time.Hour
 
-func registerAuthRoutes(router *gin.Engine) {
+func RegisterAuthRoutes(router *gin.Engine) {
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", loginHandler)
-		auth.GET("/me", authMiddleware(), meHandler)
-		auth.GET("/logout", authMiddleware(), logoutHandler)
+		auth.GET("/me", AuthMiddleware(), meHandler)
+		auth.GET("/logout", AuthMiddleware(), logoutHandler)
 	}
 }
 
@@ -59,7 +59,7 @@ func loginHandler(c *gin.Context) {
 		User:      User{ID: req.Username, Name: req.Username},
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
-	sessionMux <- func() { sessions[sessionID] = session }
+	SessionMux <- func() { Sessions[sessionID] = session }
 
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"success": true})
@@ -73,13 +73,13 @@ func meHandler(c *gin.Context) {
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
 	if err == nil {
-		sessionMux <- func() { delete(sessions, sessionID) }
+		SessionMux <- func() { delete(Sessions, sessionID) }
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
 	}
 	c.Status(http.StatusOK)
 }
 
-func authMiddleware() gin.HandlerFunc {
+func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Cookie("session_id")
 		if err != nil || cookie == "" {
@@ -90,8 +90,8 @@ func authMiddleware() gin.HandlerFunc {
 		var session Session
 		var exists bool
 		done := make(chan bool)
-		sessionMux <- func() {
-			session, exists = sessions[cookie]
+		SessionMux <- func() {
+			session, exists = Sessions[cookie]
 			done <- true
 		}
 		<-done

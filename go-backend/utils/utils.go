@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func getDistroID() (string, error) {
+func GetDistroID() (string, error) {
 	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
 		return "", err
@@ -18,4 +18,12 @@ func getDistroID() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("ID_LIKE not found")
+}
+
+func GetDevPort() string {
+	port := os.Getenv("VITE_DEV_PORT")
+	if port == "" {
+		port = "3000"
+	}
+	return port
 }

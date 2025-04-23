@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"go-backend/auth"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +18,7 @@ type ServiceStatus struct {
 }
 
 func registerServiceRoutes(router *gin.Engine) {
-	system := router.Group("/system", authMiddleware())
+	system := router.Group("/system", auth.AuthMiddleware())
 	{
 		system.GET("/services/status", getServiceStatus)
 	}

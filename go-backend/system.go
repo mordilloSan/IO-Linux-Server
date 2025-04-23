@@ -14,10 +14,12 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
+
+	"go-backend/auth"
 )
 
 func registerSystemRoutes(router *gin.Engine) {
-	system := router.Group("/system", authMiddleware())
+	system := router.Group("/system", auth.AuthMiddleware())
 	{
 		system.GET("/info", getHostInfo)
 		system.GET("/cpu", getCPUInfo)
