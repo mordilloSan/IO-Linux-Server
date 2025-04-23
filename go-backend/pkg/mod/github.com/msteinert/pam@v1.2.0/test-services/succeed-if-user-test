@@ -1,2 +1,0 @@
-# Custom stack to deny permit, independent of the user name/pass
-auth	requisite			pam_succeed_if.so user = testuser

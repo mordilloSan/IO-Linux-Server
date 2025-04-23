@@ -1,3 +1,0 @@
-# Custom stack to always permit, independent of the user name/pass
-auth	optional			pam_echo.so This is an info message for user %u on %s
-auth	required			pam_permit.so
