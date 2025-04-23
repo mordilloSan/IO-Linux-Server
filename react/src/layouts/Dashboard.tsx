@@ -100,7 +100,7 @@ const Dashboard: React.FC = () => {
       <AppContent>
         <Navbar onDrawerToggle={handleDrawerToggle} />
         <MainContent p={isLgUp ? 7 : 5}>
-          <Container maxWidth="xl">
+          <Container maxWidth={false}>
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>

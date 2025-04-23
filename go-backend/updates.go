@@ -8,12 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Update struct {
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	Severity string `json:"severity"`
-}
-
 func registerUpdateRoutes(router *gin.Engine) {
 	system := router.Group("/system", authMiddleware())
 	{
@@ -21,6 +15,14 @@ func registerUpdateRoutes(router *gin.Engine) {
 		system.POST("/update", updatePackageHandler)
 		system.GET("/updates/update-history", getUpdateHistoryHandler)
 	}
+}
+
+type UpdateGroup struct {
+	Name      string   `json:"name"`
+	Version   string   `json:"version"`
+	Severity  string   `json:"severity"`
+	Packages  []string `json:"packages"`
+	Changelog string   `json:"changelog"`
 }
 
 func getUpdatesHandler(c *gin.Context) {
@@ -34,7 +36,9 @@ func getUpdatesHandler(c *gin.Context) {
 		return
 	}
 
-	var updates []Update
+	distro, _ := getDistroID()
+
+	groupMap := make(map[string]*UpdateGroup)
 	lines := strings.Split(string(output), "\n")
 
 	for _, line := range lines {
@@ -49,30 +53,38 @@ func getUpdatesHandler(c *gin.Context) {
 
 		severity := fields[0]
 		rawID := fields[1]
-
-		// Try to safely parse name-version-arch (or name-version if arch is missing)
 		parts := strings.Split(rawID, "-")
-		if len(parts) < 2 {
+
+		if len(parts) < 3 {
 			continue
 		}
 
-		version := parts[len(parts)-2]
 		name := strings.Join(parts[:len(parts)-2], "-")
+		version := parts[len(parts)-2]
+		key := version + "|" + severity
 
-		if name == "" || version == "" {
-			continue
+		if group, exists := groupMap[key]; exists {
+			group.Packages = append(group.Packages, name)
+		} else {
+			changelog := getChangelog(distro, name)
+			groupMap[key] = &UpdateGroup{
+				Name:      name,
+				Version:   version,
+				Severity:  severity,
+				Packages:  []string{name},
+				Changelog: changelog,
+			}
 		}
+	}
 
-		updates = append(updates, Update{
-			Name:     name,
-			Version:  version,
-			Severity: severity,
-		})
+	var updates []UpdateGroup
+	for _, group := range groupMap {
+		group.Name = strings.Join(group.Packages, ", ")
+		updates = append(updates, *group)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"updates": updates})
 }
-
 func updatePackageHandler(c *gin.Context) {
 	var req struct {
 		PackageName string `json:"package"`

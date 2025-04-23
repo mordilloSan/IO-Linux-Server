@@ -5,21 +5,21 @@ import SystemHealth from "./SystemHealth";
 import FileSystem from "./FileSystem";
 import Processor from "./Processor";
 
+const cards = [
+  { id: "system", component: <SystemHealth /> },
+  { id: "cpu", component: <Processor /> },
+  { id: "memory", component: <Memory /> },
+  { id: "fs", component: <FileSystem /> },
+];
+
 const Dashboard: React.FC = () => {
   return (
     <Grid container spacing={4}>
-      <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-        <SystemHealth />
-      </Grid>
-      <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-        <Processor />
-      </Grid>
-      <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-        <Memory />
-      </Grid>
-      <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-        <FileSystem />
-      </Grid>
+      {cards.map((card) => (
+        <Grid key={card.id} size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 3 }}>
+          {card.component}
+        </Grid>
+      ))}
     </Grid>
   );
 };

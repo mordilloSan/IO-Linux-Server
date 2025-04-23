@@ -45,14 +45,14 @@ Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
 
 ```bash
 
-sudo apt update # Update package list
-sudo apt install -y make curl git lm-sensors libpam0g-dev # Install required tools
+sudo apt update
+sudo apt install -y make curl git lm-sensors libpam0g-dev
 ```
 
 **For Fedora / RHEL / CentOS:**
 
 ```bash
-sudo dnf install -y make curl git lm_sensors pam-devel # Install required tools
+sudo dnf install -y make curl git lm_sensors pam-devel dnf-plugins-core
 ```
 
 ### Clone the repo

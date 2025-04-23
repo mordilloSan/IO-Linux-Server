@@ -62,10 +62,19 @@ const SystemHealth = () => {
         borderRadius: "50%",
       }}
     >
-      <Link href={iconLink} underline="none">
+      <Link
+        component={RouterLink}
+        to={iconLink}
+        underline="hover"
+        color="inherit"
+      >
         <IconComponent sx={{ fontSize: 80, color: statusColor }} />
       </Link>
     </Box>
+  );
+  const totalPackages = updates.reduce(
+    (sum, u) => sum + (u.packages?.length || 1),
+    0
   );
 
   // Right-hand side text
@@ -82,9 +91,7 @@ const SystemHealth = () => {
           underline="hover"
           color="inherit"
         >
-          {updates.length > 0
-            ? `${updates.length} available`
-            : "None available"}
+          {totalPackages > 0 ? `${totalPackages} available` : "None available"}
         </Link>
       </Typography>
 

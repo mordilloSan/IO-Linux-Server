@@ -146,7 +146,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             </Box>
             <Box
               sx={{
-                flex: { xl: 1 },
+                flex: { sm: 1, xl: 1 },
                 display: "flex",
                 height: 120,
                 alignItems: "center",

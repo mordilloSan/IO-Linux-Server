@@ -10,9 +10,9 @@ import { CollapsibleColumn } from "@/types/collapsible";
 interface Update {
   name: string;
   version: string;
-  summary: string;
   severity: string;
-  arch: string;
+  changelog?: string;
+  packages?: string[];
 }
 
 interface UpdateInfo {
@@ -47,18 +47,19 @@ const UpdateStatus: React.FC = () => {
   const handleUpdateAll = async () => {
     if (!updateInfo || isUpdating) return;
 
+    const allPackages = updateInfo.updates.flatMap((u) => u.packages || []);
     setIsUpdating(true);
     setUpdateProgress(0);
     setCurrentPackage("");
 
-    const totalPackages = updateInfo.updates.length;
+    const totalPackages = allPackages.length;
 
     for (let i = 0; i < totalPackages; i++) {
-      const packageName = updateInfo.updates[i].name;
+      const packageName = allPackages[i];
       setCurrentPackage(packageName);
 
       try {
-        await axios.post("/api/updates/update-package", { packageName });
+        await axios.post("/api/update/", { packageName });
         setUpdateProgress(((i + 1) / totalPackages) * 100);
       } catch (error: any) {
         console.error(
@@ -73,12 +74,12 @@ const UpdateStatus: React.FC = () => {
     refetch();
   };
 
-  const rows = updateInfo?.updates || [];
+  const updates = updateInfo?.updates || [];
 
-  const renderCollapseContent = () => (
-    <Box>
-      <Typography variant="body2" color="textSecondary">
-        No additional details available.
+  const renderCollapseContent = (row: Update) => (
+    <Box sx={{ whiteSpace: "pre-wrap", fontSize: 14 }}>
+      <Typography variant="body2" color="text.secondary">
+        {row.changelog?.trim() || "Changelog not available."}
       </Typography>
     </Box>
   );
@@ -96,6 +97,7 @@ const UpdateStatus: React.FC = () => {
           </Typography>
         </Box>
       )}
+
       <Box
         sx={{
           display: "flex",
@@ -108,7 +110,7 @@ const UpdateStatus: React.FC = () => {
         <Typography variant="h4" sx={{ lineHeight: 1.2 }}>
           Updates
         </Typography>
-        {rows.length > 0 && (
+        {updates.length > 0 && (
           <Button
             variant="contained"
             color="primary"
@@ -120,6 +122,7 @@ const UpdateStatus: React.FC = () => {
           </Button>
         )}
       </Box>
+
       {loadingSystemInfo ? (
         <Box sx={{ padding: 2 }}>
           <Card>
@@ -128,9 +131,9 @@ const UpdateStatus: React.FC = () => {
             </Box>
           </Card>
         </Box>
-      ) : rows.length > 0 ? (
+      ) : updates.length > 0 ? (
         <CollapsibleTable
-          rows={rows}
+          rows={updates}
           columns={columns}
           renderCollapseContent={renderCollapseContent}
         />
