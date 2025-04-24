@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"go-backend/auth"
+	"go-backend/services"
+	"go-backend/session"
 	"go-backend/update"
+	"go-backend/utils"
+	"go-backend/websocket"
 	"log"
 	"net/http"
 	"os"
@@ -44,10 +48,10 @@ func main() {
 	router.Use(gin.Recovery())
 	auth.RegisterAuthRoutes(router)
 	registerSystemRoutes(router)
-	registerWebSocketRoutes(router)
+	websocket.RegisterWebSocketRoutes(router)
 	update.RegisterUpdateRoutes(router)
-	registerServiceRoutes(router)
-	auth.StartSessionGC()
+	services.RegisterServiceRoutes(router)
+	session.StartSessionGC()
 
 	if env != "production" {
 		router.GET("/debug/benchmark", func(c *gin.Context) {
@@ -57,7 +61,7 @@ func main() {
 				return
 			}
 
-			results := RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
+			results := utils.RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
 
 			var output []gin.H
 			for _, r := range results {

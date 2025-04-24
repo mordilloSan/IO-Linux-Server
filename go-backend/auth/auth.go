@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"go-backend/session"
+	"go-backend/utils"
+	"go-backend/websocket"
 	"log"
 	"net/http"
 	"time"
@@ -9,11 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/msteinert/pam"
 )
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
 
 type LoginRequest struct {
 	Username string `json:"username"`
@@ -55,26 +53,29 @@ func loginHandler(c *gin.Context) {
 	}
 
 	sessionID := uuid.New().String()
-	session := Session{
-		User:      User{ID: req.Username, Name: req.Username},
+	sess := session.Session{
+		User:      utils.User{ID: req.Username, Name: req.Username},
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
-	SessionMux <- func() { Sessions[sessionID] = session }
+	session.SessionMux <- func() {
+		session.Sessions[sessionID] = sess
+	}
 
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func meHandler(c *gin.Context) {
-	user := c.MustGet("user").(User)
+	user := c.MustGet("user").(utils.User)
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
 	if err == nil {
-		SessionMux <- func() { delete(Sessions, sessionID) }
+		session.SessionMux <- func() { delete(session.Sessions, sessionID) }
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
+		go websocket.CloseClientBySession(sessionID)
 	}
 	c.Status(http.StatusOK)
 }
@@ -87,21 +88,22 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		var session Session
+		var sess session.Session
 		var exists bool
 		done := make(chan bool)
-		SessionMux <- func() {
-			session, exists = Sessions[cookie]
+
+		session.SessionMux <- func() {
+			sess, exists = session.Sessions[cookie]
 			done <- true
 		}
 		<-done
 
-		if !exists || session.ExpiresAt.Before(time.Now()) {
+		if !exists || sess.ExpiresAt.Before(time.Now()) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired"})
 			return
 		}
 
-		c.Set("user", session.User)
+		c.Set("user", sess.User)
 		c.Next()
 	}
 }

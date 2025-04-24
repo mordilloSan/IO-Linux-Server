@@ -23,11 +23,6 @@ axiosInstance.interceptors.response.use(
         return;
       }
 
-      if (status === 500) {
-        window.location.href = "/error/500";
-        return;
-      }
-
       return Promise.reject(error);
     }
 

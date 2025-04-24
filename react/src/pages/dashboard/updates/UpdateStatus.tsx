@@ -6,6 +6,7 @@ import axios from "@/utils/axios";
 import UpdateActions from "./UpdateActions";
 import UpdateList from "./UpdateList";
 import { Update } from "@/types/update";
+import ChangelogPanel from "./ChangelogPanel";
 
 interface UpdateInfo {
   updates: Update[];
@@ -25,11 +26,7 @@ const UpdateStatus: React.FC = () => {
   const updates = updateInfo?.updates || [];
 
   const renderCollapseContent = (row: Update) => (
-    <Box sx={{ whiteSpace: "pre-wrap", fontSize: 14 }}>
-      <Typography variant="body2" color="text.secondary">
-        {row.changelog?.trim() || "Changelog not available."}
-      </Typography>
-    </Box>
+    <ChangelogPanel packageName={row.packages?.[0] || ""} />
   );
 
   return (

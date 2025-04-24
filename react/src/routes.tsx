@@ -31,10 +31,6 @@ const Page404 = Loadable(
   lazy(() => import("@/pages/auth/Page404")),
   "Page404"
 );
-const Blank = Loadable(
-  lazy(() => import("@/pages/dashboard/Blank")),
-  "Blank"
-);
 const Default = Loadable(
   lazy(() => import("@/pages/dashboard/home")),
   "Default"
@@ -55,7 +51,6 @@ const routes = [
     ),
     children: [
       { path: "", element: <Default /> },
-      { path: "blank", element: <Blank /> },
       { path: "updates", element: <Updates /> },
     ],
   },

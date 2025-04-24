@@ -1,7 +1,6 @@
 package update
 
 import (
-	"go-backend/utils"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -17,15 +16,15 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 		system.GET("/updates", getUpdatesHandler)
 		system.POST("/update", updatePackageHandler)
 		system.GET("/updates/update-history", getUpdateHistoryHandler)
+		system.GET("/updates/changelog", getChangelogHandler)
 	}
 }
 
 type UpdateGroup struct {
-	Name      string   `json:"name"`
-	Version   string   `json:"version"`
-	Severity  string   `json:"severity"`
-	Packages  []string `json:"packages"`
-	Changelog string   `json:"changelog"`
+	Name     string   `json:"name"`
+	Version  string   `json:"version"`
+	Severity string   `json:"severity"`
+	Packages []string `json:"packages"`
 }
 
 func getUpdatesHandler(c *gin.Context) {
@@ -43,8 +42,6 @@ func getUpdatesHandler(c *gin.Context) {
 		})
 		return
 	}
-
-	distro, _ := utils.GetDistroID()
 
 	groupMap := make(map[string]*UpdateGroup)
 	lines := strings.Split(string(output), "\n")
@@ -74,13 +71,11 @@ func getUpdatesHandler(c *gin.Context) {
 		if group, exists := groupMap[key]; exists {
 			group.Packages = append(group.Packages, name)
 		} else {
-			changelog := getChangelog(distro, name)
 			groupMap[key] = &UpdateGroup{
-				Name:      name,
-				Version:   version,
-				Severity:  severity,
-				Packages:  []string{name},
-				Changelog: changelog,
+				Name:     name,
+				Version:  version,
+				Severity: severity,
+				Packages: []string{name},
 			}
 		}
 	}
@@ -106,7 +101,7 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
-	cmd := exec.Command("pkexec", "pkcon", "update", req.PackageName)
+	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", req.PackageName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

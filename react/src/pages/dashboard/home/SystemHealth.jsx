@@ -8,27 +8,30 @@ import CardWithBorder from "@/components/cards/CardWithBorder";
 import axios from "@/utils/axios";
 import { Link as RouterLink } from "react-router-dom";
 import { Link } from "@mui/material";
+import Loader from "@/components/Loader";
 
 const SystemHealth = () => {
   const theme = useTheme();
 
-  const { data: systemHealth } = useQuery({
+  const { data: systemHealth, isLoading: loadingHealth } = useQuery({
     queryKey: ["SystemHealth"],
     queryFn: () => axios.get("system/updates").then((res) => res.data),
     refetchInterval: 50000,
   });
 
-  const { data: systemStatus } = useQuery({
+  const { data: systemStatus, isLoading: loadingStatus } = useQuery({
     queryKey: ["SystemStatus"],
     queryFn: () => axios.get("/system/services/status").then((res) => res.data),
     refetchInterval: 50000,
   });
 
-  const { data: distroInfo } = useQuery({
+  const { data: distroInfo, isLoading: loadingDistro } = useQuery({
     queryKey: ["DistroInfo"],
     queryFn: () => axios.get("/system/info").then((res) => res.data),
     refetchInterval: 50000,
   });
+
+  const isLoading = loadingHealth || loadingStatus || loadingDistro;
 
   const updates = systemHealth?.updates || [];
   const units = systemStatus?.units || 0;
@@ -49,7 +52,6 @@ const SystemHealth = () => {
     IconComponent = SecurityUpdateWarningIcon;
   }
 
-  // Main icon display
   const stats = (
     <Box
       sx={{
@@ -62,22 +64,26 @@ const SystemHealth = () => {
         borderRadius: "50%",
       }}
     >
-      <Link
-        component={RouterLink}
-        to={iconLink}
-        underline="hover"
-        color="inherit"
-      >
-        <IconComponent sx={{ fontSize: 80, color: statusColor }} />
-      </Link>
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <Link
+          component={RouterLink}
+          to={iconLink}
+          underline="hover"
+          color="inherit"
+        >
+          <IconComponent sx={{ fontSize: 80, color: statusColor }} />
+        </Link>
+      )}
     </Box>
   );
+
   const totalPackages = updates.reduce(
     (sum, u) => sum + (u.packages?.length || 1),
     0
   );
 
-  // Right-hand side text
   const stats2 = (
     <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
       <Typography variant="body1">

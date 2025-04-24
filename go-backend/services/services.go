@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"net/http"
@@ -17,7 +17,7 @@ type ServiceStatus struct {
 	SubState    string `json:"sub_state"`
 }
 
-func registerServiceRoutes(router *gin.Engine) {
+func RegisterServiceRoutes(router *gin.Engine) {
 	system := router.Group("/system", auth.AuthMiddleware())
 	{
 		system.GET("/services/status", getServiceStatus)
