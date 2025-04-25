@@ -70,15 +70,12 @@ const SelectCard: React.FC<CardWithBorderProps> = ({
   const theme = useTheme();
   const primaryColor = theme.palette.primary.main;
 
-  const handleSelectionChange = (
-    event: SelectChangeEvent<string>
-  ) => {
+  const handleSelectionChange = (event: SelectChangeEvent<string>) => {
     onSelect?.(event.target.value);
   };
 
-  const renderSelect =
-    selectOptions.length > 0 && (
-      <FormControl
+  const renderSelect = selectOptions.length > 0 && (
+    <FormControl
       size="small"
       sx={{
         "& .MuiOutlinedInput-root": {
@@ -92,31 +89,29 @@ const SelectCard: React.FC<CardWithBorderProps> = ({
         },
       }}
     >
-        <Select
-          id="card-select"
-          value={selectedOption}
-          onChange={handleSelectionChange}
-          displayEmpty
-          renderValue={() =>
-            selectedOptionLabel ? (
-              <Typography variant="body2">
-                {selectedOptionLabel}
-              </Typography>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Select...
-              </Typography>
-            )
-          }
-        >
-          {selectOptions.map((option, index) => (
-            <MenuItem key={option.id ?? index} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    );
+      <Select
+        id="card-select"
+        value={selectedOption}
+        onChange={handleSelectionChange}
+        displayEmpty
+        renderValue={() =>
+          selectedOptionLabel ? (
+            <Typography variant="body2">{selectedOptionLabel}</Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Select...
+            </Typography>
+          )
+        }
+      >
+        {selectOptions.map((option, index) => (
+          <MenuItem key={option.id ?? index} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
 
   return (
     <HoverableCard

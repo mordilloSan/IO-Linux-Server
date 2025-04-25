@@ -30,15 +30,9 @@ const GpuInfo: React.FC = () => {
 
   const visibleDetails = gpu ? (
     <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
-      <Typography variant="body1">
-        {`${gpu.vendor} - ${gpu.model}`}
-      </Typography>
-      <Typography variant="body1">
-        {`Driver: ${gpu.driver}`}
-      </Typography>
-      <Typography variant="body1">
-        {`Address: ${gpu.address}`}
-      </Typography>
+      <Typography variant="body1">{`${gpu.vendor} - ${gpu.model}`}</Typography>
+      <Typography variant="body1">{`Driver: ${gpu.driver}`}</Typography>
+      <Typography variant="body1">{`Address: ${gpu.address}`}</Typography>
     </Box>
   ) : (
     <Typography variant="body2">No GPU information available.</Typography>

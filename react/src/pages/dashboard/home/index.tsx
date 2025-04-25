@@ -24,10 +24,10 @@ const Dashboard: React.FC = () => {
   return (
     <Grid container spacing={4}>
       {cards.map((card) => (
-        <ErrorBoundary>
-        <Grid key={card.id} size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 3 }}>
-          {card.component}
-        </Grid>
+        <ErrorBoundary key={card.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 3 }}>
+            {card.component}
+          </Grid>
         </ErrorBoundary>
       ))}
     </Grid>
