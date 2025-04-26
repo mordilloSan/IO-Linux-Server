@@ -1,74 +1,119 @@
-import React, { forwardRef } from "react";
+import React, { useContext } from "react";
 import styled from "@emotion/styled";
-import { NavLink, NavLinkProps } from "react-router-dom";
-import { rgba, darken } from "polished";
+import { NavLink, useLocation } from "react-router-dom";
+import { ListItemButton, ListItemIcon, ListItemText, ListItemButtonProps } from "@mui/material";
+import { ThemeContext } from "@/contexts/ThemeContext";
+import { darken, lighten } from "polished";
+import { Icon } from "@iconify/react";
 
-import { ListItemProps, ListItemButton, ListItemText } from "@mui/material";
+interface SidebarNavListItemProps extends ListItemButtonProps {
+  href: string;
+  title: string;
+  icon?: React.ElementType | string;
+}
 
-const CustomRouterLink = forwardRef<any, NavLinkProps>((props, ref) => (
-  <div ref={ref}>
-    <NavLink {...props} />
-  </div>
-));
-
-CustomRouterLink.displayName = "CustomRouterLink";
-
-type ItemType = {
-  activeclassname?: string;
-  onClick?: () => void;
-  to?: string;
-  component?: typeof NavLink;
-};
-
-const Item = styled(ListItemButton)<ItemType>`
-  padding-top: ${(props) => props.theme.spacing(3)};
-  padding-bottom: ${(props) => props.theme.spacing(3)};
-  padding-left: ${(props) => props.theme.spacing(8)};
-  padding-right: ${(props) => props.theme.spacing(7)};
+const Item = styled(ListItemButton, {
+  shouldForwardProp: (prop) => prop !== "activecolor",
+})<{ activecolor: string }>`
+  margin: ${(props) => props.theme.spacing(1)} ${(props) => props.theme.spacing(2)};
+  padding: ${(props) => props.theme.spacing(1.5)} ${(props) => props.theme.spacing(3)};
+  border-radius: 0 9999px 9999px 0;
   font-weight: ${(props) => props.theme.typography.fontWeightRegular};
+  color: ${(props) => props.theme.sidebar.color};
+  text-transform: none;
+  width: auto;
+  justify-content: flex-start;
+  transition: background-color 0.3s, color 0.3s;
+
   svg {
     color: ${(props) => props.theme.sidebar.color};
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    opacity: 0.5;
+    width: 26px;
+    height: 26px;
+    margin-right: ${(props) => props.theme.spacing(2)};
+    transition: color 0.3s;
   }
 
-  &.${(props) => props.activeclassname} {
-    background-color: ${(props) =>
-      darken(0.03, props.theme.sidebar.background)};
+  &.Mui-selected {
+    background: linear-gradient(
+      90deg,
+      ${(props) => lighten(0.25, props.activecolor)} 0%,
+      ${(props) => props.activecolor} 50%
+    );
+    color: #ffffff;
+
+    svg {
+      color: #ffffff;
+    }
+
     span {
-      color: ${(props) => props.theme.sidebar.color};
+      color: #ffffff;
+      font-weight: ${(props) => props.theme.typography.fontWeightMedium};
     }
   }
+
+  &:hover {
+  ${(props) => !props.selected && `
+    background: ${props.theme.palette.mode === "light"
+      ? darken(0.07, props.theme.header.background)
+      : lighten(0.05, props.theme.sidebar.background)};
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  `}
+}
 `;
 
 const Title = styled(ListItemText)`
   margin: 0;
   span {
-    color: ${(props) => rgba(props.theme.sidebar.color, 1)};
     font-size: ${(props) => props.theme.typography.body1.fontSize}px;
-    padding: 0 ${(props) => props.theme.spacing(4)};
+    font-weight: ${(props) => props.theme.typography.fontWeightRegular};
+    transition: color 0.3s;
   }
 `;
 
-type SidebarNavListItemProps = ListItemProps & {
-  className?: string;
-  href: string;
-  icon?: React.ElementType | string;
-  title: string;
-};
+const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
+  href,
+  title,
+  icon,
+  ...rest
+}) => {
+  const { pathname } = useLocation();
+  const { primaryColor } = useContext(ThemeContext);
+  const fallbackPrimary = "#3f5efb";
 
-const SidebarNavListItem: React.FC<SidebarNavListItemProps> = (props) => {
-  const { title, href, icon: Icon } = props;
+  const isActive = pathname === href;
+
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (typeof icon === "string") {
+      return <Icon icon={icon} width={24} height={24} />;
+    }
+    const IconComponent = icon as React.ElementType;
+    return <IconComponent />;
+  };
 
   return (
-    <React.Fragment>
-      <Item component={CustomRouterLink} to={href} activeclassname="active">
-        {Icon && <Icon />}
-        <Title>{title}</Title>
-      </Item>
-    </React.Fragment>
+    <Item
+    component={NavLink}
+    activecolor={primaryColor || fallbackPrimary}
+    selected={isActive}
+    {...(rest as any)} // (temporary cast) or clean props manually
+    // Pass the 'to' inside props properly
+    to={href}
+    >
+      {icon && (
+        <ListItemIcon
+          sx={{
+            minWidth: 0,
+            mr: 2,
+            justifyContent: "center",
+            color: "inherit",
+          }}
+        >
+          {renderIcon()}
+        </ListItemIcon>
+      )}
+      <Title primary={title} />
+    </Item>
   );
 };
 

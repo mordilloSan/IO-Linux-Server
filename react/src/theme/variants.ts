@@ -12,10 +12,10 @@ const customBlue = {
   600: "#407ad6",
   700: "#376fd0",
   800: "#2f65cb",
-  900: "#2052c2 ",
+  900: "#2052c2",
 };
 
-const defaultVariant = {
+const defaultVariant: VariantType = {
   name: THEMES.LIGHT,
   palette: {
     mode: "light",
@@ -31,6 +31,10 @@ const defaultVariant = {
       default: "#F7F9FC",
       paper: "#FFF",
     },
+    text: {
+      primary: "rgba(15, 15, 15, 0.95)",
+      secondary: "rgba(15, 15, 15, 0.65)",
+    },
   },
   header: {
     color: grey[500],
@@ -39,63 +43,92 @@ const defaultVariant = {
       color: grey[800],
     },
     indicator: {
-      background: customBlue[600],
+      background: customBlue[200],
     },
   },
   footer: {
-    color: grey[500],
+    color: grey[800],
     background: "#F7F9FC",
   },
   sidebar: {
-    color: grey[200],
-    background: "#233044",
+    color: grey[800],
+    background: "#F7F9FC",
     header: {
-      color: grey[200],
-      background: "#233044",
+      color: grey[800],
+      background: "#F7F9FC",
       brand: {
-        color: customBlue[500],
+        color: customBlue[800],
       },
     },
     footer: {
-      color: grey[200],
-      background: "#1E2A38",
+      color: grey[800],
+      background: "#F7F9FC",
     },
     badge: {
-      color: "#FFF",
+      color: grey[800],
       background: customBlue[500],
     },
   },
 };
 
-const darkVariant = merge(defaultVariant, {
-  name: THEMES.DARK,
-  palette: {
-    mode: "dark",
-    primary: {
-      main: customBlue[600],
-      contrastText: "#FFF",
+const darkVariant: VariantType = merge<VariantType, Partial<VariantType>>(
+  defaultVariant,
+  {
+    name: THEMES.DARK,
+    palette: {
+      mode: "dark",
+      primary: {
+        main: customBlue[600],
+        contrastText: "#FFF",
+      },
+      secondary: {
+        main: customBlue[400],
+        contrastText: "#FFF",
+      },
+      background: {
+        default: "#1B2635",
+        paper: "#233044",
+      },
+      text: {
+        primary: "rgba(255, 255, 255, 0.95)",
+        secondary: "rgba(255, 255, 255, 0.5)",
+      },
     },
-    background: {
-      default: "#1B2635",
-      paper: "#233044",
+    header: {
+      color: grey[300],
+      background: "#1B2635",
+      search: {
+        color: grey[200],
+      },
+      indicator: {
+        background: customBlue[600], // or any color you want
+      },
     },
-    text: {
-      primary: "rgba(255, 255, 255, 0.95)",
-      secondary: "rgba(255, 255, 255, 0.5)",
+    footer: {
+      color: grey[300],
+      background: "#1B2635",
     },
-  },
-  header: {
-    color: grey[300],
-    background: "#1B2635",
-    search: {
+    sidebar: {
       color: grey[200],
+      background: "#1B2635",
+      header: {
+        color: grey[200],
+        background: "#1B2635",
+        brand: {
+          color: customBlue[500],
+        },
+      },
+      footer: {
+        color: grey[200],
+        background: "#1E2A38",
+      },
+      badge: {
+        color: "#FFF",
+        background: customBlue[500],
+      },
     },
-  },
-  footer: {
-    color: grey[300],
-    background: "#1B2635",
-  },
-});
+  }
+);
 
 const variants: Array<VariantType> = [defaultVariant, darkVariant];
 
@@ -104,8 +137,17 @@ export default variants;
 export type VariantType = {
   name: string;
   palette: {
+    mode: "light" | "dark";
     primary: MainContrastTextType;
     secondary: MainContrastTextType;
+    background: {
+      default: string;
+      paper: string;
+    };
+    text: {
+      primary: string;
+      secondary: string;
+    };
   };
   header: ColorBgType & {
     search: {

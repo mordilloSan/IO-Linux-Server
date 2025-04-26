@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled";
 import { withTheme } from "@emotion/react";
-import { darken } from "polished";
+import { darken, lighten } from "polished";
 import { Search as SearchIcon } from "lucide-react";
 
 import {
@@ -39,7 +39,10 @@ const Search = styled.div`
   width: 100%;
 
   &:hover {
-    background-color: ${(props) => darken(0.05, props.theme.header.background)};
+    background-color: ${(props) =>
+      props.theme.palette.mode === "light"
+        ? darken(0.07, props.theme.header.background)
+        : lighten(0.05, props.theme.sidebar.background)};
   }
 
   ${(props) => props.theme.breakpoints.up("md")} {

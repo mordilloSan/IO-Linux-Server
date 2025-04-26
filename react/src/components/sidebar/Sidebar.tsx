@@ -2,7 +2,7 @@ import React from "react";
 import styled from "@emotion/styled";
 import { NavLink } from "react-router-dom";
 
-import { Drawer as MuiDrawer, ListItemButton } from "@mui/material";
+import { Drawer as MuiDrawer, ListItemButton, useTheme } from "@mui/material";
 
 import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { SidebarItemsType } from "@/types/sidebar";
@@ -57,15 +57,13 @@ export type SidebarProps = {
   variant?: "permanent" | "persistent" | "temporary";
   open?: boolean;
   onClose?: () => void;
-  items: {
-    title: string;
-    pages: SidebarItemsType[];
-  }[];
+  items: SidebarItemsType[]; // ← updated here
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
+  const theme = useTheme();
   return (
-    <Drawer variant="permanent" {...rest}>
+    <Drawer key={theme.palette.mode} variant="permanent" {...rest}>
       <Brand component={NavLink as any} to="/">
         <BrandIcon />
       </Brand>

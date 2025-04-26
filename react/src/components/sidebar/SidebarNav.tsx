@@ -3,11 +3,10 @@ import styled from "@emotion/styled";
 import { List } from "@mui/material";
 
 import { SidebarItemsType } from "@/types/sidebar";
-import SidebarNavSection from "./SidebarNavSection";
+import SidebarNavListItem from "./SidebarNavListItem";
 
 const Wrapper = styled.div`
   background-color: ${(props) => props.theme.sidebar.background};
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
   flex-grow: 1;
 `;
 
@@ -17,10 +16,7 @@ const Items = styled.div`
 `;
 
 type SidebarNavProps = {
-  items: {
-    title: string;
-    pages: SidebarItemsType[];
-  }[];
+  items: SidebarItemsType[]; // ✅ flat array
 };
 
 const SidebarNav: React.FC<SidebarNavProps> = ({ items }) => {
@@ -28,15 +24,14 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ items }) => {
     <Wrapper>
       <List disablePadding>
         <Items>
-          {items &&
-            items.map((item) => (
-              <SidebarNavSection
-                component="div"
-                key={item.title}
-                pages={item.pages}
-                title={item.title}
-              />
-            ))}
+          {items.map((page) => (
+            <SidebarNavListItem
+              key={page.title}
+              href={page.href}
+              icon={page.icon || (() => null)}
+              title={page.title}
+            />
+          ))}
         </Items>
       </List>
     </Wrapper>

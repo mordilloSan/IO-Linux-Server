@@ -1,6 +1,5 @@
 import {
   Home,
-  Settings,
   RefreshCcw,
   ServerCog,
   HardDrive,
@@ -8,14 +7,14 @@ import {
   Share2,
   Cpu,
   Folder,
-  Grid,
+  Network,
 } from "lucide-react";
 
 import { Icon } from "@iconify/react";
 
 import { SidebarItemsType } from "@/types/sidebar";
 
-const pagesSection: SidebarItemsType[] = [
+const navItems: SidebarItemsType[] = [
   {
     href: "/",
     icon: Home,
@@ -23,7 +22,7 @@ const pagesSection: SidebarItemsType[] = [
   },
   {
     href: "/network",
-    icon: Settings,
+    icon: Network,
     title: "Network",
   },
   {
@@ -70,25 +69,6 @@ const pagesSection: SidebarItemsType[] = [
     href: "/filebrowser",
     icon: Folder,
     title: "Navigator",
-  },
-];
-
-const elementsSection: SidebarItemsType[] = [
-  {
-    href: "/components",
-    icon: Grid,
-    title: "Components",
-  },
-];
-
-const navItems = [
-  {
-    title: "Pages",
-    pages: pagesSection,
-  },
-  {
-    title: "Elements",
-    pages: elementsSection,
   },
 ];
 
