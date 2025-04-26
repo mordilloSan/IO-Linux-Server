@@ -1,7 +1,12 @@
 import React, { useContext } from "react";
 import styled from "@emotion/styled";
 import { NavLink, useLocation } from "react-router-dom";
-import { ListItemButton, ListItemIcon, ListItemText, ListItemButtonProps } from "@mui/material";
+import {
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  ListItemButtonProps,
+} from "@mui/material";
 import { ThemeContext } from "@/contexts/ThemeContext";
 import { darken, lighten } from "polished";
 import { Icon } from "@iconify/react";
@@ -15,8 +20,10 @@ interface SidebarNavListItemProps extends ListItemButtonProps {
 const Item = styled(ListItemButton, {
   shouldForwardProp: (prop) => prop !== "activecolor",
 })<{ activecolor: string }>`
-  margin: ${(props) => props.theme.spacing(1)} ${(props) => props.theme.spacing(2)};
-  padding: ${(props) => props.theme.spacing(1.5)} ${(props) => props.theme.spacing(3)};
+  margin: ${(props) => props.theme.spacing(1)}
+    ${(props) => props.theme.spacing(2)};
+  padding: ${(props) => props.theme.spacing(1.5)}
+    ${(props) => props.theme.spacing(3)};
   border-radius: 0 9999px 9999px 0;
   font-weight: ${(props) => props.theme.typography.fontWeightRegular};
   color: ${(props) => props.theme.sidebar.color};
@@ -52,13 +59,17 @@ const Item = styled(ListItemButton, {
   }
 
   &:hover {
-  ${(props) => !props.selected && `
-    background: ${props.theme.palette.mode === "light"
-      ? darken(0.07, props.theme.header.background)
-      : lighten(0.05, props.theme.sidebar.background)};
+    ${(props) =>
+      !props.selected &&
+      `
+    background: ${
+      props.theme.palette.mode === "light"
+        ? darken(0.07, props.theme.header.background)
+        : lighten(0.05, props.theme.sidebar.background)
+    };
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   `}
-}
+  }
 `;
 
 const Title = styled(ListItemText)`
@@ -93,12 +104,12 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
 
   return (
     <Item
-    component={NavLink}
-    activecolor={primaryColor || fallbackPrimary}
-    selected={isActive}
-    {...(rest as any)} // (temporary cast) or clean props manually
-    // Pass the 'to' inside props properly
-    to={href}
+      component={NavLink}
+      activecolor={primaryColor || fallbackPrimary}
+      selected={isActive}
+      {...(rest as any)} // (temporary cast) or clean props manually
+      // Pass the 'to' inside props properly
+      to={href}
     >
       {icon && (
         <ListItemIcon
