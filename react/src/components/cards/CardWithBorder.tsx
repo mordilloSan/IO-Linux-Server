@@ -23,17 +23,15 @@ const HoverableCard = styled(MuiCard)(({ theme }) => {
   const mainColor = theme.palette.primary.main;
 
   return {
-    transition:
-      "border 0.3s ease-in-out, box-shadow 0.3s ease-in-out, margin 0.3s ease-in-out",
+    transition: "border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
     borderBottomWidth: "2px",
     borderBottomStyle: "solid",
     borderBottomColor: alpha(mainColor, 0.3),
+    marginBlockEnd: 0,
 
     "&:hover": {
-      borderBottomWidth: "3px",
       borderBottomColor: mainColor,
       boxShadow: theme.shadows[10],
-      marginBlockEnd: "-1px",
     },
   };
 });

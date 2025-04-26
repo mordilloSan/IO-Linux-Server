@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Typography, Box, useTheme } from "@mui/material";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import GppGoodOutlinedIcon from "@mui/icons-material/GppGoodOutlined";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import SecurityUpdateWarningIcon from "@mui/icons-material/SecurityUpdateWarning";
 import CardWithBorder from "@/components/cards/CardWithBorder";
@@ -40,7 +40,7 @@ const SystemHealth = () => {
 
   // Determine icon + color
   let statusColor = theme.palette.success.dark;
-  let IconComponent = CheckCircleOutlineIcon;
+  let IconComponent = GppGoodOutlinedIcon;
   let iconLink = "/updates";
 
   if (failed > 0) {

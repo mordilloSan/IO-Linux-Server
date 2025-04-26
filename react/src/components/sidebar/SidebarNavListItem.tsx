@@ -91,7 +91,7 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
   const { primaryColor } = useContext(ThemeContext);
   const fallbackPrimary = "#3f5efb";
 
-  const isActive = pathname === href;
+  const isActive = pathname === href || pathname.startsWith(href + "/");
 
   const renderIcon = () => {
     if (!icon) return null;

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go-backend/auth"
 	"net/http"
 	"os"
@@ -182,6 +183,22 @@ type netStats struct {
 var netStatsMap = make(map[string]netStats)
 var netStatsLock = sync.Mutex{}
 
+func getInterfaceSpeed(interfaceName string) (string, string, error) {
+	speedPath := fmt.Sprintf("/sys/class/net/%s/speed", interfaceName)
+	duplexPath := fmt.Sprintf("/sys/class/net/%s/duplex", interfaceName)
+
+	speedBytes, err := os.ReadFile(speedPath)
+	if err != nil {
+		return "", "", err
+	}
+	duplexBytes, err := os.ReadFile(duplexPath)
+	if err != nil {
+		return strings.TrimSpace(string(speedBytes)), "", err
+	}
+
+	return strings.TrimSpace(string(speedBytes)), strings.TrimSpace(string(duplexBytes)), nil
+}
+
 func getNetworkInfo(c *gin.Context) {
 	stats, _ := net.IOCounters(true)
 	ifaces, _ := net.Interfaces()
@@ -193,6 +210,11 @@ func getNetworkInfo(c *gin.Context) {
 	defer netStatsLock.Unlock()
 
 	for _, iface := range ifaces {
+		// Skip loopback and docker/veth
+		if strings.HasPrefix(iface.Name, "lo") || strings.HasPrefix(iface.Name, "docker") || strings.HasPrefix(iface.Name, "veth") {
+			continue
+		}
+
 		entry := map[string]any{
 			"name":         iface.Name,
 			"mtu":          iface.MTU,
@@ -203,12 +225,27 @@ func getNetworkInfo(c *gin.Context) {
 			"bytesRecv":    uint64(0),
 			"txSpeed":      float64(0),
 			"rxSpeed":      float64(0),
+			"linkSpeed":    "unknown",
+			"duplex":       "unknown",
 		}
 
+		// Try to fetch speed only for real interfaces
+		speed, duplex, err := getInterfaceSpeed(iface.Name)
+		if err == nil {
+			if speed != "" {
+				entry["linkSpeed"] = speed
+			}
+			if duplex != "" {
+				entry["duplex"] = duplex
+			}
+		}
+
+		// Add IP addresses
 		for _, addr := range iface.Addrs {
 			entry["addresses"] = append(entry["addresses"].([]string), addr.Addr)
 		}
 
+		// Add IO counters
 		for _, s := range stats {
 			if s.Name == iface.Name {
 				entry["bytesSent"] = s.BytesSent
