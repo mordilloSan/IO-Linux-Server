@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/utils/axios";
-import SelectCard from "@/components/cards/SelectCard";
+import CardWithBorder from "@/components/cards/CardWithBorder";
 import Loader from "@/components/Loader";
-import NetworkGraph from "@/pages/dashboard/home/NetworkGraph"; // your graph
+import NetworkGraph from "./NetworkGraph";
 
 interface InterfaceStats {
   name: string;
@@ -105,7 +105,7 @@ const NetworkInterfacesCard: React.FC = () => {
   );
 
   return (
-    <SelectCard
+    <CardWithBorder
       title="Network"
       avatarIcon="mdi:ethernet"
       stats={content}
@@ -121,7 +121,7 @@ const NetworkInterfacesCard: React.FC = () => {
         selectedInterface && selectedInterface.rxSpeed > 0
           ? "online"
           : "offline"
-      } // 👈 ADD THIS
+      }
     />
   );
 };

@@ -1,13 +1,14 @@
 import "@mui/lab/themeAugmentation";
-
+import { Theme } from "@mui/material/styles";
 import { createTheme as createMuiTheme } from "@mui/material/styles";
 import variants from "@/theme/variants";
 import typography from "@/theme/typography";
 import breakpoints from "@/theme/breakpoints";
-import components from "@/theme/components";
 import shadows from "@/theme/shadows";
+import { Components } from "@mui/material/styles";
+import components from "@/theme/components";
 
-const createTheme = (name: string, primaryColor?: string) => {
+const createTheme = (name: string, primaryColor?: string): Theme => {
   let themeConfig = variants.find((variant) => variant.name === name);
 
   if (!themeConfig) {
@@ -27,8 +28,7 @@ const createTheme = (name: string, primaryColor?: string) => {
     {
       spacing: 4,
       breakpoints: breakpoints,
-      // @ts-expect-error Incompatible types
-      components: components,
+      components: components as Components,
       typography: typography,
       shadows: shadows,
       palette,

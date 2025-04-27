@@ -1,15 +1,16 @@
 import React from "react";
 import {
   Box,
-  Card,
   CircularProgress,
   Grid,
   Tooltip,
   Typography,
   Fade,
 } from "@mui/material";
-import ActionButton from "./ActionButton"; // <-- import ActionButton here
-import { ContainerInfo } from "./ContainerList"; // <-- import interface
+import ActionButton from "./ActionButton";
+import { ContainerInfo } from "@/types/container";
+import FrostedCard from "@/components/cards/FrostedCard";
+import axios from "@/utils/axios";
 
 const getContainerIconUrl = (name: string) => {
   const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
@@ -61,9 +62,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({
   ) => {
     setLoading(true);
     try {
-      await import("@/utils/axios").then(({ default: axios }) =>
-        axios.post(`/docker/containers/${id}/${action}`)
-      );
+      await axios.post(`/docker/containers/${id}/${action}`);
       queryClient.invalidateQueries({ queryKey: ["containers"] });
     } finally {
       setLoading(false);
@@ -72,20 +71,13 @@ const ContainerCard: React.FC<ContainerCardProps> = ({
 
   return (
     <Grid size={{ xs: 6, sm: 4, md: 4, lg: 3, xl: 2 }}>
-      <Card
+      <FrostedCard
         sx={{
           p: 2,
-          borderRadius: 3,
           display: "flex",
           alignItems: "center",
           height: "100%",
           position: "relative",
-          backgroundColor: (theme) =>
-            theme.palette.mode === "dark"
-              ? "rgba(255,255,255,0.08)"
-              : "rgba(0,0,0,0.05)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
           transition: "transform 0.2s, box-shadow 0.2s",
           "&:hover": {
             transform: "translateY(-4px)",
@@ -179,7 +171,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({
             </Box>
           )}
         </Box>
-      </Card>
+      </FrostedCard>
     </Grid>
   );
 };

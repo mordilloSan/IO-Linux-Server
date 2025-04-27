@@ -12,11 +12,11 @@ function AuthGuard({ children }: AuthGuardType) {
   const { isAuthenticated, isInitialized } = useAuth();
 
   if (!isInitialized) {
-    return <Navigate to="/auth/sign-in" replace />;
+    return <Navigate to="/sign-in" replace />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/sign-in" replace />;
+    return <Navigate to="/sign-in" replace />;
   }
 
   return <>{children}</>;

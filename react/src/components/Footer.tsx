@@ -1,87 +1,94 @@
 import React from "react";
-import styled from "@emotion/styled";
-
 import {
   Grid,
   List,
-  ListItemText as MuiListItemText,
-  ListItemButtonProps as MuiListItemButtonProps,
-  ListItemButton as MuiListItemButton,
+  ListItemText,
+  ListItemButton,
+  Box,
+  useTheme,
 } from "@mui/material";
 
-interface ListItemButtonProps extends MuiListItemButtonProps {
-  href?: string;
-}
-
-const Wrapper = styled.div`
-  padding: ${(props) => props.theme.spacing(0.25)}
-    ${(props) => props.theme.spacing(4)};
-  background: ${(props) => props.theme.footer.background};
-  position: relative;
-`;
-
-const ListItemButton = styled(MuiListItemButton)<ListItemButtonProps>`
-  display: inline-block;
-  width: auto;
-  padding-left: ${(props) => props.theme.spacing(2)};
-  padding-right: ${(props) => props.theme.spacing(2)};
-
-  &,
-  &:hover,
-  &:active {
-    color: #ff0000;
-  }
-`;
-
-const ListItemText = styled(MuiListItemText)`
-  span {
-    color: ${(props) => props.theme.footer.color};
-  }
-`;
-
 function Footer() {
+  const theme = useTheme();
+
   return (
-    <Wrapper>
+    <Box
+      sx={{
+        p: theme.spacing(0.25, 4),
+        background: theme.footer?.background || theme.palette.background.paper,
+        position: "relative",
+      }}
+    >
       <Grid container spacing={0}>
+        {/* Left side links */}
         <Grid
-          sx={{ display: { xs: "none", md: "block" } }}
-          container
           size={{
             xs: 12,
             md: 6,
           }}
+          sx={{ display: { xs: "none", md: "block" } }}
         >
           <List>
-            <ListItemButton component="a" href="#">
-              <ListItemText primary="Support" />
-            </ListItemButton>
-            <ListItemButton component="a" href="#">
-              <ListItemText primary="Help Center" />
-            </ListItemButton>
-            <ListItemButton component="a" href="#">
-              <ListItemText primary="Privacy" />
-            </ListItemButton>
-            <ListItemButton component="a" href="#">
-              <ListItemText primary="Terms of Service" />
-            </ListItemButton>
+            {["Support", "Help Center", "Privacy", "Terms of Service"].map(
+              (text) => (
+                <ListItemButton
+                  key={text}
+                  component="a"
+                  href="#"
+                  sx={{
+                    display: "inline-block",
+                    width: "auto",
+                    px: 2,
+                    color: "#ff0000",
+                    "&:hover, &:active": { color: "#ff0000" },
+                  }}
+                >
+                  <ListItemText
+                    primary={text}
+                    slotProps={{
+                      primary: {
+                        sx: { color: theme.footer?.color || "text.primary" },
+                      },
+                    }}
+                  />
+                </ListItemButton>
+              )
+            )}
           </List>
         </Grid>
+
+        {/* Right side copyright */}
         <Grid
-          container
-          justifyContent="flex-end"
           size={{
             xs: 12,
             md: 6,
           }}
+          container
+          justifyContent="flex-end"
         >
           <List>
-            <ListItemButton>
-              <ListItemText primary={`© ${new Date().getFullYear()} - Mira`} />
+            <ListItemButton
+              sx={{
+                display: "inline-block",
+                width: "auto",
+                px: 2,
+                color: "#ff0000",
+                "&:hover, &:active": { color: "#ff0000" },
+              }}
+            >
+              <ListItemText
+                primary={`© ${new Date().getFullYear()} - Mira`}
+                slotProps={{
+                  primary: {
+                    sx: { color: theme.footer?.color || "text.primary" },
+                  },
+                }}
+              />
             </ListItemButton>
           </List>
         </Grid>
       </Grid>
-    </Wrapper>
+    </Box>
   );
 }
 

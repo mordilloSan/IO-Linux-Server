@@ -1,6 +1,37 @@
-import { Theme } from "@mui/system";
+import { Theme } from "@mui/material/styles";
+import { darken, lighten } from "polished";
+
+// === Helpers ===
+
+export const getHoverBackground = (theme: Theme) =>
+  theme.palette.mode === "light"
+    ? darken(0.07, theme.sidebar.background)
+    : lighten(0.05, theme.sidebar.background);
+
+const hoverStyles = (theme: Theme) => ({
+  background: getHoverBackground(theme),
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+});
+
+const transitionStyles = (theme: Theme) => ({
+  transition: theme.transitions.create(
+    ["background-color", "color", "transform"],
+    {
+      duration: theme.transitions.duration.shortest,
+    }
+  ),
+});
+
+// === Components ===
 
 const components = {
+  MuiCssBaseline: {
+    styleOverrides: {
+      html: { height: "100%" },
+      body: { height: "100%", margin: 0 },
+      "#root": { height: "100%" },
+    },
+  },
   MuiButtonBase: {
     defaultProps: {
       disableRipple: true,
@@ -14,6 +45,28 @@ const components = {
       },
     },
   },
+  MuiListItemButton: {
+    styleOverrides: {
+      root: (params: { theme: Theme }) => {
+        const { theme } = params;
+        return {
+          ...transitionStyles(theme),
+          "&:hover": hoverStyles(theme),
+        };
+      },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: {
+      root: (params: { theme: Theme }) => {
+        const { theme } = params;
+        return {
+          ...transitionStyles(theme),
+          "&:hover": hoverStyles(theme),
+        };
+      },
+    },
+  },
   MuiLink: {
     defaultProps: {
       underline: "hover",
@@ -21,9 +74,7 @@ const components = {
   },
   MuiCardHeader: {
     defaultProps: {
-      titleTypographyProps: {
-        variant: "h6",
-      },
+      titleTypographyProps: { variant: "h6" },
     },
     styleOverrides: {
       action: {
@@ -44,39 +95,48 @@ const components = {
   },
   MuiPaper: {
     styleOverrides: {
-      root: {
-        backgroundImage: "none",
+      root: { backgroundImage: "none" },
+    },
+  },
+  MuiChip: {
+    styleOverrides: {
+      root: { borderRadius: "6px" },
+      filled: {
+        textShadow: "0 1px 1px rgba(0, 0, 0, 0.2)",
       },
     },
   },
+  MuiMenu: {
+    styleOverrides: {
+      paper: (params: { theme: Theme }) => {
+        const { theme } = params;
+        return {
+          borderColor: theme.palette.divider,
+        };
+      },
+    },
+  },
+  // Picker styles cleaned
   MuiPickersDay: {
     styleOverrides: {
-      day: {
-        fontWeight: "300",
-      },
+      day: { fontWeight: "300" },
     },
   },
   MuiPickersYear: {
     styleOverrides: {
-      root: {
-        height: "64px",
-      },
+      root: { height: "64px" },
     },
   },
   MuiPickersCalendar: {
     styleOverrides: {
-      transitionContainer: {
-        marginTop: "6px",
-      },
+      transitionContainer: { marginTop: "6px" },
     },
   },
   MuiPickersCalendarHeader: {
     styleOverrides: {
       iconButton: {
         backgroundColor: "transparent",
-        "& > *": {
-          backgroundColor: "transparent",
-        },
+        "& > *": { backgroundColor: "transparent" },
       },
       switchHeader: {
         marginTop: "2px",
@@ -86,15 +146,13 @@ const components = {
   },
   MuiPickersClock: {
     styleOverrides: {
-      container: {
-        margin: `32px 0 4px`,
-      },
+      container: { margin: "32px 0 4px" },
     },
   },
   MuiPickersClockNumber: {
     styleOverrides: {
       clockNumber: {
-        left: `calc(50% - 16px)`,
+        left: "calc(50% - 16px)",
         width: "32px",
         height: "32px",
       },
@@ -102,56 +160,18 @@ const components = {
   },
   MuiPickerDTHeader: {
     styleOverrides: {
-      dateHeader: {
-        "& h4": {
-          fontSize: "2.125rem",
-          fontWeight: 400,
-        },
-      },
-      timeHeader: {
-        "& h3": {
-          fontSize: "3rem",
-          fontWeight: 400,
-        },
-      },
+      dateHeader: { "& h4": { fontSize: "2.125rem", fontWeight: 400 } },
+      timeHeader: { "& h3": { fontSize: "3rem", fontWeight: 400 } },
     },
   },
   MuiPickersTimePicker: {
     styleOverrides: {
-      hourMinuteLabel: {
-        "& h2": {
-          fontSize: "3.75rem",
-          fontWeight: 300,
-        },
-      },
+      hourMinuteLabel: { "& h2": { fontSize: "3.75rem", fontWeight: 300 } },
     },
   },
   MuiPickersToolbar: {
     styleOverrides: {
-      toolbar: {
-        "& h4": {
-          fontSize: "2.125rem",
-          fontWeight: 400,
-        },
-      },
-    },
-  },
-  MuiChip: {
-    styleOverrides: {
-      root: {
-        borderRadius: "6px",
-      },
-      filled: {
-        textShadow: "0 1px 1px rgba(0, 0, 0, 0.2)",
-      },
-    },
-  },
-  MuiMenu: {
-    styleOverrides: {
-      paper: ({ theme }: { theme: Theme }) => ({
-        border: `1px solid red`,
-        borderColor: theme.palette.divider,
-      }),
+      toolbar: { "& h4": { fontSize: "2.125rem", fontWeight: 400 } },
     },
   },
 };

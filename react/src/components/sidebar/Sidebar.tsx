@@ -1,52 +1,8 @@
 import React from "react";
-import styled from "@emotion/styled";
-import { NavLink } from "react-router-dom";
-
-import { Drawer as MuiDrawer, ListItemButton, useTheme } from "@mui/material";
-
+import { Drawer, Box, useTheme } from "@mui/material";
 import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { SidebarItemsType } from "@/types/sidebar";
 import SidebarNav from "./SidebarNav";
-
-const Drawer = styled(MuiDrawer)`
-  border-right: 0;
-
-  > div {
-    border-right: 0;
-    scrollbar-width: none;
-  }
-`;
-
-const Brand = styled(ListItemButton)<{
-  component?: React.ReactNode;
-  to?: string;
-}>`
-  font-size: ${(props) => props.theme.typography.h5.fontSize};
-  font-weight: ${(props) => props.theme.typography.fontWeightMedium};
-  color: ${(props) => props.theme.sidebar.header.color};
-  background-color: ${(props) => props.theme.sidebar.header.background};
-  font-family: ${(props) => props.theme.typography.fontFamily};
-  min-height: 56px;
-  padding-left: ${(props) => props.theme.spacing(6)};
-  padding-right: ${(props) => props.theme.spacing(6)};
-  justify-content: center;
-  cursor: pointer;
-  flex-grow: 0;
-
-  ${(props) => props.theme.breakpoints.up("sm")} {
-    min-height: 64px;
-  }
-
-  &:hover {
-    background-color: ${(props) => props.theme.sidebar.header.background};
-  }
-`;
-
-const BrandIcon = styled(Logo)`
-  margin-right: ${(props) => props.theme.spacing(2)};
-  fill: ${(props) => props.theme.palette.primary.main};
-  height: 42px;
-`;
 
 export type SidebarProps = {
   PaperProps: {
@@ -57,17 +13,59 @@ export type SidebarProps = {
   variant?: "permanent" | "persistent" | "temporary";
   open?: boolean;
   onClose?: () => void;
-  items: SidebarItemsType[]; // ← updated here
+  items: SidebarItemsType[];
+  collapsed?: boolean;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  items,
+  collapsed = false,
+  ...rest
+}) => {
   const theme = useTheme();
+
   return (
-    <Drawer key={theme.palette.mode} variant="permanent" {...rest}>
-      <Brand component={NavLink as any} to="/">
-        <BrandIcon />
-      </Brand>
-      <SidebarNav items={items} />
+    <Drawer
+      key={theme.palette.mode}
+      {...rest}
+      slotProps={{
+        paper: {
+          sx: {
+            width: rest.PaperProps.style.width,
+            borderRight: 0,
+            backgroundColor: theme.sidebar.background,
+            scrollbarWidth: "none",
+            "& > div": {
+              borderRight: 0,
+            },
+          },
+        },
+      }}
+    >
+      {/* --- Sidebar Header (just logo) --- */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: theme.sidebar.header.background,
+          minHeight: { xs: 56, sm: 64 },
+          px: 6,
+          flexGrow: 0,
+        }}
+      >
+        <Box
+          component={Logo}
+          sx={{
+            fill: theme.palette.primary.main,
+            height: 42,
+            marginRight: 2,
+          }}
+        />
+      </Box>
+
+      {/* --- Sidebar Navigation --- */}
+      <SidebarNav items={items} collapsed={collapsed} />
     </Drawer>
   );
 };

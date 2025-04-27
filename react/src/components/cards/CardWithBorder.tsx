@@ -1,12 +1,24 @@
 import React from "react";
-import MuiCard from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import { styled, alpha, useTheme } from "@mui/material/styles";
-import CustomAvatar from "@/components/Avatar";
-import { cardHeight, cardBorderRadius } from "@/constants";
+import {
+  Box,
+  CardContent,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  Tooltip,
+} from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { Icon } from "@iconify/react";
+import FrostedCard from "./FrostedCard";
+import { cardHeight } from "@/constants";
+
+interface SelectOption {
+  value: string;
+  label: string;
+  id?: string;
+}
 
 interface CardWithBorderProps {
   title: string;
@@ -16,25 +28,12 @@ interface CardWithBorderProps {
   icon?: React.ElementType;
   iconProps?: Record<string, any>;
   icon_text?: string;
+  selectOptions?: SelectOption[];
+  selectedOption?: string;
+  selectedOptionLabel?: string;
+  onSelect?: (value: string) => void;
+  connectionStatus?: "online" | "offline";
 }
-
-// Styled card with hover border animation
-const HoverableCard = styled(MuiCard)(({ theme }) => {
-  const mainColor = theme.palette.primary.main;
-
-  return {
-    transition: "border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-    borderBottomWidth: "2px",
-    borderBottomStyle: "solid",
-    borderBottomColor: alpha(mainColor, 0.3),
-    marginBlockEnd: 0,
-
-    "&:hover": {
-      borderBottomColor: mainColor,
-      boxShadow: theme.shadows[10],
-    },
-  };
-});
 
 const CardWithBorder: React.FC<CardWithBorderProps> = ({
   title,
@@ -44,22 +43,105 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
   icon: IconComponent,
   iconProps,
   icon_text,
+  selectOptions = [],
+  selectedOption = "",
+  selectedOptionLabel,
+  onSelect,
+  connectionStatus,
 }) => {
   const theme = useTheme();
   const primaryColor = theme.palette.primary.main;
 
+  const handleSelectionChange = (event: SelectChangeEvent<string>) => {
+    onSelect?.(event.target.value);
+  };
+
+  const statusDot = connectionStatus && (
+    <Tooltip
+      title={connectionStatus === "online" ? "Connected" : "Disconnected"}
+      arrow
+    >
+      <Box
+        sx={{
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          bgcolor:
+            connectionStatus === "online" ? "success.main" : "error.main",
+          flexShrink: 0,
+        }}
+      />
+    </Tooltip>
+  );
+
+  const renderSelect = selectOptions.length > 0 && (
+    <FormControl
+      size="small"
+      sx={{
+        m: -1,
+        minWidth: "auto",
+        "& .MuiOutlinedInput-root": {
+          color: "text.secondary",
+        },
+        "& .MuiOutlinedInput-notchedOutline": {
+          border: "none",
+        },
+        "& .MuiSelect-select": {
+          padding: "4px 8px",
+        },
+        "& .MuiSvgIcon-root": {
+          color: theme.palette.text.secondary,
+          fontSize: 18,
+        },
+      }}
+    >
+      <Select
+        id="card-select"
+        value={selectedOption}
+        onChange={handleSelectionChange}
+        displayEmpty
+        renderValue={() =>
+          selectedOptionLabel ? (
+            <Typography variant="body2">{selectedOptionLabel}</Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Select...
+            </Typography>
+          )
+        }
+      >
+        {selectOptions.map((option, index) => (
+          <MenuItem key={option.id ?? index} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+
   return (
-    <HoverableCard
+    <FrostedCard
       elevation={2}
       sx={{
         minHeight: cardHeight,
         m: 1,
         display: "flex",
         flexDirection: "column",
-        borderRadius: cardBorderRadius,
+        transition:
+          "border 0.3s ease-in-out, box-shadow 0.3s ease-in-out, margin 0.3s ease-in-out",
+        borderBottomWidth: "2px",
+        borderBottomStyle: "solid",
+        borderBottomColor: alpha(primaryColor, 0.3),
+        "&:hover": {
+          borderBottomWidth: "3px",
+          borderBottomColor: primaryColor,
+          boxShadow: theme.shadows[10],
+          marginBlockEnd: "-1px",
+        },
       }}
     >
       <CardContent>
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -68,16 +150,17 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             mb: 1,
           }}
         >
+          {/* Title and optional extras */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
-              variant="h4"
-              sx={{
-                fontWeight: "bold",
-                transform: "translateY(-1px)",
-              }}
+              variant="h5"
+              sx={{ fontWeight: "bold", transform: "translateY(-1px)" }}
             >
               {title}
             </Typography>
+
+            {statusDot}
+            {renderSelect}
 
             {IconComponent && icon_text && (
               <Box
@@ -86,6 +169,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
                   alignItems: "center",
                   gap: 0,
                   lineHeight: 1,
+                  ml: 1,
                 }}
               >
                 <Box
@@ -114,16 +198,16 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             )}
           </Box>
 
-          <CustomAvatar transparent size={40}>
-            <Icon
-              icon={avatarIcon}
-              width="32px"
-              height="32px"
-              color={primaryColor}
-            />
-          </CustomAvatar>
+          {/* Avatar/Icon */}
+          <Icon
+            icon={avatarIcon}
+            width="38px"
+            height="38px"
+            color={primaryColor}
+          />
         </Box>
 
+        {/* Content */}
         {stats2 ? (
           <Box
             sx={{
@@ -144,7 +228,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
             </Box>
             <Box
               sx={{
-                flex: { sm: 1, xl: 1 },
+                flex: 1,
                 display: "flex",
                 height: 120,
                 alignItems: "center",
@@ -158,7 +242,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
           <Box sx={{ mt: 7 }}>{stats}</Box>
         )}
       </CardContent>
-    </HoverableCard>
+    </FrostedCard>
   );
 };
 

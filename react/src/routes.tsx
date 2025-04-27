@@ -3,8 +3,7 @@ import React, { lazy, Suspense } from "react";
 
 // Layouts
 import AuthLayout from "@/layouts/Auth";
-import ErrorLayout from "@/layouts/Error";
-import DashboardLayout from "@/layouts/Dashboard";
+import DashboardLayout from "@/layouts/Main";
 
 // Guards
 import AuthGuard from "@/components/guards/AuthGuard";
@@ -56,10 +55,12 @@ const routes = [
       { path: "docker", element: <Docker /> },
     ],
   },
+
   {
-    path: "auth",
+    path: "*",
     element: <AuthLayout />,
     children: [
+      { path: "*", element: <Page404 /> },
       {
         path: "sign-in",
         element: (
@@ -69,11 +70,6 @@ const routes = [
         ),
       },
     ],
-  },
-  {
-    path: "*",
-    element: <ErrorLayout />,
-    children: [{ path: "*", element: <Page404 /> }],
   },
 ];
 

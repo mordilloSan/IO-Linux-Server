@@ -2,13 +2,8 @@ import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Typography, Grid } from "@mui/material";
 import ContainerCard from "./ContainerCard";
-
-export interface ContainerInfo {
-  Id: string;
-  Names: string[];
-  State: string;
-  Status: string;
-}
+import { ContainerInfo } from "@/types/container";
+import axios from "@/utils/axios";
 
 const ContainerList: React.FC = () => {
   const queryClient = useQueryClient();
@@ -16,9 +11,7 @@ const ContainerList: React.FC = () => {
   const { data: containers = [], isLoading } = useQuery<ContainerInfo[]>({
     queryKey: ["containers"],
     queryFn: async () => {
-      const res = await import("@/utils/axios").then(({ default: axios }) =>
-        axios.get("/docker/containers")
-      );
+      const res = await axios.get("/docker/containers");
       return res.data;
     },
     refetchInterval: 5000,

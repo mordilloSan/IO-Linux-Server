@@ -1,124 +1,141 @@
 import React from "react";
-import styled from "@emotion/styled";
-import { withTheme } from "@emotion/react";
-import { darken, lighten } from "polished";
-import { Search as SearchIcon } from "lucide-react";
-
 import {
   Grid,
   InputBase,
-  AppBar as MuiAppBar,
-  IconButton as MuiIconButton,
+  AppBar,
+  IconButton,
   Toolbar,
+  Box,
+  useTheme,
 } from "@mui/material";
-
-import { Menu as MenuIcon } from "@mui/icons-material";
+import {
+  Menu as MenuIcon,
+  ChevronLeft,
+  ChevronRight,
+} from "@mui/icons-material";
+import { Search as SearchIcon } from "lucide-react";
 
 import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
 import NavbarUserDropdown from "./NavbarUserDropdown";
 import Settings from "./NavbarThemeToggle";
 import Customizer from "./NavbarCustomizer";
-
-const AppBar = styled(MuiAppBar)`
-  background: ${(props) => props.theme.header.background};
-  color: ${(props) => props.theme.header.color};
-`;
-
-const IconButton = styled(MuiIconButton)`
-  svg {
-    width: 22px;
-    height: 22px;
-  }
-`;
-
-const Search = styled.div`
-  border-radius: 2px;
-  background-color: ${(props) => props.theme.header.background};
-  display: none;
-  position: relative;
-  width: 100%;
-
-  &:hover {
-    background-color: ${(props) =>
-      props.theme.palette.mode === "light"
-        ? darken(0.07, props.theme.header.background)
-        : lighten(0.05, props.theme.sidebar.background)};
-  }
-
-  ${(props) => props.theme.breakpoints.up("md")} {
-    display: block;
-  }
-`;
-
-const SearchIconWrapper = styled.div`
-  width: 50px;
-  height: 100%;
-  position: absolute;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  svg {
-    width: 22px;
-    height: 22px;
-  }
-`;
-
-const Input = styled(InputBase)`
-  color: inherit;
-  width: 100%;
-
-  > input {
-    color: ${(props) => props.theme.header.search.color};
-    padding-top: ${(props) => props.theme.spacing(2.5)};
-    padding-right: ${(props) => props.theme.spacing(2.5)};
-    padding-bottom: ${(props) => props.theme.spacing(2.5)};
-    padding-left: ${(props) => props.theme.spacing(12)};
-    width: 160px;
-  }
-`;
+import { getHoverBackground } from "@/theme/components";
 
 type NavbarProps = {
   onDrawerToggle: React.MouseEventHandler<HTMLElement>;
+  onSidebarCollapseToggle?: () => void;
+  collapsed?: boolean;
 };
 
-const Navbar: React.FC<NavbarProps> = ({ onDrawerToggle }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  onDrawerToggle,
+  onSidebarCollapseToggle,
+  collapsed,
+}) => {
+  const theme = useTheme();
+
   return (
-    <React.Fragment>
-      <AppBar position="sticky" elevation={1}>
-        <Toolbar>
-          <Grid container alignItems="center" style={{ width: "100%" }}>
-            <Grid sx={{ display: { xs: "block", md: "none" } }}>
-              <IconButton
-                color="inherit"
-                aria-label="Open drawer"
-                onClick={onDrawerToggle}
-                size="large"
-              >
-                <MenuIcon />
-              </IconButton>
-            </Grid>
-            <Grid>
-              <Search>
-                <SearchIconWrapper>
-                  <SearchIcon />
-                </SearchIconWrapper>
-                <Input placeholder={"Search"} />
-              </Search>
-            </Grid>
-            <Grid size="grow" />
-            <Grid>
-              <NavbarNotificationsDropdown />
-              <Settings />
-              <Customizer />
-              <NavbarUserDropdown />
-            </Grid>
+    <AppBar
+      position="sticky"
+      elevation={1}
+      sx={{
+        background: theme.header.background,
+        color: theme.header.color,
+      }}
+    >
+      <Toolbar>
+        <Grid container alignItems="center" sx={{ width: "100%" }}>
+          {/* Mobile menu button */}
+          <Grid sx={{ display: { xs: "block", md: "none" } }}>
+            <IconButton
+              color="inherit"
+              aria-label="Open drawer"
+              onClick={onDrawerToggle}
+              size="large"
+            >
+              <MenuIcon sx={{ width: 22, height: 22 }} />
+            </IconButton>
           </Grid>
-        </Toolbar>
-      </AppBar>
-    </React.Fragment>
+
+          {/* Search Field (only desktop) */}
+          <Grid>
+            <Box
+              sx={{
+                position: "relative",
+                borderRadius: 2,
+                backgroundColor: theme.header.background,
+                width: "100%",
+                display: { xs: "none", md: "block" },
+                "&:hover": {
+                  backgroundColor: getHoverBackground(theme),
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  width: 50,
+                  height: "100%",
+                  pointerEvents: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <SearchIcon width={22} height={22} />
+              </Box>
+              <InputBase
+                placeholder="Search"
+                sx={{
+                  color: "inherit",
+                  width: "100%",
+                  input: {
+                    color: theme.header.search.color,
+                    p: theme.spacing(2.5, 2.5, 2.5, 12),
+                    width: 160,
+                  },
+                }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Collapse Sidebar button (only desktop) */}
+          {onSidebarCollapseToggle && (
+            <IconButton
+              color="inherit"
+              aria-label="Collapse sidebar"
+              onClick={onSidebarCollapseToggle}
+              size="large"
+              sx={{
+                ml: 1,
+                display: { xs: "none", md: "inline-flex" },
+                transition: theme.transitions.create(["transform"], {
+                  duration: theme.transitions.duration.shortest,
+                }),
+              }}
+            >
+              {collapsed ? (
+                <ChevronRight sx={{ width: 22, height: 22 }} />
+              ) : (
+                <ChevronLeft sx={{ width: 22, height: 22 }} />
+              )}
+            </IconButton>
+          )}
+
+          {/* Spacer */}
+          <Grid sx={{ flexGrow: 1 }} />
+
+          {/* User Actions */}
+          <Grid>
+            <NavbarNotificationsDropdown />
+            <Settings />
+            <Customizer />
+            <NavbarUserDropdown />
+          </Grid>
+        </Grid>
+      </Toolbar>
+    </AppBar>
   );
 };
 
-export default withTheme(Navbar);
+export default Navbar;

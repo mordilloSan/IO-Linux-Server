@@ -17,7 +17,7 @@ axiosInstance.interceptors.response.use(
         !error.config?.url?.includes("/auth/me") // ⛔️ Don't redirect if the request was to /auth/me
       ) {
         const redirectPath = window.location.pathname + window.location.search;
-        window.location.href = `/auth/sign-in?redirect=${encodeURIComponent(
+        window.location.href = `/sign-in?redirect=${encodeURIComponent(
           redirectPath
         )}`;
         return;

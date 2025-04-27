@@ -9,7 +9,6 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { toast } from "sonner";
 import { getErrorMessage } from "./getErrorMessage";
 
-// Factory for creating a QueryClient instance
 function makeQueryClient() {
   return new QueryClient({
     queryCache: new QueryCache({
@@ -22,7 +21,7 @@ function makeQueryClient() {
       queries: {
         retry: 1,
         refetchOnWindowFocus: false,
-        staleTime: 2000, // 2 seconds; adjust as needed
+        staleTime: 2000,
       },
       mutations: {
         onError: (error: unknown) => {
@@ -33,7 +32,6 @@ function makeQueryClient() {
   });
 }
 
-// Singleton instance in browser
 let browserQueryClient: QueryClient | undefined;
 
 function getQueryClient(): QueryClient {

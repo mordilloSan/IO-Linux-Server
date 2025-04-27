@@ -1,25 +1,10 @@
 import React from "react";
-import styled from "@emotion/styled";
 import { Link } from "react-router-dom";
-
-import { Button as MuiButton, Typography } from "@mui/material";
-import { spacing, SpacingProps } from "@mui/system";
-
-interface ButtonProps extends SpacingProps {
-  component?: React.ElementType;
-  to?: string;
-  target?: string;
-}
-
-const Button = styled(MuiButton)<ButtonProps>(spacing);
-
-const Wrapper = styled.div`
-  text-align: center;
-`;
+import { Button, Typography, Box } from "@mui/material";
 
 function Page500() {
   return (
-    <Wrapper>
+    <Box sx={{ textAlign: "center" }}>
       <Typography component="h1" variant="h1" align="center" gutterBottom>
         500
       </Typography>
@@ -41,11 +26,11 @@ function Page500() {
         to="/"
         variant="contained"
         color="secondary"
-        mt={2}
+        sx={{ mt: 2 }}
       >
         Return to website
       </Button>
-    </Wrapper>
+    </Box>
   );
 }
 

@@ -1,22 +1,49 @@
 import React from "react";
-
-import { Typography } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
+import { ReactComponent as Logo } from "@/assets/logo.svg";
 
 import SignInComponent from "@/components/auth/SignIn";
 
-function SignIn() {
+const SignIn: React.FC = () => {
   return (
     <React.Fragment>
-      <Typography component="h1" variant="h3" align="center" gutterBottom>
-        Welcome back!
-      </Typography>
-      <Typography component="h2" variant="subtitle1" align="center">
-        Sign in to your account to continue
-      </Typography>
+      {/* Logo */}
+      <Box
+        component={Logo}
+        sx={{
+          fill: (theme) => theme.palette.primary.main,
+          width: 150,
+          height: 64,
+          mb: 4,
+        }}
+      />
 
-      <SignInComponent />
+      {/* Title and subtitle */}
+      <Box textAlign="center" mb={4}>
+        <Typography component="h1" variant="h3" gutterBottom>
+          Welcome back!
+        </Typography>
+        <Typography component="h2" variant="subtitle1">
+          Sign in to your account to continue
+        </Typography>
+      </Box>
+
+      {/* Paper form */}
+      <Paper
+        sx={(theme) => ({
+          p: 6,
+          width: "100%",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          [theme.breakpoints.up("md")]: {
+            p: 10,
+          },
+        })}
+      >
+        <SignInComponent />
+      </Paper>
     </React.Fragment>
   );
-}
+};
 
 export default SignIn;
