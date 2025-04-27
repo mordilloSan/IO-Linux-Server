@@ -3,7 +3,7 @@ import React, { lazy, Suspense } from "react";
 
 // Layouts
 import AuthLayout from "@/layouts/Auth";
-import DashboardLayout from "@/layouts/Main";
+import MainLayout from "@/layouts/Main";
 
 // Guards
 import AuthGuard from "@/components/guards/AuthGuard";
@@ -46,7 +46,7 @@ const routes = [
     path: "/",
     element: (
       <AuthGuard>
-        <DashboardLayout />
+        <MainLayout />
       </AuthGuard>
     ),
     children: [

@@ -57,35 +57,37 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          transition: theme.transitions.create(["margin-left", "width"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          ml: { md: `${sidebarWidth}px` },
-        }}
-      >
+  sx={{
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    minHeight: "100vh", // Important
+    transition: theme.transitions.create(["margin-left", "width"], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    ml: { md: `${sidebarWidth}px` },
+  }}
+>
+
         <Navbar
           onDrawerToggle={handleDrawerToggle}
-          onSidebarCollapseToggle={handleSidebarCollapseToggle} // 👈 pass it down
-          collapsed={collapsed} // 👈 pass it down
+          onSidebarCollapseToggle={handleSidebarCollapseToggle}
+          collapsed={collapsed}
         />
 
-        <Paper
-          elevation={0}
-          sx={{
-            flex: 1,
-            background: theme.palette.background.default,
-            p: { xs: 5, lg: 7 },
-            boxShadow: "none",
-            minHeight: "calc(100vh - 64px)",
-          }}
-        >
-          <Container maxWidth={false} sx={{ height: "100%" }}>
+<Paper
+  elevation={0}
+  sx={{
+    flexGrow: 1, // 👈 not just flex: 1
+    background: theme.palette.background.default,
+    p: { xs: 5, lg: 7 },
+    boxShadow: "none",
+    minHeight: 0, // 👈 allows it to shrink correctly if needed
+  }}
+>
+  <Container maxWidth={false} sx={{ height: "100%" }}>
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
