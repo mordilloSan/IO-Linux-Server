@@ -22,8 +22,8 @@ const cards = [
   { id: "system", component: MemoSystemHealth },
   { id: "cpu", component: MemoProcessor },
   { id: "memory", component: MemoMemory },
-  { id: "fs", component: MemoFileSystem },
   { id: "nic", component: MemoNetworkInterfacesCard },
+  { id: "fs", component: MemoFileSystem },
   { id: "mb", component: MemoMotherBoardInfo },
   { id: "gpu", component: MemoGpuInfo },
 ];

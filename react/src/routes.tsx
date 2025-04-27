@@ -10,6 +10,7 @@ import DashboardLayout from "@/layouts/Dashboard";
 import AuthGuard from "@/components/guards/AuthGuard";
 import GuestGuard from "./components/guards/GuestGuard";
 import Loader from "./components/PageLoader";
+import Docker from "./pages/dashboard/docker";
 
 const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
   const Wrapped = (props: any) => (
@@ -52,6 +53,7 @@ const routes = [
     children: [
       { path: "", element: <Default /> },
       { path: "updates", element: <Updates /> },
+      { path: "docker", element: <Docker /> },
     ],
   },
   {

@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  Tooltip,
 } from "@mui/material";
 
 interface SelectOption {
@@ -28,11 +29,11 @@ interface CardWithBorderProps {
   icon?: React.ElementType;
   iconProps?: Record<string, any>;
   icon_text?: string;
-
   selectOptions?: SelectOption[];
   selectedOption?: string;
   selectedOptionLabel?: string;
   onSelect?: (value: string) => void;
+  connectionStatus?: "online" | "offline";
 }
 
 const HoverableCard = styled(MuiCard)(({ theme }) => {
@@ -44,7 +45,6 @@ const HoverableCard = styled(MuiCard)(({ theme }) => {
     borderBottomWidth: "2px",
     borderBottomStyle: "solid",
     borderBottomColor: alpha(mainColor, 0.3),
-
     "&:hover": {
       borderBottomWidth: "3px",
       borderBottomColor: mainColor,
@@ -59,13 +59,11 @@ const SelectCard: React.FC<CardWithBorderProps> = ({
   stats,
   stats2,
   avatarIcon,
-  icon: IconComponent,
-  iconProps,
-  icon_text,
   selectOptions = [],
   selectedOption = "",
   selectedOptionLabel,
   onSelect,
+  connectionStatus,
 }) => {
   const theme = useTheme();
   const primaryColor = theme.palette.primary.main;
@@ -74,18 +72,41 @@ const SelectCard: React.FC<CardWithBorderProps> = ({
     onSelect?.(event.target.value);
   };
 
+  const statusDot = connectionStatus && (
+    <Tooltip
+      title={connectionStatus === "online" ? "Connected" : "Disconnected"}
+    >
+      <Box
+        sx={{
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          bgcolor:
+            connectionStatus === "online" ? "success.main" : "error.main",
+          flexShrink: 0,
+        }}
+      />
+    </Tooltip>
+  );
+
   const renderSelect = selectOptions.length > 0 && (
     <FormControl
       size="small"
       sx={{
+        m: -1, // no margin
+        minWidth: "auto", // remove fixed width
         "& .MuiOutlinedInput-root": {
-          color: "text.secondary", // text color
+          color: "text.secondary",
         },
         "& .MuiOutlinedInput-notchedOutline": {
           border: "none",
         },
+        "& .MuiSelect-select": {
+          padding: "4px 8px", // reduce padding inside
+        },
         "& .MuiSvgIcon-root": {
-          color: theme.palette.text.secondary, // arrow color
+          color: theme.palette.text.secondary,
+          fontSize: 18, // optional smaller arrow
         },
       }}
     >
@@ -144,32 +165,8 @@ const SelectCard: React.FC<CardWithBorderProps> = ({
               {title}
             </Typography>
 
-            {/* Conditionally show select or icon+text */}
-            {renderSelect ||
-              (IconComponent && icon_text && (
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    mr: "-4px",
-                  }}
-                >
-                  <IconComponent
-                    {...iconProps}
-                    sx={{
-                      verticalAlign: "middle",
-                      color: primaryColor,
-                      ...iconProps?.sx,
-                    }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "grey", ml: 0, lineHeight: 1 }}
-                  >
-                    {icon_text}
-                  </Typography>
-                </Box>
-              ))}
+            {statusDot}
+            {renderSelect}
           </Box>
 
           <CustomAvatar transparent size={40}>

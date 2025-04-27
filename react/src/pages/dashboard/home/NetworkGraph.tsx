@@ -25,10 +25,10 @@ const CustomLegend: React.FC<{ latestData?: { rx: number; tx: number } }> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        gap: 12, // tighter spacing between Rx and Tx
+        gap: 12,
         marginTop: 4,
-        fontSize: 11, // smaller font
-        whiteSpace: "nowrap", // important to avoid line break!
+        fontSize: 12,
+        whiteSpace: "nowrap",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -62,10 +62,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        data={data}
-        margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
-      >
+      <LineChart data={data} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
         <XAxis dataKey="time" hide />
         <YAxis hide />
         <Tooltip
@@ -73,7 +70,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
           formatter={(value: number) => `${value.toFixed(2)} kB/s`}
           labelFormatter={() => ""}
           contentStyle={{
-            backgroundColor: "rgba(0, 0, 0, 0.7)", // slightly dark transparent background
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
             border: "none",
             borderRadius: 4,
             padding: "2px 6px",
@@ -83,9 +80,9 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
             boxShadow: "0 0 5px rgba(0,0,0,0.3)",
           }}
           wrapperStyle={{
-            pointerEvents: "none", // prevents flicker
+            pointerEvents: "none",
           }}
-          position={{ y: 10 }} // << Tooltip 10px from top (near mouse)
+          position={{ y: 10 }}
           isAnimationActive={false}
         />
 
@@ -96,7 +93,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
           dot={false}
           name="Rx"
           strokeWidth={2}
-          isAnimationActive={false} // smoother when off for live
+          isAnimationActive={false}
         />
         <Line
           type="monotone"
@@ -105,12 +102,11 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({ data }) => {
           dot={false}
           name="Tx"
           strokeWidth={2}
-          isAnimationActive={false} // smoother when off for live
+          isAnimationActive={false}
         />
-        {/* Empty Legend to reserve space */}
         <Legend
           verticalAlign="bottom"
-          height={26}
+          height={0}
           content={<CustomLegend latestData={latest} />}
         />
       </LineChart>

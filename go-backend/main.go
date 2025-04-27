@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-backend/auth"
+	"go-backend/docker"
 	"go-backend/services"
 	"go-backend/session"
 	"go-backend/update"
@@ -51,6 +52,9 @@ func main() {
 	websocket.RegisterWebSocketRoutes(router)
 	update.RegisterUpdateRoutes(router)
 	services.RegisterServiceRoutes(router)
+	docker.RegisterDockerRoutes(router)
+	docker.RegisterDockerComposeRoutes(router)
+
 	session.StartSessionGC()
 
 	if env != "production" {

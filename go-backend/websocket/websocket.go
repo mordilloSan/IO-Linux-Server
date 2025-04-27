@@ -1,4 +1,3 @@
-// websocket/websocket.go
 package websocket
 
 import (
@@ -22,6 +21,19 @@ func init() {
 	}()
 }
 
+type Client struct {
+	conn      *websocket.Conn
+	channel   chan any
+	sessionID string
+	done      chan struct{}
+	closeOnce sync.Once
+	lastPong  time.Time
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
 func (c *Client) Close() {
 	c.closeOnce.Do(func() {
 		close(c.channel)
@@ -30,16 +42,17 @@ func (c *Client) Close() {
 	})
 }
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+func (c *Client) Send(msg any) bool {
+	return safeSend(c.channel, msg)
 }
 
-type Client struct {
-	conn      *websocket.Conn
-	channel   chan any
-	sessionID string
-	done      chan struct{}
-	closeOnce sync.Once
+func safeSend(c chan any, msg any) bool {
+	select {
+	case c <- msg:
+		return true
+	default:
+		return false
+	}
 }
 
 func RegisterWebSocketRoutes(router *gin.Engine) {
@@ -61,7 +74,13 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 			channel:   make(chan any),
 			sessionID: sessionID,
 			done:      make(chan struct{}),
+			lastPong:  time.Now(),
 		}
+
+		conn.SetPongHandler(func(appData string) error {
+			client.lastPong = time.Now()
+			return nil
+		})
 
 		_ = user
 
@@ -75,12 +94,17 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 }
 
 func sendLoop(client *Client) {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	pingTicker := time.NewTicker(2 * time.Second)
+	heartbeatTicker := time.NewTicker(5 * time.Second)
+	defer pingTicker.Stop()
+	defer heartbeatTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-client.done:
+			return
+
+		case <-pingTicker.C:
 			if !session.IsValid(client.sessionID) {
 				client.conn.WriteMessage(websocket.CloseMessage,
 					websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "Session expired"))
@@ -88,21 +112,36 @@ func sendLoop(client *Client) {
 				return
 			}
 
-			select {
-			case client.channel <- map[string]any{
-				"timestamp": time.Now().Format(time.RFC3339),
-				"message":   "system heartbeat",
-			}:
-			case <-client.done:
+			if time.Since(client.lastPong) > 10*time.Second {
+				client.conn.WriteMessage(websocket.CloseMessage,
+					websocket.FormatCloseMessage(websocket.CloseNormalClosure, "pong timeout"))
+				client.Close()
 				return
 			}
+
+			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				client.Close()
+				return
+			}
+
+		case <-heartbeatTicker.C:
+			if !client.Send(map[string]any{
+				"timestamp": time.Now().Format(time.RFC3339),
+				"message":   "system heartbeat",
+			}) {
+				client.Close()
+				return
+			}
+
 		case msg, ok := <-client.channel:
 			if !ok {
 				return
 			}
-			client.conn.WriteJSON(msg)
-		case <-client.done:
-			return
+			err := client.conn.WriteJSON(msg)
+			if err != nil {
+				client.Close()
+				return
+			}
 		}
 	}
 }

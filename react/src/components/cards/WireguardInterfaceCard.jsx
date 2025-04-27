@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { Card, CardContent, Typography, Box, IconButton } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";

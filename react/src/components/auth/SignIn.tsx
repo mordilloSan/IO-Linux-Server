@@ -86,7 +86,10 @@ function SignIn() {
         fullWidth
         color="primary"
         disabled={loading}
-        sx={{ mb: 3 }}
+        sx={{
+          mb: 3,
+          py: 2,
+        }}
       >
         Sign in
       </Button>

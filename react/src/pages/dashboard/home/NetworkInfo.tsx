@@ -108,8 +108,8 @@ const NetworkInterfacesCard: React.FC = () => {
     <SelectCard
       title="Network"
       avatarIcon="mdi:ethernet"
-      stats={content} // LEFT
-      stats2={content2} // RIGHT
+      stats={content}
+      stats2={content2}
       selectOptions={options}
       selectedOption={selected}
       selectedOptionLabel={selected}
@@ -117,6 +117,11 @@ const NetworkInterfacesCard: React.FC = () => {
         setSelected(val);
         setHistory([]);
       }}
+      connectionStatus={
+        selectedInterface && selectedInterface.rxSpeed > 0
+          ? "online"
+          : "offline"
+      } // 👈 ADD THIS
     />
   );
 };
