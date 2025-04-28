@@ -1,7 +1,6 @@
 # Linux I/O
 
-![CodeQL](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)
-![Dependency Review](https://github.com/mordilloSan/LinuxIO/actions/workflows/dependency-review.yml/badge.svg)
+[![CodeQL Advanced](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml)
 
 ![Logo](react/src/assets/logo.png)
 
