@@ -1,5 +1,8 @@
 # Linux I/O
 
+![CodeQL](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)
+![Dependency Review](https://github.com/mordilloSan/LinuxIO/actions/workflows/dependency-review.yml/badge.svg)
+
 ![Logo](react/src/assets/logo.png)
 
 **Linux I/O** is a modern dashboard for managing your Linux system using native tools.  
