@@ -10,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Define a strict regex: only letters, numbers, dashes, underscores, dots
+var validPackageName = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+
 func RegisterUpdateRoutes(router *gin.Engine) {
 	system := router.Group("/system", auth.AuthMiddleware())
 	{
@@ -101,8 +104,15 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
+	// 🛡️ Sanitize the package name
+	if !validPackageName.MatchString(req.PackageName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package name"})
+		return
+	}
+
 	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", req.PackageName)
 	output, err := cmd.CombinedOutput()
+	
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
