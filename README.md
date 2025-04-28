@@ -1,18 +1,19 @@
-# I/O Linux Server
+# Linux I/O
 
 ![Logo](react/src/assets/logo.png)
 
-**I/O Linux Server** is a modern dashboard for managing your Linux system using native tools.  
+**Linux I/O** is a modern dashboard for managing your Linux system using native tools.  
 It aims to unify essential functionality in a single web-based interface without reinventing the wheel.
 
 ---
 
 ## 🧠 Philosophy
 
-Most Linux distributions already come with powerful tools for monitoring and control — `top`, `systemctl`, `ss`, etc.  
+Most Linux distributions already come with powerful tools for monitoring and control — `docker`, `systemctl`, `nmcli`, etc.  
 This project is about **leveraging those existing tools** by exposing their input/output via a friendly, minimal, and customizable web UI.  
+As such we aim to rely on D-Bus connectivity, docker SDK and parsing linux commands. Hence the I/O meaning input/output
 
-Instead of replacing the Linux experience, **I/O Linux Server visualizes it.**
+Instead of replacing the Linux experience, **Linux I/O visualizes it.**
 
 ---
 
