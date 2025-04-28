@@ -14,7 +14,6 @@ function Footer() {
   return (
     <Box
       sx={{
-
         background: theme.footer?.background || theme.palette.background.paper,
         position: "relative",
       }}

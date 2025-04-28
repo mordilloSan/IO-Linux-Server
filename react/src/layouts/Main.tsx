@@ -65,9 +65,10 @@ const Dashboard: React.FC = () => {
 
         {/* Scrollable Content Area */}
         <Box
+          className="custom-scrollbar"
           sx={{
             flex: 1,
-            overflow: "auto", // 👈 scrolling is only here
+            overflow: "auto",
             background: theme.palette.background.default,
             p: { xs: 5, lg: 7 },
           }}

@@ -35,6 +35,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             borderRight: 0,
             backgroundColor: theme.sidebar.background,
             scrollbarWidth: "none",
+            transition: theme.transitions.create(
+              ["width", "background-color"],
+              {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.standard,
+              }
+            ), // 👈 this is the key!
+            overflowX: "hidden", // 👈 avoid horizontal scrollbar when collapsing
             "& > div": {
               borderRight: 0,
             },

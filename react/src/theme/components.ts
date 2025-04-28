@@ -26,11 +26,30 @@ const transitionStyles = (theme: Theme) => ({
 
 const components = {
   MuiCssBaseline: {
-    styleOverrides: {
+    styleOverrides: () => ({
       html: { height: "100%" },
       body: { height: "100%", margin: 0 },
       "#root": { height: "100%" },
-    },
+      /* Make scrollbars beautiful */
+      ".custom-scrollbar::-webkit-scrollbar": {
+        width: "8px",
+        height: "8px",
+      },
+      ".custom-scrollbar::-webkit-scrollbar-thumb": {
+        backgroundColor: "rgba(100, 100, 100, 0.4)",
+        borderRadius: "8px",
+        border: "2px solid transparent",
+        backgroundClip: "content-box",
+        transition: "background-color 0.3s",
+      },
+      ".custom-scrollbar::-webkit-scrollbar-track": {
+        background: "transparent",
+        borderRadius: "8px",
+      },
+      ".custom-scrollbar::-webkit-scrollbar-thumb:hover": {
+        backgroundColor: "rgba(100, 100, 100, 0.7)",
+      },
+    }),
   },
   MuiButtonBase: {
     defaultProps: {

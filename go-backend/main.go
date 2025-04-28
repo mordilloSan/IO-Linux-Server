@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"go-backend/auth"
+	"go-backend/config"
 	"go-backend/docker"
 	"go-backend/services"
 	"go-backend/session"
 	"go-backend/update"
 	"go-backend/utils"
 	"go-backend/websocket"
+
 	"log"
 	"net/http"
 	"os"
@@ -24,6 +26,19 @@ var (
 )
 
 func main() {
+
+	// Load configuration
+	err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Ensure docker apps folder exists
+	err = config.EnsureDockerAppsDirExists()
+	if err != nil {
+		log.Fatalf("Failed to create docker apps directory: %v", err)
+	}
+
 	// Load .env variables into os.Environ()
 	godotenv.Load("../.env")
 
