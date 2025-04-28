@@ -3,6 +3,7 @@ package update
 import (
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"go-backend/auth"
@@ -112,7 +113,7 @@ func updatePackageHandler(c *gin.Context) {
 
 	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", safePackageName)
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
@@ -127,4 +128,3 @@ func updatePackageHandler(c *gin.Context) {
 		"output":  string(output),
 	})
 }
-
