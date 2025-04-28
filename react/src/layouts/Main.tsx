@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import {
-  Box,
-  CssBaseline,
-  Container,
-  Paper,
-  useMediaQuery,
-} from "@mui/material";
+import { Box, CssBaseline, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
 import Navbar from "@/components/navbar/Navbar";
@@ -23,13 +17,8 @@ const Dashboard: React.FC = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
-  const handleDrawerToggle = () => {
-    setMobileOpen((prev) => !prev);
-  };
-
-  const handleSidebarCollapseToggle = () => {
-    setCollapsed((prev) => !prev);
-  };
+  const handleDrawerToggle = () => setMobileOpen((prev) => !prev);
+  const handleSidebarCollapseToggle = () => setCollapsed((prev) => !prev);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -42,7 +31,7 @@ const Dashboard: React.FC = () => {
     : drawerWidth;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100vh" }}>
       <CssBaseline />
 
       {/* Sidebar */}
@@ -55,45 +44,40 @@ const Dashboard: React.FC = () => {
         collapsed={collapsed}
       />
 
-      {/* Main Content */}
+      {/* Main content */}
       <Box
-  sx={{
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    width: "100%",
-    minHeight: "100vh", // Important
-    transition: theme.transitions.create(["margin-left", "width"], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    ml: { md: `${sidebarWidth}px` },
-  }}
->
-
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          transition: theme.transitions.create(["margin-left", "width"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          ml: { md: `${sidebarWidth}px` },
+        }}
+      >
         <Navbar
           onDrawerToggle={handleDrawerToggle}
           onSidebarCollapseToggle={handleSidebarCollapseToggle}
           collapsed={collapsed}
         />
 
-<Paper
-  elevation={0}
-  sx={{
-    flexGrow: 1, // 👈 not just flex: 1
-    background: theme.palette.background.default,
-    p: { xs: 5, lg: 7 },
-    boxShadow: "none",
-    minHeight: 0, // 👈 allows it to shrink correctly if needed
-  }}
->
-  <Container maxWidth={false} sx={{ height: "100%" }}>
-            <ErrorBoundary>
-              <Outlet />
-            </ErrorBoundary>
-          </Container>
-        </Paper>
+        {/* Scrollable Content Area */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto", // 👈 scrolling is only here
+            background: theme.palette.background.default,
+            p: { xs: 5, lg: 7 },
+          }}
+        >
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </Box>
 
+        {/* Footer Always at Bottom */}
         <Footer />
       </Box>
     </Box>

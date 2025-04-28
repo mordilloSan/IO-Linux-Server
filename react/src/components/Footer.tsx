@@ -14,7 +14,7 @@ function Footer() {
   return (
     <Box
       sx={{
-        p: theme.spacing(0.25, 4),
+
         background: theme.footer?.background || theme.palette.background.paper,
         position: "relative",
       }}
@@ -40,7 +40,7 @@ function Footer() {
                     width: "auto",
                     px: 2,
                     color: "#ff0000",
-                    "&:hover, &:active": { color: "#ff0000" },
+                    "&:hover, &:active": theme.footer.color,
                   }}
                 >
                   <ListItemText
