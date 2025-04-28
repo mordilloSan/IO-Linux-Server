@@ -98,19 +98,19 @@ func updatePackageHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageName) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request. 'package' field is required.",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. 'package' field is required."})
 		return
 	}
 
-	// 🛡️ Sanitize the package name
+	// Validate input strictly
 	if !validPackageName.MatchString(req.PackageName) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package name"})
 		return
 	}
 
-	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", req.PackageName)
+	safePackageName := req.PackageName
+
+	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", safePackageName)
 	output, err := cmd.CombinedOutput()
 	
 	if err != nil {
@@ -127,3 +127,4 @@ func updatePackageHandler(c *gin.Context) {
 		"output":  string(output),
 	})
 }
+
