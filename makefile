@@ -65,7 +65,6 @@ setup: ensure-node ensure-go
 	$(NVM_SETUP); \
 		cd react && npm install --silent; \
 	'
-	@touch .setup-complete
 	@echo "✅ Frontend dependencies installed!"
 
 lint:
@@ -152,7 +151,7 @@ run: build-backend
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
 clean:
-	@rm -f .setup-complete go-backend/server || true
+	@rm -f go-backend/server || true
 	@rm -rf react/node_modules go-backend/frontend || true
 	@echo "🧹 Cleaned workspace."
 

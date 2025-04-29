@@ -13,7 +13,6 @@ go-backend/server
 *.log
 .DS_Store
 .vscode/
-.setup-complete
 
 # VSCode
 .vscode/
