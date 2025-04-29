@@ -69,6 +69,7 @@ func main() {
 	services.RegisterServiceRoutes(router)
 	docker.RegisterDockerRoutes(router)
 	docker.RegisterDockerComposeRoutes(router)
+	config.RegisterThemeRoutes(router)
 
 	session.StartSessionGC()
 

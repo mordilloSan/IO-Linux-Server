@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 const animation = {
   animate: {
-    x: ["-150px", "300px"], // Start off-screen and move across
+    x: ["-150px", "300px"],
     transition: {
       duration: 1.0,
       repeat: Infinity,
@@ -13,26 +13,30 @@ const animation = {
   },
 };
 
-function Loader() {
+function PageLoader() {
   const theme = useTheme();
   const color = theme.palette.primary.main;
 
   return (
     <Box
       sx={{
-        width: "100%",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
         height: "100vh",
+        backgroundColor: theme.palette.background.default,
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "transparent",
+        zIndex: 1300,
       }}
     >
       <Box
         sx={{
           width: 300,
           height: 6,
-          backgroundColor: "#e0e0e0",
+          backgroundColor: theme.palette.background.paper,
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
@@ -44,7 +48,7 @@ function Loader() {
           animate="animate"
           sx={{
             height: "100%",
-            width: 150, // wider than container for trail
+            width: 150,
             position: "absolute",
             left: 0,
             top: 0,
@@ -61,4 +65,4 @@ function Loader() {
   );
 }
 
-export default Loader;
+export default PageLoader;

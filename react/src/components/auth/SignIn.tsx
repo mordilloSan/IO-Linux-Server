@@ -20,7 +20,7 @@ function SignIn() {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-const redirect = searchParams.get("redirect") || "/";
+  const redirect = searchParams.get("redirect") || "/";
   const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {

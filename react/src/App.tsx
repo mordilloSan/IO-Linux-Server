@@ -36,7 +36,6 @@ function App({ emotionCache = clientSideEmotionCache }) {
         <Toaster richColors position="top-right" />
       </MuiThemeProvider>
     </CacheProvider>
-          
   );
 }
 

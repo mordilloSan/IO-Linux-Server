@@ -19,22 +19,22 @@ const ContainerList: React.FC = () => {
 
   return (
     <Suspense fallback={<Typography>Loading containers...</Typography>}>
-    <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
-        Containers
-      </Typography>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 2 }}>
+          Containers
+        </Typography>
 
-      <Grid container spacing={2}>
-        {containers.map((container) => (
-          <ContainerCard
-            key={container.Id}
-            container={container}
-            queryClient={queryClient}
-          />
-        ))}
-      </Grid>
+        <Grid container spacing={2}>
+          {containers.map((container) => (
+            <ContainerCard
+              key={container.Id}
+              container={container}
+              queryClient={queryClient}
+            />
+          ))}
+        </Grid>
       </Box>
-</Suspense>
+    </Suspense>
   );
 };
 

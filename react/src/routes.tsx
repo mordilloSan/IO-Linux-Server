@@ -44,18 +44,34 @@ const Updates = Loadable(
 const routes = [
   {
     path: "/",
-    element: (
-      <AuthGuard>
-        <MainLayout />
-      </AuthGuard>
-    ),
+    element: <MainLayout />,
     children: [
-      { path: "", element: <Default /> },
-      { path: "updates", element: <Updates /> },
-      { path: "docker", element: <Docker /> },
+      {
+        path: "",
+        element: (
+          <AuthGuard>
+            <Default />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "updates",
+        element: (
+          <AuthGuard>
+            <Updates />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "docker",
+        element: (
+          <AuthGuard>
+            <Docker />
+          </AuthGuard>
+        ),
+      },
     ],
   },
-
   {
     path: "*",
     element: <AuthLayout />,
