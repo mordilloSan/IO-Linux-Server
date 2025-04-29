@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Typography, Grid } from "@mui/material";
 import ContainerCard from "./ContainerCard";
@@ -8,7 +8,7 @@ import axios from "@/utils/axios";
 const ContainerList: React.FC = () => {
   const queryClient = useQueryClient();
 
-  const { data: containers = [], isLoading } = useQuery<ContainerInfo[]>({
+  const { data: containers = [] } = useQuery<ContainerInfo[]>({
     queryKey: ["containers"],
     queryFn: async () => {
       const res = await axios.get("/docker/containers");
@@ -18,6 +18,7 @@ const ContainerList: React.FC = () => {
   });
 
   return (
+    <Suspense fallback={<Typography>Loading containers...</Typography>}>
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>
         Containers
@@ -32,13 +33,8 @@ const ContainerList: React.FC = () => {
           />
         ))}
       </Grid>
-
-      {isLoading && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Loading containers...
-        </Typography>
-      )}
-    </Box>
+      </Box>
+</Suspense>
   );
 };
 
