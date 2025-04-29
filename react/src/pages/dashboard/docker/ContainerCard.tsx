@@ -91,7 +91,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
           <Box
             sx={{
               position: "absolute",
-              top: 12,
+              top: 16,
               right: 8,
               width: 10,
               height: 10,
@@ -114,6 +114,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
             objectFit: "contain",
             flexShrink: 0,
             mr: 1.5,
+            alignSelf: "flex-start",
           }}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = fallbackDockerIcon;
@@ -143,27 +144,87 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
               <CircularProgress size={16} />
             </Box>
           ) : (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
-              {container.State !== "running" && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 0,
+                ml: 1,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
+                {container.State !== "running" && (
+                  <ActionButton
+                    icon="mdi:play"
+                    onClick={() => handleAction(container.Id, "start")}
+                  />
+                )}
+                {container.State === "running" && (
+                  <ActionButton
+                    icon="mdi:stop"
+                    onClick={() => handleAction(container.Id, "stop")}
+                  />
+                )}
                 <ActionButton
-                  icon="mdi:play"
-                  onClick={() => handleAction(container.Id, "start")}
+                  icon="mdi:restart"
+                  onClick={() => handleAction(container.Id, "restart")}
                 />
-              )}
-              {container.State === "running" && (
                 <ActionButton
-                  icon="mdi:stop"
-                  onClick={() => handleAction(container.Id, "stop")}
+                  icon="mdi:delete"
+                  onClick={() => handleAction(container.Id, "remove")}
                 />
+              </Box>
+
+              {container.metrics && (
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    px: 1,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    columnGap: 2,
+                    rowGap: 0.5,
+                  }}
+                >
+                  {/* Left Column */}
+                  <Typography variant="caption" color="text.secondary">
+                    CPU: {(container.metrics.cpu_percent ?? 0).toFixed(1)}%
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textAlign: "right" }}
+                  >
+                    Net:{" "}
+                    {(
+                      (container.metrics.net_input ?? 0) +
+                      (container.metrics.net_output ?? 0)
+                    ).toLocaleString()}{" "}
+                    B/s
+                  </Typography>
+
+                  <Typography variant="caption" color="text.secondary">
+                    MEM:{" "}
+                    {((container.metrics.mem_usage ?? 0) / 1024 / 1024).toFixed(
+                      1
+                    )}{" "}
+                    MB
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textAlign: "right" }}
+                  >
+                    Disk:{" "}
+                    {(
+                      (container.metrics.block_read ?? 0) +
+                      (container.metrics.block_write ?? 0)
+                    ).toLocaleString()}{" "}
+                    B
+                  </Typography>
+                </Box>
               )}
-              <ActionButton
-                icon="mdi:restart"
-                onClick={() => handleAction(container.Id, "restart")}
-              />
-              <ActionButton
-                icon="mdi:delete"
-                onClick={() => handleAction(container.Id, "remove")}
-              />
             </Box>
           )}
         </Box>

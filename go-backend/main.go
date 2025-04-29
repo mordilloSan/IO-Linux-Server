@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	env       = "development" // default
+	env       = "development"
 	version   = "dev"
 	buildTime = "unknown"
 )
@@ -112,6 +112,7 @@ func main() {
 		router.StaticFile("/favicon-4.png", "./frontend/favicon-4.png")
 		router.StaticFile("/favicon-5.png", "./frontend/favicon-5.png")
 		router.StaticFile("/favicon-6.png", "./frontend/favicon-6.png")
+		router.StaticFile("/favicon.ico", "./frontend/favicon-6.png")
 		router.NoRoute(func(c *gin.Context) {
 			c.File("./frontend/index.html")
 		})

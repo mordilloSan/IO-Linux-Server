@@ -86,6 +86,9 @@ const Navbar: React.FC<NavbarProps> = ({
               </Box>
               <InputBase
                 placeholder="Search"
+                id="search-input"
+                name="search"
+                inputProps={{ "aria-label": "Search containers or services" }}
                 sx={{
                   color: "inherit",
                   width: "100%",

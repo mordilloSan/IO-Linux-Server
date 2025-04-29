@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Box, Typography, Grid } from "@mui/material";
 import ContainerCard from "./ContainerCard";
 import { ContainerInfo } from "@/types/container";
@@ -24,10 +24,7 @@ const ContainerList: React.FC = () => {
 
         <Grid container spacing={2}>
           {containers.map((container) => (
-            <ContainerCard
-              key={container.Id}
-              container={container}
-            />
+            <ContainerCard key={container.Id} container={container} />
           ))}
         </Grid>
       </Box>

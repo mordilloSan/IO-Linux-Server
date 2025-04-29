@@ -162,7 +162,7 @@ help:
 	@echo "  make setup            Install frontend deps and Node.js ($(NODE_VERSION))"
 	@echo "  make test             Run frontend lint + type checks"
 	@echo "  make dev              Start frontend (Vite) and backend (Go) in dev mode"
-	@echo "  make prod             Build react production files and run production backend"
+	@echo "  make prod             Build Vite production files and Start backend (Go) in production mode"
 	@echo "  make binary           Compile Go backend and run binary"
 	@echo "  make clean            Remove build artifacts"
 	@echo "  make check-env        Verify .env and required variables"

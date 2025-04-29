@@ -3,4 +3,12 @@ export interface ContainerInfo {
   Names: string[];
   State: string;
   Status: string;
+  metrics?: {
+    cpu_percent: number;
+    mem_usage: number;
+    net_input: number;
+    net_output: number;
+    block_read: number;
+    block_write: number;
+  };
 }

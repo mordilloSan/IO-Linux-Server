@@ -97,6 +97,8 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
     >
       <Select
         id="card-select"
+        name="cardSelect"
+        labelId="card-select-label"
         value={selectedOption}
         onChange={handleSelectionChange}
         displayEmpty
