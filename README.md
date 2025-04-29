@@ -72,19 +72,18 @@ cd IO-Linux-Server
 This repo uses `make` to simplify standard operations.
 
 ✅ Run `make` inside the project directory to view available commands  
-✅ Both `make dev` and `make prod` will run all necessary setup automatically.  
 
 ```bash
-make setup            # Install Node.js, Go (if missing) and frontend deps
-make test             # Run frontend lint + type checks
-make build            # Run full build (frontend + backend)
-make build-frontend   # Build Vite React app
-make build-backend    # Compile Go backend with version metadata
+make check-env        # Verify .env and required environment variables
+make setup            # Install Node.js, Go and frontend dependencies
+make test             # Run Vite linter + TypeScript type checks
 make dev              # Start frontend (Vite) and backend (Go) in dev mode
-make prod             # Build react production files and run production backend
-make binary           # Compile Go backend and run binary
+make prod             # Build Vite production files and smake tart backend (Go) in production mode
+make run              # Build Go binary and runs full production mode
+make build-vite-dev   # Build frontend static files (Vite) for Go in development mode
+make build-vite-prod  # Build frontend static files (Vite) for Go in production mode
+make build-backend    # Build Go binary and runs it
 make clean            # Remove build artifacts
-make check-env        # Verify .env and required variables
 
 ```
 

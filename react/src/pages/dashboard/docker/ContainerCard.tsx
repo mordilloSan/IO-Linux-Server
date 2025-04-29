@@ -175,56 +175,6 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
                   onClick={() => handleAction(container.Id, "remove")}
                 />
               </Box>
-
-              {container.metrics && (
-                <Box
-                  sx={{
-                    mt: 1.5,
-                    px: 1,
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    columnGap: 2,
-                    rowGap: 0.5,
-                  }}
-                >
-                  {/* Left Column */}
-                  <Typography variant="caption" color="text.secondary">
-                    CPU: {(container.metrics.cpu_percent ?? 0).toFixed(1)}%
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ textAlign: "right" }}
-                  >
-                    Net:{" "}
-                    {(
-                      (container.metrics.net_input ?? 0) +
-                      (container.metrics.net_output ?? 0)
-                    ).toLocaleString()}{" "}
-                    B/s
-                  </Typography>
-
-                  <Typography variant="caption" color="text.secondary">
-                    MEM:{" "}
-                    {((container.metrics.mem_usage ?? 0) / 1024 / 1024).toFixed(
-                      1
-                    )}{" "}
-                    MB
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ textAlign: "right" }}
-                  >
-                    Disk:{" "}
-                    {(
-                      (container.metrics.block_read ?? 0) +
-                      (container.metrics.block_write ?? 0)
-                    ).toLocaleString()}{" "}
-                    B
-                  </Typography>
-                </Box>
-              )}
             </Box>
           )}
         </Box>

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	env       = "development"
+	env       = "development" // default
 	version   = "dev"
 	buildTime = "unknown"
 )
@@ -117,14 +117,6 @@ func main() {
 			c.File("./frontend/index.html")
 		})
 	}
-
-	router.GET("/version", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"env":       env,
-			"version":   version,
-			"buildTime": buildTime,
-		})
-	})
 
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
