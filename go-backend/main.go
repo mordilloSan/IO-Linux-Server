@@ -105,6 +105,13 @@ func main() {
 	// Serve frontend in production
 	if env == "production" {
 		router.Static("/assets", "./frontend/assets")
+		router.StaticFile("/manifest.json", "./frontend/manifest.json")
+		router.StaticFile("/favicon-1.png", "./frontend/favicon-1.png")
+		router.StaticFile("/favicon-2.png", "./frontend/favicon-2.png")
+		router.StaticFile("/favicon-3.png", "./frontend/favicon-3.png")
+		router.StaticFile("/favicon-4.png", "./frontend/favicon-4.png")
+		router.StaticFile("/favicon-5.png", "./frontend/favicon-5.png")
+		router.StaticFile("/favicon-6.png", "./frontend/favicon-6.png")
 		router.NoRoute(func(c *gin.Context) {
 			c.File("./frontend/index.html")
 		})
