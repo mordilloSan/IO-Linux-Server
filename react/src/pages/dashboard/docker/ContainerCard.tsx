@@ -11,7 +11,7 @@ import ActionButton from "./ActionButton";
 import { ContainerInfo } from "@/types/container";
 import FrostedCard from "@/components/cards/FrostedCard";
 import axios from "@/utils/axios";
-import type { QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
 
 const getContainerIconUrl = (name: string) => {
   const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
@@ -43,13 +43,10 @@ const getStatusTooltip = (container: ContainerInfo) => {
 
 interface ContainerCardProps {
   container: ContainerInfo;
-  queryClient: QueryClient;
 }
 
-const ContainerCard: React.FC<ContainerCardProps> = ({
-  container,
-  queryClient,
-}) => {
+const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = React.useState(false);
 
   const name = container.Names?.[0]?.replace("/", "") || "Unnamed";

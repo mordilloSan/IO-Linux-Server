@@ -6,8 +6,6 @@ import { ContainerInfo } from "@/types/container";
 import axios from "@/utils/axios";
 
 const ContainerList: React.FC = () => {
-  const queryClient = useQueryClient();
-
   const { data: containers = [] } = useQuery<ContainerInfo[]>({
     queryKey: ["containers"],
     queryFn: async () => {
@@ -29,7 +27,6 @@ const ContainerList: React.FC = () => {
             <ContainerCard
               key={container.Id}
               container={container}
-              queryClient={queryClient}
             />
           ))}
         </Grid>
