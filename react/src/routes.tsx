@@ -8,12 +8,12 @@ import MainLayout from "@/layouts/Main";
 // Guards
 import AuthGuard from "@/components/guards/AuthGuard";
 import GuestGuard from "./components/guards/GuestGuard";
-import Loader from "./components/PageLoader";
+import PageLoader from "./components/PageLoader";
 import Docker from "./pages/dashboard/docker";
 
 const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
   const Wrapped = (props: any) => (
-    <Suspense fallback={<Loader />}>
+    <Suspense fallback={<PageLoader />}>
       <Component {...props} />
     </Suspense>
   );

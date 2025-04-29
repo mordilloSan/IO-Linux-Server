@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/utils/axios";
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 import NetworkGraph from "./NetworkGraph";
 
 interface InterfaceStats {
@@ -68,7 +68,7 @@ const NetworkInterfacesCard: React.FC = () => {
 
   const content = selectedInterface ? (
     isLoading ? (
-      <Loader />
+      <ComponentLoader />
     ) : (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography variant="body2">
@@ -94,7 +94,7 @@ const NetworkInterfacesCard: React.FC = () => {
 
   const content2 = selectedInterface ? (
     isLoading ? (
-      <Loader />
+      <ComponentLoader />
     ) : (
       <Box sx={{ height: "120px", width: "100%" }}>
         <NetworkGraph data={history} />

@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Typography, Paper } from "@mui/material";
 import { ReactComponent as Logo } from "@/assets/logo.svg";
-
 import SignInComponent from "@/components/auth/SignIn";
 
 const SignIn: React.FC = () => {

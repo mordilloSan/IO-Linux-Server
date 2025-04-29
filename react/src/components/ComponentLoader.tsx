@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, CircularProgress } from "@mui/material";
 
-function Loader() {
+function ComponentLoader() {
   return (
     <Box
       sx={{
@@ -16,4 +16,4 @@ function Loader() {
   );
 }
 
-export default Loader;
+export default ComponentLoader;

@@ -11,7 +11,7 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 import { CollapsibleTableProps } from "@/types/collapsible";
 
 const CollapsibleTable = <T extends Record<string, any>>({
@@ -107,7 +107,7 @@ const CollapsibleTable = <T extends Record<string, any>>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length + 1} align="center">
-                  <Loader />
+                  <ComponentLoader />
                 </TableCell>
               </TableRow>
             )}

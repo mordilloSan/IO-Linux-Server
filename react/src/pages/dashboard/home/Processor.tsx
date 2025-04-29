@@ -8,7 +8,7 @@ import CardWithBorder from "@/components/cards/CardWithBorder";
 import CircularProgressWithLabel from "@/components/CircularProgress";
 import axios from "@/utils/axios";
 import ErrorMessage from "@/components/Error";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 
 interface CPUInfoResponse {
   vendorId: string;
@@ -63,7 +63,7 @@ const Processor: React.FC = () => {
     stats: isError ? (
       <ErrorMessage />
     ) : isPending ? (
-      <Loader />
+      <ComponentLoader />
     ) : (
       <CircularProgressWithLabel
         value={averageCpuUsage}

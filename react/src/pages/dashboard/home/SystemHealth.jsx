@@ -8,7 +8,7 @@ import CardWithBorder from "@/components/cards/CardWithBorder";
 import axios from "@/utils/axios";
 import { Link as RouterLink } from "react-router-dom";
 import { Link } from "@mui/material";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 
 const SystemHealth = () => {
   const theme = useTheme();
@@ -65,7 +65,7 @@ const SystemHealth = () => {
       }}
     >
       {isLoading ? (
-        <Loader />
+        <ComponentLoader />
       ) : (
         <Link
           component={RouterLink}

@@ -3,7 +3,7 @@ import React from "react";
 import { Card, Box, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CollapsibleTable from "@/components/tables/CollapsibleTable";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 import { Update } from "@/types/update";
 import { CollapsibleColumn } from "@/types/collapsible";
 
@@ -29,7 +29,7 @@ const UpdateList: React.FC<Props> = ({
       <Box sx={{ padding: 2 }}>
         <Card>
           <Box sx={{ py: 2.8 }}>
-            <Loader />
+            <ComponentLoader />
           </Box>
         </Card>
       </Box>

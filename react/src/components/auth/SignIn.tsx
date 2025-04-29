@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -19,6 +19,8 @@ function SignIn() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+const redirect = searchParams.get("redirect") || "/";
   const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +35,7 @@ function SignIn() {
     try {
       setLoading(true);
       await signIn(username, password);
-      navigate("/");
+      navigate(redirect);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {

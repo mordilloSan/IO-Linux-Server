@@ -5,7 +5,7 @@ import { Typography, LinearProgress, Box, Tooltip } from "@mui/material";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import { FilesystemInfo } from "@/types/fs";
-import Loader from "@/components/Loader";
+import ComponentLoader from "@/components/ComponentLoader";
 import ErrorMessage from "@/components/Error";
 
 const FsInfoCard: React.FC = () => {
@@ -105,7 +105,7 @@ const FsInfoCard: React.FC = () => {
     stats: isError ? (
       <ErrorMessage />
     ) : isPending ? (
-      <Loader />
+      <ComponentLoader />
     ) : (
       renderFsProgressBars()
     ),

@@ -1,6 +1,5 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
-
+import { Navigate, useSearchParams } from "react-router-dom";
 import useAuth from "@/hooks/useAuth";
 
 interface GuestGuardType {
@@ -10,12 +9,14 @@ interface GuestGuardType {
 // For routes that can only be accessed by unauthenticated users
 function GuestGuard({ children }: GuestGuardType) {
   const { isAuthenticated, isInitialized } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
 
   if (isInitialized && isAuthenticated) {
-    return <Navigate to="/" />;
+    return <Navigate to={redirect} replace />;
   }
 
-  return <React.Fragment>{children}</React.Fragment>;
+  return <>{children}</>;
 }
 
 export default GuestGuard;
