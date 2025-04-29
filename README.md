@@ -162,11 +162,14 @@ Under the hood:
 
 ```
 IO_Linux_Server/
-├── go-backend/       # Gin-powered backend
-├── react/            # Vite + React frontend
+├── go-backend/       # Gin powered backend
+├── react/            # Vite powered React frontend
 ├── .env              # Environment variables
+├── .gitignore        # List of files to be ignored by git
 ├── makefile          # Automation of builds & setup
-└── README.md         # You're reading it!
+├── README.md         # You're reading it!
+├── secret.env        # File to write your sudo password
+└── SECURITY.md       # Security  write up
 ```
 
 ---
