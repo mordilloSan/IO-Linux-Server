@@ -104,13 +104,23 @@ test: setup check-env
 	@$(MAKE) --no-print-directory tsc
 	@echo "✅ All tests done!"
 
-build-frontend: test check-env
+build-frontend-dev: test check-env
 	@echo ""
 	@echo "📦 Building frontend..."
 	@bash -c '\
 	$(NVM_SETUP); \
 		cd react && \
 		VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite build && \
+		echo "✅ Frontend built successfully!" \
+	'
+
+build-frontend-prod: test check-env
+	@echo ""
+	@echo "📦 Building frontend..."
+	@bash -c '\
+	$(NVM_SETUP); \
+		cd react && \
+		VITE_API_URL=/ npx vite build && \
 		echo "✅ Frontend built successfully!" \
 	'
 
@@ -133,13 +143,11 @@ build-backend: setup
 	echo "📦 Size: $$(du -h server | cut -f1)" && \
 	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
 
-build: build-frontend build-backend
-
 binary: build-backend
 	@cd go-backend && \
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
-prod: check-env build-frontend 
+prod: check-env build-frontend-prod
 	@cd go-backend && GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
 
 clean:
@@ -153,9 +161,6 @@ help:
 	@echo ""
 	@echo "  make setup            Install frontend deps and Node.js ($(NODE_VERSION))"
 	@echo "  make test             Run frontend lint + type checks"
-	@echo "  make build            Run full build (frontend + backend)"
-	@echo "  make build-frontend   Build React app using Vite"
-	@echo "  make build-backend    Compile Go backend with version metadata"
 	@echo "  make dev              Start frontend (Vite) and backend (Go) in dev mode"
 	@echo "  make prod             Build react production files and run production backend"
 	@echo "  make binary           Compile Go backend and run binary"

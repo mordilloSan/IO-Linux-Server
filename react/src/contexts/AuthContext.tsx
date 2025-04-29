@@ -14,8 +14,6 @@ import { WebSocketContext } from "@/contexts/WebSocketContext";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/utils/getErrorMessage"; // Optional helper
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const INITIALIZE = "INITIALIZE";
 const SIGN_IN = "SIGN_IN";
 const SIGN_OUT = "SIGN_OUT";
@@ -55,7 +53,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { disconnect } = useContext(WebSocketContext);
   const fetchUser = async () => {
-    const response = await axios.get(`${API_URL}/auth/me`);
+    const response = await axios.get("/auth/me");
     return response.data.user;
   };
 
@@ -88,7 +86,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (username: string, password: string) => {
     try {
-      await axios.post(`${API_URL}/auth/login`, { username, password });
+      await axios.post("/auth/login", { username, password });
       const user = await fetchUser();
       dispatch({ type: SIGN_IN, payload: { user } });
     } catch (err) {
@@ -99,7 +97,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await axios.get(`${API_URL}/auth/logout`);
+      await axios.get("/auth/logout");
       disconnect();
       dispatch({ type: SIGN_OUT });
     } catch (err) {
