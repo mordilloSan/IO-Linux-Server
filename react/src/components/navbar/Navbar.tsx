@@ -8,11 +8,7 @@ import {
   Box,
   useTheme,
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  ChevronLeft,
-  ChevronRight,
-} from "@mui/icons-material";
+import {  Menu as MenuIcon,} from "@mui/icons-material";
 import { Search as SearchIcon } from "lucide-react";
 
 import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
@@ -23,14 +19,10 @@ import { getHoverBackground } from "@/theme/components";
 
 type NavbarProps = {
   onDrawerToggle: React.MouseEventHandler<HTMLElement>;
-  onSidebarCollapseToggle?: () => void;
-  collapsed?: boolean;
 };
 
 const Navbar: React.FC<NavbarProps> = ({
   onDrawerToggle,
-  onSidebarCollapseToggle,
-  collapsed,
 }) => {
   const theme = useTheme();
 
@@ -100,30 +92,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 }}
               />
             </Box>
-          </Grid>
-
-          {/* Collapse Sidebar button (only desktop) */}
-          {onSidebarCollapseToggle && (
-            <IconButton
-              color="inherit"
-              aria-label="Collapse sidebar"
-              onClick={onSidebarCollapseToggle}
-              size="large"
-              sx={{
-                ml: 1,
-                display: { xs: "none", md: "inline-flex" },
-                transition: theme.transitions.create(["transform"], {
-                  duration: theme.transitions.duration.shortest,
-                }),
-              }}
-            >
-              {collapsed ? (
-                <ChevronRight sx={{ width: 22, height: 22 }} />
-              ) : (
-                <ChevronLeft sx={{ width: 22, height: 22 }} />
-              )}
-            </IconButton>
-          )}
+          </Grid> 
 
           {/* Spacer */}
           <Grid sx={{ flexGrow: 1 }} />

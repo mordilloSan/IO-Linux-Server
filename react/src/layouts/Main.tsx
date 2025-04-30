@@ -42,6 +42,7 @@ const Dashboard: React.FC = () => {
         onClose={handleDrawerToggle}
         items={dashboardItems}
         collapsed={collapsed}
+        onSidebarCollapseToggle={handleSidebarCollapseToggle}
       />
 
       {/* Main content */}
@@ -59,8 +60,6 @@ const Dashboard: React.FC = () => {
       >
         <Navbar
           onDrawerToggle={handleDrawerToggle}
-          onSidebarCollapseToggle={handleSidebarCollapseToggle}
-          collapsed={collapsed}
         />
 
         {/* Scrollable Content Area */}
