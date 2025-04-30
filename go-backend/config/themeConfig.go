@@ -8,12 +8,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func RegisterThemeRoutes(router *gin.Engine) {
+	// Route for fetching the theme (does not require authentication)
+	router.GET("/theme/get", func(c *gin.Context) {
+		currentTheme := LoadTheme()
+		c.JSON(http.StatusOK, gin.H{"theme": currentTheme})
+	})
+
+	// Authenticated route for setting the theme (requires authentication)
+	theme := router.Group("/theme", auth.AuthMiddleware())
+	theme.POST("/set", SaveTheme)
+}
+
 func SaveTheme(c *gin.Context) {
 	var body struct {
-		Theme string `json:"theme"` // expects "light" or "dark"
+		Theme string `json:"theme"`
 	}
 
-	if err := c.BindJSON(&body); err != nil || (body.Theme != "light" && body.Theme != "dark") {
+	if err := c.BindJSON(&body); err != nil || (body.Theme != "LIGHT" && body.Theme != "DARK") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme value"})
 		return
 	}
@@ -30,22 +42,11 @@ func SaveTheme(c *gin.Context) {
 func LoadTheme() string {
 	data, err := os.ReadFile("./theme.txt")
 	if err != nil {
-		return "dark" // fallback default
+		return "DARK" // fallback default
 	}
 	theme := string(data)
-	if theme != "light" && theme != "dark" {
-		return "dark"
+	if theme != "LIGHT" && theme != "DARK" {
+		return "DARK"
 	}
 	return theme
-}
-
-func RegisterThemeRoutes(router *gin.Engine) {
-	theme := router.Group("/theme", auth.AuthMiddleware())
-
-	theme.GET("/", func(c *gin.Context) {
-		currentTheme := LoadTheme()
-		c.JSON(http.StatusOK, gin.H{"theme": currentTheme})
-	})
-
-	theme.POST("/", SaveTheme)
 }

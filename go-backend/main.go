@@ -10,6 +10,7 @@ import (
 	"go-backend/update"
 	"go-backend/utils"
 	"go-backend/websocket"
+	"go-backend/wireguard"
 
 	"log"
 	"net/http"
@@ -20,9 +21,7 @@ import (
 )
 
 var (
-	env       = "development" // default
-	version   = "dev"
-	buildTime = "unknown"
+	env = "development" // default
 )
 
 func main() {
@@ -70,6 +69,7 @@ func main() {
 	docker.RegisterDockerRoutes(router)
 	docker.RegisterDockerComposeRoutes(router)
 	config.RegisterThemeRoutes(router)
+	wireguard.RegisterWireguardRoutes(router)
 
 	session.StartSessionGC()
 

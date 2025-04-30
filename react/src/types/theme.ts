@@ -9,4 +9,9 @@ export type ThemeContextType = {
   setTheme: (theme: string) => void;
   primaryColor: string | undefined;
   setPrimaryColor: (color: string) => void;
+  toggleTheme: () => void; // Add toggleTheme to the context type
+};
+
+export type ThemeProviderProps = {
+  children: React.ReactNode;
 };

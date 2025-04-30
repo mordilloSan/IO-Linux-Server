@@ -16,7 +16,7 @@ function NavbarThemeToggle() {
   return (
     <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
       <IconButton color="inherit" onClick={toggleTheme} size="large">
-        {isDark ? <Sun /> : <Moon />}
+        {isDark ? <Moon /> : <Sun />}
       </IconButton>
     </Tooltip>
   );
