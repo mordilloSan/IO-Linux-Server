@@ -39,7 +39,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
       return;
     }
 
-    const ws = new WebSocket("ws://localhost:8080/ws/system");
+    const ws = new WebSocket("/ws/system");
     socketRef.current = ws;
     setSocket(ws);
 

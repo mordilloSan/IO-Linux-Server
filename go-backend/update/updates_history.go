@@ -11,16 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UpgradeItem struct {
-	Package string `json:"package"`
-	Version string `json:"version,omitempty"`
-}
-
-type UpdateHistoryEntry struct {
-	Date     string        `json:"date"`
-	Upgrades []UpgradeItem `json:"upgrades"`
-}
-
 func getUpdateHistoryHandler(c *gin.Context) {
 	history := parseUpdateHistory()
 	if len(history) == 0 {

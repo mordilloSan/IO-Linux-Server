@@ -3,7 +3,6 @@ package websocket
 import (
 	"go-backend/session"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,15 +18,6 @@ func init() {
 			fn()
 		}
 	}()
-}
-
-type Client struct {
-	conn      *websocket.Conn
-	channel   chan any
-	sessionID string
-	done      chan struct{}
-	closeOnce sync.Once
-	lastPong  time.Time
 }
 
 var upgrader = websocket.Upgrader{

@@ -24,13 +24,6 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 	}
 }
 
-type UpdateGroup struct {
-	Name     string   `json:"name"`
-	Version  string   `json:"version"`
-	Severity string   `json:"severity"`
-	Packages []string `json:"packages"`
-}
-
 func getUpdatesHandler(c *gin.Context) {
 	cmd := exec.Command("pkcon", "get-updates")
 	output, err := cmd.CombinedOutput()

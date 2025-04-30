@@ -9,13 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type BenchmarkResult struct {
-	Endpoint string
-	Status   int
-	Latency  time.Duration
-	Error    error
-}
-
 // RunBenchmark performs parallel benchmarking of all GET /system/* endpoints
 func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, concurrency int) []BenchmarkResult {
 	endpoints := getSystemEndpoints(router)
