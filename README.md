@@ -2,7 +2,7 @@
 
 [![CodeQL Advanced](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml)
 
-![Logo](react/src/assets/logo.png)
+![Logo](react/src/assets/logo.svg)
 
 **Linux I/O** is a modern dashboard for managing your Linux system using native tools.  
 It aims to unify essential functionality in a single web-based interface without reinventing the wheel.
