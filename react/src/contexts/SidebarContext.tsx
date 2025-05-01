@@ -6,8 +6,9 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { useMediaQuery, useTheme } from "@mui/material";
+import { useMediaQuery, useTheme as useMuiTheme } from "@mui/material";
 import { drawerWidth, collapsedDrawerWidth } from "@/constants";
+import useAppTheme from "@/hooks/useAppTheme";
 
 export interface SidebarContextType {
   collapsed: boolean;
@@ -26,25 +27,22 @@ export const SidebarContext = createContext<SidebarContextType | undefined>(
   undefined
 );
 
-export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const muiTheme = useMuiTheme();
+  const isDesktop = useMediaQuery(muiTheme.breakpoints.up("md"));
+  const { sidebarColapsed: collapsed, setSidebarColapsed } = useAppTheme();
 
-  const [collapsed, setCollapsed] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const hoverEnabled = useRef(true);
-  const desktopCollapsed = useRef(true); // store previous desktop collapse state
+  const desktopCollapsed = useRef<boolean>(collapsed);
 
   const toggleCollapse = useCallback(() => {
-    setCollapsed((prev) => {
+    setSidebarColapsed((prev) => {
       const newState = !prev;
       desktopCollapsed.current = newState;
   
-      if (isDesktop && newState === true) {
-        // User just collapsed the sidebar — suppress hover briefly
+      if (isDesktop && newState) {
         hoverEnabled.current = false;
         setHovered(false);
         setTimeout(() => {
@@ -54,28 +52,23 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   
       return newState;
     });
-  }, [isDesktop]);
+  }, [isDesktop, setSidebarColapsed]);
   
 
   const toggleMobileOpen = useCallback(() => {
-    if (!isDesktop) return; // collapse shouldn't affect mobile
+    if (isDesktop) return;
     setMobileOpen((prev) => !prev);
-  }, []);
+  }, [isDesktop]);
 
-  // Handle screen size changes
   useEffect(() => {
     if (isDesktop) {
-      // Restore collapsed state and reset mobile drawer
-      setCollapsed(desktopCollapsed.current);
+      desktopCollapsed.current = collapsed; // sync current state
       setMobileOpen(false);
     } else {
-      // Store current desktop state, and fully expand sidebar on mobile
-      desktopCollapsed.current = collapsed;
-      setCollapsed(false);
       setHovered(false);
-      setMobileOpen(false); // or true, if you want it open on mobile by default
+      setMobileOpen(false);
     }
-  }, [isDesktop]);
+  }, [isDesktop, collapsed]);
   
 
   const sidebarWidth = useMemo(() => {
@@ -112,7 +105,5 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     ]
   );
 
-  return (
-    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
-  );
+  return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 };

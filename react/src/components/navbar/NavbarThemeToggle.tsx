@@ -3,7 +3,7 @@ import { IconButton, Tooltip } from "@mui/material";
 import { Sun, Moon } from "lucide-react";
 
 import { THEMES } from "@/constants";
-import useTheme from "@/hooks/useTheme";
+import useTheme from "@/hooks/useAppTheme";
 
 function NavbarThemeToggle() {
   const { theme, setTheme } = useTheme();

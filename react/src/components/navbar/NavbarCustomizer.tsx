@@ -10,7 +10,7 @@ import {
 import { Paintbrush } from "lucide-react";
 import { ColorPicker, useColor, type IColor } from "react-color-palette";
 import "react-color-palette/css";
-import useTheme from "@/hooks/useTheme";
+import useTheme from "@/hooks/useAppTheme";
 import { DEFAULT_PRIMARY_COLOR } from "@/constants";
 
 function NavbarColorCustomizer() {

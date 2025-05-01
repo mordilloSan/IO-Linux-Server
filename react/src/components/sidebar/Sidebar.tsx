@@ -8,20 +8,21 @@ import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
 
 export type SidebarProps = {
-  PaperProps: {
-    style: {
-      width: number;
-    };
-  };
-  variant?: "permanent" | "temporary";
-  open?: boolean;
-  onClose?: () => void;
   items: SidebarItemsType[];
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
+const Sidebar: React.FC<SidebarProps> = ({ items }) => {
   const theme = useTheme();
-  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop, hoverEnabledRef } = useSidebar();
+  const {
+    collapsed,
+    hovered,
+    setHovered,
+    toggleCollapse,
+    isDesktop,
+    hoverEnabledRef,
+    mobileOpen,
+    setMobileOpen,
+  } = useSidebar();
 
   const effectiveWidth = !isDesktop
     ? drawerWidth
@@ -29,34 +30,27 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
     ? collapsedDrawerWidth
     : drawerWidth;
 
-    const handleMouseEnter = () => {
-      if (hoverEnabledRef.current) {
-        setHovered(true);
-      }
-    };
-    
-    const handleMouseLeave = () => {
-      setHovered(false);
-    };
+  const handleMouseEnter = () => {
+    if (hoverEnabledRef.current) setHovered(true);
+  };
+
+  const handleMouseLeave = () => setHovered(false);
 
   return (
     <Drawer
-      key={theme.palette.mode}
-      {...rest}
+      variant={isDesktop ? "permanent" : "temporary"}
+      open={isDesktop ? true : mobileOpen}
+      onClose={() => setMobileOpen(false)}
       slotProps={{
         paper: {
           sx: {
             width: effectiveWidth,
             borderRight: 0,
             backgroundColor: theme.sidebar.background,
-            scrollbarWidth: "none",
-            transition: theme.transitions.create(
-              ["width", "background-color"],
-              {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard,
-              }
-            ),
+            transition: theme.transitions.create(["width", "background-color"], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.standard,
+            }),
             overflowX: "hidden",
             "& > div": {
               borderRight: 0,
@@ -66,9 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
       }}
       onMouseEnter={isDesktop ? handleMouseEnter : undefined}
       onMouseLeave={isDesktop ? handleMouseLeave : undefined}
-      
     >
-      {/* --- Sidebar Header (just logo) --- */}
       <Box
         sx={{
           display: "flex",
@@ -77,7 +69,6 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
           backgroundColor: theme.sidebar.header.background,
           minHeight: { xs: 56, sm: 64 },
           px: 6,
-          flexGrow: 0,
           position: "relative",
         }}
       >
@@ -90,7 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
           }}
         />
 
-        {/* Collapse button (only show if sidebar is expanded) */}
         {isDesktop && (!collapsed || (hovered && collapsed)) && (
           <div
             onClick={toggleCollapse}
@@ -111,7 +101,6 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
         )}
       </Box>
 
-      {/* --- Sidebar Navigation --- */}
       <SidebarNav items={items} collapsed={isDesktop && collapsed && !hovered} />
     </Drawer>
   );

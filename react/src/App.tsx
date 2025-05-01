@@ -6,7 +6,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import createTheme from "./theme";
 import routes from "./routes";
 
-import useTheme from "@/hooks/useTheme";
+import useTheme from "@/hooks/useAppTheme";
 
 import createEmotionCache from "@/utils/createEmotionCache";
 import ReactQueryProvider from "./utils/ReactQueryProvider";

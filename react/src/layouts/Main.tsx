@@ -9,11 +9,12 @@ import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import dashboardItems from "@/components/sidebar/dashboardItems";
 import useSidebar from "@/hooks/useSidebar";
+import useAppTheme from "@/hooks/useAppTheme";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
   const theme = useTheme();
-
+  const { isLoaded } = useAppTheme();
   const {
     mobileOpen,
     toggleMobileOpen,
@@ -21,6 +22,10 @@ const Dashboard: React.FC = () => {
     sidebarWidth,
     isDesktop,
   } = useSidebar();
+
+
+  // Wait for theme to load before rendering layout
+  if (!isLoaded) return null;
 
   // Auto-close mobile drawer on route change
   useEffect(() => {
@@ -33,10 +38,6 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <Sidebar
-        PaperProps={{ style: { width: sidebarWidth } }}
-        variant={isDesktop ? "permanent" : "temporary"}
-        open={mobileOpen}
-        onClose={toggleMobileOpen}
         items={dashboardItems}
       />
 

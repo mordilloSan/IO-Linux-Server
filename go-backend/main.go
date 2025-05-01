@@ -46,6 +46,11 @@ func main() {
 		env = goEnv
 	}
 
+	// Init React theme file
+	if err := config.InitTheme(); err != nil {
+		log.Fatalf("Failed to initialize theme file: %v", err)
+	}
+
 	log.Printf("🌱 Starting server in %s mode...\n", env)
 
 	if env == "production" {

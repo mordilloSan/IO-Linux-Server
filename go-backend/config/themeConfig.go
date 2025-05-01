@@ -10,72 +10,95 @@ import (
 )
 
 type ThemeSettings struct {
-	Theme        string `json:"theme"`
-	PrimaryColor string `json:"primaryColor,omitempty"`
+	Theme           string `json:"theme"`
+	PrimaryColor    string `json:"primaryColor"`
+	SidebarColapsed bool   `json:"sidebarColapsed"`
 }
 
 const themeFilePath = "./theme.txt"
 
-func RegisterThemeRoutes(router *gin.Engine) {
-	// Public: Get current theme + primary color
-	router.GET("/theme/get", func(c *gin.Context) {
-		settings := LoadTheme()
-		c.JSON(http.StatusOK, gin.H{
-			"theme":        settings.Theme,
-			"primaryColor": settings.PrimaryColor,
-		})
-	})
-
-	// Authenticated: Save both theme and primary color
-	theme := router.Group("/theme", auth.AuthMiddleware())
-	theme.POST("/set", SaveTheme)
+func InitTheme() error {
+	if _, err := os.Stat(themeFilePath); os.IsNotExist(err) {
+		defaultSettings := ThemeSettings{
+			Theme:           "DARK",
+			PrimaryColor:    "#1976d2",
+			SidebarColapsed: false,
+		}
+		return SaveThemeToFile(defaultSettings)
+	}
+	return nil
 }
 
-func SaveTheme(c *gin.Context) {
-	var body ThemeSettings
-
-	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	if body.Theme != "LIGHT" && body.Theme != "DARK" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme value"})
-		return
-	}
-
-	data, err := json.Marshal(body)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode theme settings"})
-		return
-	}
-
-	err = os.WriteFile(themeFilePath, data, 0644)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save theme settings"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Theme settings saved"})
-}
-
-func LoadTheme() ThemeSettings {
+func LoadTheme() (ThemeSettings, error) {
 	var settings ThemeSettings
 
 	data, err := os.ReadFile(themeFilePath)
 	if err != nil {
-		// fallback default
-		return ThemeSettings{Theme: "DARK"}
+		return settings, err
 	}
 
 	if err := json.Unmarshal(data, &settings); err != nil {
-		return ThemeSettings{Theme: "DARK"}
+		return settings, err
 	}
 
-	// Validate theme value
-	if settings.Theme != "LIGHT" && settings.Theme != "DARK" {
-		settings.Theme = "DARK"
+	return settings, nil
+}
+
+func SaveThemeToFile(settings ThemeSettings) error {
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return err
 	}
 
-	return settings
+	return os.WriteFile(themeFilePath, data, 0644)
+}
+
+// --- Gin routes ---
+
+func RegisterThemeRoutes(router *gin.Engine) {
+	router.GET("/theme/get", func(c *gin.Context) {
+		// Attempt to load theme
+		settings, err := LoadTheme()
+		if err != nil {
+			// If file is missing, auto-init
+			if os.IsNotExist(err) {
+				if initErr := InitTheme(); initErr != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize theme"})
+					return
+				}
+				// Try again after init
+				settings, err = LoadTheme()
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load initialized theme"})
+					return
+				}
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load theme"})
+				return
+			}
+		}
+		c.JSON(http.StatusOK, settings)
+	})
+
+	theme := router.Group("/theme", auth.AuthMiddleware())
+	theme.POST("/set", func(c *gin.Context) {
+		var body ThemeSettings
+
+		if err := c.BindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if body.Theme != "LIGHT" && body.Theme != "DARK" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme value"})
+			return
+		}
+
+		if err := SaveThemeToFile(body); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save theme settings"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Theme settings saved"})
+	})
 }
