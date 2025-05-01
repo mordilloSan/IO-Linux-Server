@@ -1,7 +1,6 @@
 import React from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import useAuth from "@/hooks/useAuth";
-import PageLoader from "../PageLoader";
 
 interface GuestGuardType {
   children: React.ReactNode;

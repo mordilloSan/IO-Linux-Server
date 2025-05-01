@@ -28,14 +28,17 @@ const ThemeContext = createContext<ThemeContextType>(initialState);
 const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, _setTheme] = useState(initialState.theme);
   const [primaryColor, _setPrimaryColor] = useState(DEFAULT_PRIMARY_COLOR);
-  const [sidebarColapsed, _setSidebarColapsed] = useState(SIDEBAR_COLAPSED_STATE);
+  const [sidebarColapsed, _setSidebarColapsed] = useState(
+    SIDEBAR_COLAPSED_STATE
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const fetchTheme = async () => {
       try {
         const response = await axios.get("/theme/get");
-        const fetchedTheme = response.data.theme === "LIGHT" ? THEMES.LIGHT : THEMES.DARK;
+        const fetchedTheme =
+          response.data.theme === "LIGHT" ? THEMES.LIGHT : THEMES.DARK;
         const fetchedColor = response.data.primaryColor;
         const fetchedColapsed = response.data.sidebarColapsed;
         _setTheme(fetchedTheme);
@@ -52,13 +55,15 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const saveThemeSettings = useCallback(
     (themeToSave: string, colorToSave: string, colapsed: boolean) => {
-      axios.post("/theme/set", {
-        theme: themeToSave,
-        primaryColor: colorToSave,
-        sidebarColapsed: colapsed,
-      }).catch((error) => {
-        console.error("Error saving theme settings:", error);
-      });
+      axios
+        .post("/theme/set", {
+          theme: themeToSave,
+          primaryColor: colorToSave,
+          sidebarColapsed: colapsed,
+        })
+        .catch((error) => {
+          console.error("Error saving theme settings:", error);
+        });
     },
     []
   );
@@ -86,13 +91,13 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
           typeof valueOrUpdater === "function"
             ? valueOrUpdater(prev)
             : valueOrUpdater;
-  
+
         saveThemeSettings(theme, primaryColor, newValue);
         return newValue;
       });
     },
     [theme, primaryColor, saveThemeSettings]
-  ); 
+  );
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
@@ -110,7 +115,16 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       toggleTheme,
       isLoaded,
     }),
-    [theme, primaryColor, sidebarColapsed, setTheme, setPrimaryColor, setSidebarColapsed, toggleTheme,  isLoaded]
+    [
+      theme,
+      primaryColor,
+      sidebarColapsed,
+      setTheme,
+      setPrimaryColor,
+      setSidebarColapsed,
+      toggleTheme,
+      isLoaded,
+    ]
   );
 
   return (

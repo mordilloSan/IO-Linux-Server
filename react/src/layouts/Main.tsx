@@ -15,31 +15,22 @@ const Dashboard: React.FC = () => {
   const location = useLocation();
   const theme = useTheme();
   const { isLoaded } = useAppTheme();
-  const {
-    mobileOpen,
-    toggleMobileOpen,
-    setMobileOpen,
-    sidebarWidth,
-    isDesktop,
-  } = useSidebar();
-
-
-  // Wait for theme to load before rendering layout
-  if (!isLoaded) return null;
+  const { toggleMobileOpen, setMobileOpen, sidebarWidth } = useSidebar();
 
   // Auto-close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, setMobileOpen]);
 
+  // Wait for theme to load before rendering layout
+  if (!isLoaded) return null;
+
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
       <CssBaseline />
 
       {/* Sidebar */}
-      <Sidebar
-        items={dashboardItems}
-      />
+      <Sidebar items={dashboardItems} />
 
       {/* Main content */}
       <Box

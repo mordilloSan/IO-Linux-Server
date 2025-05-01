@@ -18,7 +18,7 @@ function NavbarColorCustomizer() {
   const muiTheme = useMuiTheme();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [color, setColor] = useColor(primaryColor );
+  const [color, setColor] = useColor(primaryColor);
 
   // Keep picker synced with context
   useEffect(() => {
@@ -86,18 +86,17 @@ function NavbarColorCustomizer() {
           hideInput={["rgb", "hsv"]}
         />
         <Button
-  variant="outlined"
-  fullWidth
-  size="small"
-  onClick={() => {
-    setPrimaryColor(DEFAULT_PRIMARY_COLOR);
-    setColor({ ...color, hex: DEFAULT_PRIMARY_COLOR });
-  }}
-  sx={{ mt: 2 }}
->
-  Reset to Default
-</Button>
-
+          variant="outlined"
+          fullWidth
+          size="small"
+          onClick={() => {
+            setPrimaryColor(DEFAULT_PRIMARY_COLOR);
+            setColor({ ...color, hex: DEFAULT_PRIMARY_COLOR });
+          }}
+          sx={{ mt: 2 }}
+        >
+          Reset to Default
+        </Button>
       </Popover>
     </>
   );

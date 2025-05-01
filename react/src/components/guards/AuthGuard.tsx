@@ -2,7 +2,6 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 import useAuth from "@/hooks/useAuth";
-import PageLoader from "../PageLoader";
 
 interface AuthGuardType {
   children: React.ReactNode;

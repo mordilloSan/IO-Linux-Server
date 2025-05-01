@@ -27,7 +27,9 @@ export const SidebarContext = createContext<SidebarContextType | undefined>(
   undefined
 );
 
-export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const muiTheme = useMuiTheme();
   const isDesktop = useMediaQuery(muiTheme.breakpoints.up("md"));
   const { sidebarColapsed: collapsed, setSidebarColapsed } = useAppTheme();
@@ -41,7 +43,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSidebarColapsed((prev) => {
       const newState = !prev;
       desktopCollapsed.current = newState;
-  
+
       if (isDesktop && newState) {
         hoverEnabled.current = false;
         setHovered(false);
@@ -49,11 +51,10 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
           hoverEnabled.current = true;
         }, 200);
       }
-  
+
       return newState;
     });
   }, [isDesktop, setSidebarColapsed]);
-  
 
   const toggleMobileOpen = useCallback(() => {
     if (isDesktop) return;
@@ -69,7 +70,6 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setMobileOpen(false);
     }
   }, [isDesktop, collapsed]);
-  
 
   const sidebarWidth = useMemo(() => {
     return isDesktop
@@ -105,5 +105,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ]
   );
 
-  return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
+  return (
+    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
+  );
 };
