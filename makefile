@@ -149,7 +149,7 @@ dev: setup check-env
 	'
 
 prod: check-env build-vite-prod
-	@cd go-backend && GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
+	@cd go-backend && echo "$(SUDO_PASSWORD)" | GO_ENV=production SERVER_PORT=$(SERVER_PORT) go run .
 
 run: build-backend
 	@cd go-backend && \

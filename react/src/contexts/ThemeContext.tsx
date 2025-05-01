@@ -12,6 +12,7 @@ import {
 } from "@/constants";
 import { ThemeContextType, ThemeProviderProps } from "@/types/theme";
 import axios from "@/utils/axios";
+import { debounce } from "@/utils/debounce";
 
 const initialState: ThemeContextType = {
   theme: THEMES.DARK,
@@ -53,35 +54,37 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     fetchTheme();
   }, []);
 
-  const saveThemeSettings = useCallback(
-    (themeToSave: string, colorToSave: string, colapsed: boolean) => {
-      axios
-        .post("/theme/set", {
-          theme: themeToSave,
-          primaryColor: colorToSave,
-          sidebarColapsed: colapsed,
-        })
-        .catch((error) => {
-          console.error("Error saving theme settings:", error);
-        });
-    },
-    []
-  );
+  const debouncedSaveThemeSettings = useMemo(() => {
+    return debounce(
+      (themeToSave: string, colorToSave: string, colapsed: boolean) => {
+        axios
+          .post("/theme/set", {
+            theme: themeToSave,
+            primaryColor: colorToSave,
+            sidebarColapsed: colapsed,
+          })
+          .catch((error) => {
+            console.error("Error saving theme settings:", error);
+          });
+      },
+      500
+    ); // Save only after 500ms of inactivity
+  }, []);
 
   const setTheme = useCallback(
     (newTheme: string) => {
       _setTheme(newTheme);
-      saveThemeSettings(newTheme, primaryColor, sidebarColapsed);
+      debouncedSaveThemeSettings(newTheme, primaryColor, sidebarColapsed);
     },
-    [primaryColor, sidebarColapsed, saveThemeSettings]
+    [primaryColor, sidebarColapsed, debouncedSaveThemeSettings]
   );
 
   const setPrimaryColor = useCallback(
     (color: string) => {
       _setPrimaryColor(color);
-      saveThemeSettings(theme, color, sidebarColapsed);
+      debouncedSaveThemeSettings(theme, color, sidebarColapsed);
     },
-    [theme, sidebarColapsed, saveThemeSettings]
+    [theme, sidebarColapsed, debouncedSaveThemeSettings]
   );
 
   const setSidebarColapsed = useCallback(
@@ -92,11 +95,11 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             ? valueOrUpdater(prev)
             : valueOrUpdater;
 
-        saveThemeSettings(theme, primaryColor, newValue);
+        debouncedSaveThemeSettings(theme, primaryColor, newValue);
         return newValue;
       });
     },
-    [theme, primaryColor, saveThemeSettings]
+    [theme, primaryColor, debouncedSaveThemeSettings]
   );
 
   const toggleTheme = useCallback(() => {

@@ -47,13 +47,10 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
             width: effectiveWidth,
             borderRight: 0,
             backgroundColor: theme.sidebar.background,
-            transition: theme.transitions.create(
-              ["width", "background-color"],
-              {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard,
-              }
-            ),
+            transition: theme.transitions.create(["width"], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.standard,
+            }),
             overflowX: "hidden",
             "& > div": {
               borderRight: 0,

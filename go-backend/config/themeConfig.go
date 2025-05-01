@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-backend/auth"
 	"net/http"
 	"os"
@@ -47,10 +48,18 @@ func LoadTheme() (ThemeSettings, error) {
 func SaveThemeToFile(settings ThemeSettings) error {
 	data, err := json.Marshal(settings)
 	if err != nil {
+		fmt.Printf("[theme] Failed to marshal theme settings: %v\n", err)
 		return err
 	}
 
-	return os.WriteFile(themeFilePath, data, 0644)
+	err = os.WriteFile(themeFilePath, data, 0644)
+	if err != nil {
+		fmt.Printf("[theme] Failed to write theme file at %s: %v\n", themeFilePath, err)
+		return err
+	}
+
+	fmt.Printf("[theme] Theme settings successfully saved to %s\n", themeFilePath)
+	return nil
 }
 
 // --- Gin routes ---
