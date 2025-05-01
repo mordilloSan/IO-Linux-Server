@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
 import {
   IconButton,
+  Button,
   Tooltip,
   Popover,
   Typography,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Paintbrush } from "lucide-react"; // You can switch this to Palette, Droplet, etc.
+import { Paintbrush } from "lucide-react";
 import { ColorPicker, useColor, type IColor } from "react-color-palette";
 import "react-color-palette/css";
-
 import useTheme from "@/hooks/useTheme";
+import { DEFAULT_PRIMARY_COLOR } from "@/constants";
 
 function NavbarColorCustomizer() {
   const { primaryColor, setPrimaryColor } = useTheme();
   const muiTheme = useMuiTheme();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [color, setColor] = useColor(primaryColor || "#4782da");
+  const [color, setColor] = useColor(primaryColor );
 
   // Keep picker synced with context
   useEffect(() => {
@@ -84,6 +85,19 @@ function NavbarColorCustomizer() {
           onChangeComplete={handleChangeComplete}
           hideInput={["rgb", "hsv"]}
         />
+        <Button
+  variant="outlined"
+  fullWidth
+  size="small"
+  onClick={() => {
+    setPrimaryColor(DEFAULT_PRIMARY_COLOR);
+    setColor({ ...color, hex: DEFAULT_PRIMARY_COLOR });
+  }}
+  sx={{ mt: 2 }}
+>
+  Reset to Default
+</Button>
+
       </Popover>
     </>
   );

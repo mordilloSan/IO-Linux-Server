@@ -1,1 +1,1 @@
-DARK
+{"theme":"DARK","primaryColor":"#1976d2"}

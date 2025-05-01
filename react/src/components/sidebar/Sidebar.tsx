@@ -21,14 +21,23 @@ export type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
   const theme = useTheme();
-  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop } =
-    useSidebar();
+  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop, hoverEnabledRef } = useSidebar();
 
   const effectiveWidth = !isDesktop
     ? drawerWidth
     : collapsed && !hovered
     ? collapsedDrawerWidth
     : drawerWidth;
+
+    const handleMouseEnter = () => {
+      if (hoverEnabledRef.current) {
+        setHovered(true);
+      }
+    };
+    
+    const handleMouseLeave = () => {
+      setHovered(false);
+    };
 
   return (
     <Drawer
@@ -55,8 +64,9 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
           },
         },
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={isDesktop ? handleMouseEnter : undefined}
+      onMouseLeave={isDesktop ? handleMouseLeave : undefined}
+      
     >
       {/* --- Sidebar Header (just logo) --- */}
       <Box
@@ -102,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
       </Box>
 
       {/* --- Sidebar Navigation --- */}
-      <SidebarNav items={items} collapsed={collapsed && !hovered} />
+      <SidebarNav items={items} collapsed={isDesktop && collapsed && !hovered} />
     </Drawer>
   );
 };

@@ -1,64 +1,99 @@
-import React, { createContext, useEffect, useState, useCallback } from "react";
-import { THEMES } from "@/constants";
+import React, {
+  createContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import { DEFAULT_PRIMARY_COLOR, THEMES } from "@/constants";
 import { ThemeContextType, ThemeProviderProps } from "@/types/theme";
 import axios from "@/utils/axios";
 
 const initialState: ThemeContextType = {
   theme: THEMES.DARK,
   setTheme: () => {},
-  primaryColor: undefined,
+  primaryColor: DEFAULT_PRIMARY_COLOR,
   setPrimaryColor: () => {},
   toggleTheme: () => {},
 };
 
 const ThemeContext = createContext<ThemeContextType>(initialState);
 
-function ThemeProvider({ children }: ThemeProviderProps) {
+const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, _setTheme] = useState<string>(initialState.theme);
-  const [primaryColor, _setPrimaryColor] = useState<string | undefined>(
-    undefined
-  );
+  const [primaryColor, _setPrimaryColor] = useState<string>(DEFAULT_PRIMARY_COLOR);
 
-  // Fetch the theme from the backend on component mount
+  // Fetch theme and color on mount
   useEffect(() => {
     const fetchTheme = async () => {
       try {
         const response = await axios.get("/theme/get");
-        const fetchedTheme =
-          response.data.theme === "LIGHT" ? THEMES.LIGHT : THEMES.DARK;
+        const fetchedTheme = response.data.theme === "LIGHT" ? THEMES.LIGHT : THEMES.DARK;
+        const fetchedColor = response.data.primaryColor;
+
         _setTheme(fetchedTheme);
+        _setPrimaryColor(fetchedColor || DEFAULT_PRIMARY_COLOR);
       } catch (error) {
         console.error("Error fetching theme from backend:", error);
-        // Optionally, set a default theme if API fails
         _setTheme(THEMES.DARK);
+        _setPrimaryColor(DEFAULT_PRIMARY_COLOR);
       }
     };
+
     fetchTheme();
   }, []);
 
-  const setTheme = useCallback((newTheme: string) => {
-    _setTheme(newTheme);
-    axios.post("/theme/set", { theme: newTheme }).catch((error) => {
-      console.error("Error saving theme:", error);
-    });
-  }, []); // `setTheme` does not depend on any state, so it only needs to be created once
+  const saveThemeSettings = useCallback(
+    (themeToSave: string, colorToSave: string) => {
+      axios
+        .post("/theme/set", {
+          theme: themeToSave,
+          primaryColor: colorToSave,
+        })
+        .catch((error) => {
+          console.error("Error saving theme settings:", error);
+        });
+    },
+    []
+  );
 
-  const setPrimaryColor = useCallback((color: string) => {
-    _setPrimaryColor(color);
-  }, []); // `setPrimaryColor` does not depend on any state, so it only needs to be created once
+  const setTheme = useCallback(
+    (newTheme: string) => {
+      _setTheme(newTheme);
+      saveThemeSettings(newTheme, primaryColor);
+    },
+    [primaryColor, saveThemeSettings]
+  );
+
+  const setPrimaryColor = useCallback(
+    (color: string) => {
+      _setPrimaryColor(color);
+      saveThemeSettings(theme, color);
+    },
+    [theme, saveThemeSettings]
+  );
 
   const toggleTheme = useCallback(() => {
     const newTheme = theme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
     setTheme(newTheme);
   }, [theme, setTheme]);
 
+  const contextValue = useMemo(
+    () => ({
+      theme,
+      setTheme,
+      primaryColor,
+      setPrimaryColor,
+      toggleTheme,
+    }),
+    [theme, setTheme, primaryColor, setPrimaryColor, toggleTheme]
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{ theme, setTheme, primaryColor, setPrimaryColor, toggleTheme }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
-}
+};
 
 export { ThemeProvider, ThemeContext };

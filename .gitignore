@@ -4,10 +4,11 @@
 # Node modules
 react/node_modules/
 
-# Go Folders
+# Go Folders and files
 go-backend/frontend/
 go-backend/tmp/
 go-backend/server
+go-backend/theme.txt
 
 # Logs and misc
 *.log

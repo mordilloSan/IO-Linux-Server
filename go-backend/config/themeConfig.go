@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"go-backend/auth"
 	"net/http"
 	"os"
@@ -8,45 +9,73 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ThemeSettings struct {
+	Theme        string `json:"theme"`
+	PrimaryColor string `json:"primaryColor,omitempty"`
+}
+
+const themeFilePath = "./theme.txt"
+
 func RegisterThemeRoutes(router *gin.Engine) {
-	// Route for fetching the theme (does not require authentication)
+	// Public: Get current theme + primary color
 	router.GET("/theme/get", func(c *gin.Context) {
-		currentTheme := LoadTheme()
-		c.JSON(http.StatusOK, gin.H{"theme": currentTheme})
+		settings := LoadTheme()
+		c.JSON(http.StatusOK, gin.H{
+			"theme":        settings.Theme,
+			"primaryColor": settings.PrimaryColor,
+		})
 	})
 
-	// Authenticated route for setting the theme (requires authentication)
+	// Authenticated: Save both theme and primary color
 	theme := router.Group("/theme", auth.AuthMiddleware())
 	theme.POST("/set", SaveTheme)
 }
 
 func SaveTheme(c *gin.Context) {
-	var body struct {
-		Theme string `json:"theme"`
+	var body ThemeSettings
+
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
 	}
 
-	if err := c.BindJSON(&body); err != nil || (body.Theme != "LIGHT" && body.Theme != "DARK") {
+	if body.Theme != "LIGHT" && body.Theme != "DARK" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid theme value"})
 		return
 	}
 
-	err := os.WriteFile("./theme.txt", []byte(body.Theme), 0644)
+	data, err := json.Marshal(body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save theme"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode theme settings"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Theme saved"})
+	err = os.WriteFile(themeFilePath, data, 0644)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save theme settings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Theme settings saved"})
 }
 
-func LoadTheme() string {
-	data, err := os.ReadFile("./theme.txt")
+func LoadTheme() ThemeSettings {
+	var settings ThemeSettings
+
+	data, err := os.ReadFile(themeFilePath)
 	if err != nil {
-		return "DARK" // fallback default
+		// fallback default
+		return ThemeSettings{Theme: "DARK"}
 	}
-	theme := string(data)
-	if theme != "LIGHT" && theme != "DARK" {
-		return "DARK"
+
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return ThemeSettings{Theme: "DARK"}
 	}
-	return theme
+
+	// Validate theme value
+	if settings.Theme != "LIGHT" && settings.Theme != "DARK" {
+		settings.Theme = "DARK"
+	}
+
+	return settings
 }

@@ -7,9 +7,9 @@ export type ThemeProps = {
 export type ThemeContextType = {
   theme: string;
   setTheme: (theme: string) => void;
-  primaryColor: string | undefined;
+  primaryColor: string
   setPrimaryColor: (color: string) => void;
-  toggleTheme: () => void; // Add toggleTheme to the context type
+  toggleTheme: () => void;
 };
 
 export type ThemeProviderProps = {
