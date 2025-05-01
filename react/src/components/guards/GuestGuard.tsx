@@ -13,10 +13,6 @@ function GuestGuard({ children }: GuestGuardType) {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
 
-  if (!isInitialized) {
-    return <PageLoader />;
-  }
-
   if (isInitialized && isAuthenticated) {
     return <Navigate to={redirect} replace />;
   }

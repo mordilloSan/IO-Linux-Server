@@ -18,7 +18,7 @@ function AuthGuard({ children }: AuthGuardType) {
   )}`;
 
   if (!isInitialized) {
-    return <PageLoader />;
+    return <Navigate to={redirectPath} replace />;
   }
 
   if (!isAuthenticated) {
