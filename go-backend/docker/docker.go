@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"go-backend/auth"
+	"go-backend/logger"
 	"net/http"
 
 	"github.com/docker/docker/api/types"
@@ -21,24 +22,26 @@ func getClient() (*client.Client, error) {
 func ListContainers(c *gin.Context) {
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("ListContainers: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("ContainerList: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list containers"})
 		return
 	}
 
 	type Metrics struct {
 		CPUPercent float64 `json:"cpu_percent"`
 		MemUsage   uint64  `json:"mem_usage"`
-		NetInput   uint64  `json:"net_input"`   // bytes in
-		NetOutput  uint64  `json:"net_output"`  // bytes out
-		BlockRead  uint64  `json:"block_read"`  // bytes read
-		BlockWrite uint64  `json:"block_write"` // bytes written
+		NetInput   uint64  `json:"net_input"`
+		NetOutput  uint64  `json:"net_output"`
+		BlockRead  uint64  `json:"block_read"`
+		BlockWrite uint64  `json:"block_write"`
 	}
 
 	type ContainerWithMetrics struct {
@@ -50,7 +53,6 @@ func ListContainers(c *gin.Context) {
 
 	for _, ctr := range containers {
 		metrics := &Metrics{}
-
 		statsResp, err := cli.ContainerStatsOneShot(context.Background(), ctr.ID)
 		if err == nil {
 			var stats struct {
@@ -77,23 +79,19 @@ func ListContainers(c *gin.Context) {
 			}
 
 			if err := json.NewDecoder(statsResp.Body).Decode(&stats); err == nil {
-				// CPU %
 				cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage)
 				systemDelta := float64(stats.CPUStats.SystemCPUUsage)
 				if systemDelta > 0 && len(stats.CPUStats.CPUUsage.PercpuUsage) > 0 {
 					metrics.CPUPercent = (cpuDelta / systemDelta) * float64(len(stats.CPUStats.CPUUsage.PercpuUsage)) * 100.0
 				}
 
-				// Memory
 				metrics.MemUsage = stats.MemoryStats.Usage
 
-				// Network I/O (sum all interfaces)
 				for _, net := range stats.Networks {
 					metrics.NetInput += net.RxBytes
 					metrics.NetOutput += net.TxBytes
 				}
 
-				// Block I/O
 				for _, entry := range stats.BlkioStats.IoServiceBytesRecursive {
 					switch entry.Op {
 					case "Read":
@@ -102,9 +100,10 @@ func ListContainers(c *gin.Context) {
 						metrics.BlockWrite += entry.Value
 					}
 				}
-
 			}
 			statsResp.Body.Close()
+		} else {
+			logger.Warning.Printf("Failed to get stats for container %s: %v", ctr.ID[:12], err)
 		}
 
 		enriched = append(enriched, ContainerWithMetrics{
@@ -120,16 +119,19 @@ func StartContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("StartContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerStart(context.Background(), id, container.StartOptions{}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("StartContainer %s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start container"})
 		return
 	}
 
+	logger.Info.Printf("Started container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -137,17 +139,19 @@ func StopContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("StopContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
-	timeout := container.StopOptions{}
-	if err := cli.ContainerStop(context.Background(), id, timeout); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := cli.ContainerStop(context.Background(), id, container.StopOptions{}); err != nil {
+		logger.Error.Printf("StopContainer %s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop container"})
 		return
 	}
 
+	logger.Info.Printf("Stopped container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -155,16 +159,19 @@ func RemoveContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("RemoveContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{Force: true}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("RemoveContainer %s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove container"})
 		return
 	}
 
+	logger.Info.Printf("Removed container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -172,30 +179,35 @@ func RestartContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("RestartContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerRestart(context.Background(), id, container.StopOptions{}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("RestartContainer %s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to restart container"})
 		return
 	}
 
+	logger.Info.Printf("Restarted container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
 func ListImages(c *gin.Context) {
 	cli, err := getClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("ListImages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	images, err := cli.ImageList(context.Background(), image.ListOptions{All: true})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error.Printf("ImageList: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
 		return
 	}
 

@@ -1,4 +1,3 @@
-// go-backend/docker/compose.go
 package docker
 
 import (
@@ -10,49 +9,39 @@ import (
 	"strings"
 
 	"go-backend/config"
+	"go-backend/logger"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Safe project name: only letters, numbers, dashes, underscores
 var validProjectName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-// Validate project name format
 func isValidProjectName(name string) bool {
 	return validProjectName.MatchString(name)
 }
 
-// run docker compose inside specific directory
 func runComposeCommandInDir(dir string, args ...string) ([]byte, error) {
 	cmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	cmd.Dir = dir
 	return cmd.CombinedOutput()
 }
 
-// Build full project directory
 func getComposeProjectDir(project string) (string, error) {
 	baseDir, err := config.GetDockerAppsDir()
 	if err != nil {
 		return "", err
 	}
-	projectDir := filepath.Join(baseDir, project)
-	return projectDir, nil
+	return filepath.Join(baseDir, project), nil
 }
 
-// Ensure compose.yaml exists (optional but good)
 func checkComposeFileExists(dir string) bool {
-	composePathYaml := filepath.Join(dir, "compose.yaml")
-	composePathYml := filepath.Join(dir, "docker-compose.yml")
-	if _, err := os.Stat(composePathYaml); err == nil {
-		return true
-	}
-	if _, err := os.Stat(composePathYml); err == nil {
-		return true
-	}
-	return false
+	return fileExists(filepath.Join(dir, "compose.yaml")) || fileExists(filepath.Join(dir, "docker-compose.yml"))
 }
 
-// ---- Handlers ----
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
 
 func ComposeUp(c *gin.Context) {
 	project := c.Param("project")
@@ -64,6 +53,7 @@ func ComposeUp(c *gin.Context) {
 
 	projectDir, err := getComposeProjectDir(project)
 	if err != nil {
+		logger.Error.Printf("Failed to resolve project dir: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project directory"})
 		return
 	}
@@ -75,6 +65,7 @@ func ComposeUp(c *gin.Context) {
 
 	output, err := runComposeCommandInDir(projectDir, "up", "-d")
 	if err != nil {
+		logger.Error.Printf("Compose up failed for %s: %v", project, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to start compose project",
 			"details": string(output),
@@ -82,6 +73,7 @@ func ComposeUp(c *gin.Context) {
 		return
 	}
 
+	logger.Info.Printf("Compose project %s started", project)
 	c.JSON(http.StatusOK, gin.H{"message": "Compose project started"})
 }
 
@@ -95,12 +87,14 @@ func ComposeDown(c *gin.Context) {
 
 	projectDir, err := getComposeProjectDir(project)
 	if err != nil {
+		logger.Error.Printf("Failed to resolve project dir: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project directory"})
 		return
 	}
 
 	output, err := runComposeCommandInDir(projectDir, "down")
 	if err != nil {
+		logger.Error.Printf("Compose down failed for %s: %v", project, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to stop compose project",
 			"details": string(output),
@@ -108,6 +102,7 @@ func ComposeDown(c *gin.Context) {
 		return
 	}
 
+	logger.Info.Printf("Compose project %s stopped", project)
 	c.JSON(http.StatusOK, gin.H{"message": "Compose project stopped"})
 }
 
@@ -121,12 +116,14 @@ func ComposeRestart(c *gin.Context) {
 
 	projectDir, err := getComposeProjectDir(project)
 	if err != nil {
+		logger.Error.Printf("Failed to resolve project dir: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project directory"})
 		return
 	}
 
 	output, err := runComposeCommandInDir(projectDir, "restart")
 	if err != nil {
+		logger.Error.Printf("Compose restart failed for %s: %v", project, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to restart compose project",
 			"details": string(output),
@@ -134,6 +131,7 @@ func ComposeRestart(c *gin.Context) {
 		return
 	}
 
+	logger.Info.Printf("Compose project %s restarted", project)
 	c.JSON(http.StatusOK, gin.H{"message": "Compose project restarted"})
 }
 
@@ -147,12 +145,14 @@ func ComposeStatus(c *gin.Context) {
 
 	projectDir, err := getComposeProjectDir(project)
 	if err != nil {
+		logger.Error.Printf("Failed to resolve project dir: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project directory"})
 		return
 	}
 
 	output, err := runComposeCommandInDir(projectDir, "ps")
 	if err != nil {
+		logger.Error.Printf("Compose status failed for %s: %v", project, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to get compose status",
 			"details": string(output),
@@ -160,20 +160,22 @@ func ComposeStatus(c *gin.Context) {
 		return
 	}
 
+	logger.Debug.Printf("Compose status for %s:\n%s", project, output)
 	lines := strings.Split(string(output), "\n")
 	c.JSON(http.StatusOK, gin.H{"status": lines})
 }
 
-// List all projects
 func ListComposeProjects(c *gin.Context) {
 	baseDir, err := config.GetDockerAppsDir()
 	if err != nil {
+		logger.Error.Printf("Failed to get base dir: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get base directory"})
 		return
 	}
 
 	entries, err := os.ReadDir(baseDir)
 	if err != nil {
+		logger.Error.Printf("Failed to list projects in %s: %v", baseDir, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list projects"})
 		return
 	}
@@ -185,10 +187,10 @@ func ListComposeProjects(c *gin.Context) {
 		}
 	}
 
+	logger.Info.Printf("Listed %d Docker Compose projects", len(projects))
 	c.JSON(http.StatusOK, gin.H{"projects": projects})
 }
 
-// Register Docker Compose routes
 func RegisterDockerComposeRoutes(router *gin.Engine) {
 	docker := router.Group("/docker/compose")
 	{

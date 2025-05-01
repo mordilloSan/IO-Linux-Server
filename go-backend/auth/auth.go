@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"go-backend/logger"
 	"go-backend/session"
 	"go-backend/utils"
 	"go-backend/websocket"
-	"log"
 	"net/http"
 	"time"
 
@@ -47,7 +47,7 @@ func loginHandler(c *gin.Context) {
 	}
 
 	if err := pamAuth(req.Username, req.Password); err != nil {
-		log.Printf("❌ Auth failed for user: %s", req.Username)
+		logger.Warning.Printf("❌ Authentication failed for user: %s", req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
 		return
 	}
@@ -57,11 +57,13 @@ func loginHandler(c *gin.Context) {
 		User:      utils.User{ID: req.Username, Name: req.Username},
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
+
 	session.SessionMux <- func() {
 		session.Sessions[sessionID] = sess
 	}
 
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
+	logger.Info.Printf("✅ User %s logged in, session ID: %s", req.Username, sessionID)
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -73,9 +75,12 @@ func meHandler(c *gin.Context) {
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
 	if err == nil {
-		session.SessionMux <- func() { delete(session.Sessions, sessionID) }
+		session.SessionMux <- func() {
+			delete(session.Sessions, sessionID)
+		}
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
 		go websocket.CloseClientBySession(sessionID)
+		logger.Info.Printf("👋 Logged out session: %s", sessionID)
 	}
 	c.Status(http.StatusOK)
 }
@@ -84,6 +89,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Cookie("session_id")
 		if err != nil || cookie == "" {
+			logger.Warning.Println("⚠️  Unauthorized request: missing session_id cookie")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
@@ -99,6 +105,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		<-done
 
 		if !exists || sess.ExpiresAt.Before(time.Now()) {
+			logger.Warning.Printf("⚠️  Session expired or invalid: %s", cookie)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired"})
 			return
 		}

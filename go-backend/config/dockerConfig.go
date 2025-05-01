@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"go-backend/logger"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -13,11 +15,11 @@ type AppConfig struct {
 
 var appConfig AppConfig
 
-// LoadConfig reads config.yaml or uses defaults
+// LoadConfig reads config.yaml or applies default values
 func LoadConfig() error {
 	file, err := os.Open("config.yaml")
 	if err != nil {
-		// No config.yaml found? Use defaults
+		logger.Warning.Println("[config] No config.yaml found, using defaults")
 		appConfig = AppConfig{
 			DockerAppsSubdir: "docker",
 		}
@@ -26,33 +28,41 @@ func LoadConfig() error {
 	defer file.Close()
 
 	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&appConfig)
-	if err != nil {
+	if err := decoder.Decode(&appConfig); err != nil {
+		logger.Error.Printf("[config] Failed to parse config.yaml: %v", err)
 		return err
 	}
 
-	// Fallback if docker_apps_subdir missing
+	// Fallback if value is empty
 	if appConfig.DockerAppsSubdir == "" {
+		logger.Warning.Println("[config] docker_apps_subdir missing, falling back to default: 'docker'")
 		appConfig.DockerAppsSubdir = "docker"
 	}
 
+	logger.Info.Printf("[config] Config loaded. DockerAppsSubdir: %s", appConfig.DockerAppsSubdir)
 	return nil
 }
 
-// GetDockerAppsDir returns /home/username/docker
+// GetDockerAppsDir returns absolute path to user's docker apps folder
 func GetDockerAppsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
+		logger.Error.Printf("[config] Failed to get user home directory: %v", err)
 		return "", err
 	}
 	return filepath.Join(home, appConfig.DockerAppsSubdir), nil
 }
 
-// EnsureDockerAppsDirExists creates the folder if missing
+// EnsureDockerAppsDirExists creates the folder if it doesn't exist
 func EnsureDockerAppsDirExists() error {
 	dockerDir, err := GetDockerAppsDir()
 	if err != nil {
 		return err
 	}
-	return os.MkdirAll(dockerDir, 0755)
+	if err := os.MkdirAll(dockerDir, 0755); err != nil {
+		logger.Error.Printf("[config] Failed to create docker apps directory: %v", err)
+		return err
+	}
+	logger.Info.Printf("[config] Docker apps directory ensured at: %s", dockerDir)
+	return nil
 }

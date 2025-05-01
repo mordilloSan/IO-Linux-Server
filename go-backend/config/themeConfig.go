@@ -2,8 +2,9 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"go-backend/auth"
+	"go-backend/logger"
 	"net/http"
 	"os"
 
@@ -18,14 +19,16 @@ type ThemeSettings struct {
 
 const themeFilePath = "./theme.txt"
 
+var defaultTheme = ThemeSettings{
+	Theme:           "DARK",
+	PrimaryColor:    "#1976d2",
+	SidebarColapsed: false,
+}
+
 func InitTheme() error {
 	if _, err := os.Stat(themeFilePath); os.IsNotExist(err) {
-		defaultSettings := ThemeSettings{
-			Theme:           "DARK",
-			PrimaryColor:    "#1976d2",
-			SidebarColapsed: false,
-		}
-		return SaveThemeToFile(defaultSettings)
+		logger.Info.Println("[theme] No theme file found, creating default...")
+		return SaveThemeToFile(defaultTheme)
 	}
 	return nil
 }
@@ -35,10 +38,12 @@ func LoadTheme() (ThemeSettings, error) {
 
 	data, err := os.ReadFile(themeFilePath)
 	if err != nil {
+		logger.Error.Printf("[theme] Failed to read theme file: %v", err)
 		return settings, err
 	}
 
 	if err := json.Unmarshal(data, &settings); err != nil {
+		logger.Error.Printf("[theme] Failed to parse theme file: %v", err)
 		return settings, err
 	}
 
@@ -46,36 +51,33 @@ func LoadTheme() (ThemeSettings, error) {
 }
 
 func SaveThemeToFile(settings ThemeSettings) error {
-	data, err := json.Marshal(settings)
+	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
-		fmt.Printf("[theme] Failed to marshal theme settings: %v\n", err)
+		logger.Error.Printf("[theme] Failed to encode theme settings: %v", err)
 		return err
 	}
 
 	err = os.WriteFile(themeFilePath, data, 0644)
 	if err != nil {
-		fmt.Printf("[theme] Failed to write theme file at %s: %v\n", themeFilePath, err)
+		logger.Error.Printf("[theme] Failed to write theme file: %v", err)
 		return err
 	}
 
-	fmt.Printf("[theme] Theme settings successfully saved to %s\n", themeFilePath)
+	logger.Info.Printf("[theme] Theme settings saved to %s", themeFilePath)
 	return nil
 }
 
-// --- Gin routes ---
+// --- Gin Routes ---
 
 func RegisterThemeRoutes(router *gin.Engine) {
 	router.GET("/theme/get", func(c *gin.Context) {
-		// Attempt to load theme
 		settings, err := LoadTheme()
 		if err != nil {
-			// If file is missing, auto-init
-			if os.IsNotExist(err) {
+			if errors.Is(err, os.ErrNotExist) {
 				if initErr := InitTheme(); initErr != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize theme"})
 					return
 				}
-				// Try again after init
 				settings, err = LoadTheme()
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load initialized theme"})

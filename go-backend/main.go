@@ -5,6 +5,7 @@ import (
 	"go-backend/auth"
 	"go-backend/config"
 	"go-backend/docker"
+	"go-backend/logger"
 	"go-backend/services"
 	"go-backend/session"
 	"go-backend/update"
@@ -12,52 +13,48 @@ import (
 	"go-backend/websocket"
 	"go-backend/wireguard"
 
-	"log"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-var (
-	env = "development" // default
-)
+var env = "development"
 
 func main() {
+	// Load .env
+	_ = godotenv.Load("../.env")
 
-	// Load configuration
-	err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
-
-	// Ensure docker apps folder exists
-	err = config.EnsureDockerAppsDirExists()
-	if err != nil {
-		log.Fatalf("Failed to create docker apps directory: %v", err)
-	}
-
-	// Load .env variables into os.Environ()
-	godotenv.Load("../.env")
-
-	// Override env from GO_ENV if set
+	// Resolve environment
 	if goEnv := os.Getenv("GO_ENV"); goEnv != "" {
 		env = goEnv
 	}
 
-	// Init React theme file
-	if err := config.InitTheme(); err != nil {
-		log.Fatalf("Failed to initialize theme file: %v", err)
+	// Initialize logger
+	verbose := os.Getenv("VERBOSE") == "true"
+	logger.Init(env, verbose)
+
+	logger.Info.Println("📦 Loading configuration...")
+	if err := config.LoadConfig(); err != nil {
+		logger.Error.Fatalf("❌ Failed to load config: %v", err)
 	}
 
-	log.Printf("🌱 Starting server in %s mode...\n", env)
+	if err := config.EnsureDockerAppsDirExists(); err != nil {
+		logger.Error.Fatalf("❌ Failed to create docker apps directory: %v", err)
+	}
+
+	if err := config.InitTheme(); err != nil {
+		logger.Error.Fatalf("❌ Failed to initialize theme file: %v", err)
+	}
+
+	logger.Info.Printf("🌱 Starting server in %s mode...", env)
 
 	if env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.New()
+	router.Use(gin.Recovery())
 
 	if env == "development" {
 		router.SetTrustedProxies(nil)
@@ -65,7 +62,7 @@ func main() {
 		router.Use(gin.Logger())
 	}
 
-	router.Use(gin.Recovery())
+	// Register routes
 	auth.RegisterAuthRoutes(router)
 	registerSystemRoutes(router)
 	websocket.RegisterWebSocketRoutes(router)
@@ -82,19 +79,14 @@ func main() {
 		router.GET("/debug/benchmark", func(c *gin.Context) {
 			cookie, err := c.Cookie("session_id")
 			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+				c.JSON(401, gin.H{"error": "unauthorized"})
 				return
 			}
-
 			results := utils.RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
-
 			var output []gin.H
 			for _, r := range results {
 				if r.Error != nil {
-					output = append(output, gin.H{
-						"endpoint": r.Endpoint,
-						"error":    r.Error.Error(),
-					})
+					output = append(output, gin.H{"endpoint": r.Endpoint, "error": r.Error.Error()})
 				} else {
 					output = append(output, gin.H{
 						"endpoint": r.Endpoint,
@@ -103,21 +95,17 @@ func main() {
 					})
 				}
 			}
-			c.JSON(http.StatusOK, output)
+			c.JSON(200, output)
 		})
 	}
 
-	// Serve frontend in production
 	if env == "production" {
 		router.Static("/assets", "./frontend/assets")
 		router.StaticFile("/manifest.json", "./frontend/manifest.json")
-		router.StaticFile("/favicon-1.png", "./frontend/favicon-1.png")
-		router.StaticFile("/favicon-2.png", "./frontend/favicon-2.png")
-		router.StaticFile("/favicon-3.png", "./frontend/favicon-3.png")
-		router.StaticFile("/favicon-4.png", "./frontend/favicon-4.png")
-		router.StaticFile("/favicon-5.png", "./frontend/favicon-5.png")
-		router.StaticFile("/favicon-6.png", "./frontend/favicon-6.png")
 		router.StaticFile("/favicon.ico", "./frontend/favicon-6.png")
+		for i := 1; i <= 6; i++ {
+			router.StaticFile(fmt.Sprintf("/favicon-%d.png", i), fmt.Sprintf("./frontend/favicon-%d.png", i))
+		}
 		router.NoRoute(func(c *gin.Context) {
 			c.File("./frontend/index.html")
 		})
@@ -126,9 +114,9 @@ func main() {
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"
-		log.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
+		logger.Warning.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
 	}
 
-	log.Printf("🚀 Server running in %s mode on http://localhost:%s", env, port)
-	log.Fatal(router.Run(":" + port))
+	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
+	logger.Error.Fatal(router.Run(":" + port))
 }
