@@ -9,14 +9,22 @@ AIR_BIN := $(shell which air)
 
 default: help
 
+define check_var
+	@if [ -z "$($1)" ]; then echo "❌ $1 not set. Please edit the file ".env""; exit 1; fi
+endef
+
+define check_var_sudo
+	@if [ -z "$($1)" ]; then echo "❌ $1 not set. Please edit the file "secret.env""; exit 1; fi
+endef
+
 check-env: 
 	@echo ""
 	@echo "🔍 Checking .env setup..."
-	@if [ -z "$(SERVER_PORT)" ]; then echo "❌ SERVER_PORT not set"; exit 1; fi
-	@if [ -z "$(VITE_DEV_PORT)" ]; then echo "❌ VITE_DEV_PORT not set"; exit 1; fi
-	@if [ -z "$(GO_VERSION)" ]; then echo "❌ GO_VERSION not set"; exit 1; fi
-	@if [ -z "$(NODE_VERSION)" ]; then echo "❌ NODE_VERSION not set"; exit 1; fi
-	@if [ -z "$(SUDO_PASSWORD)" ]; then echo "❌ SUDO_PASSWORD not set"; exit 1; fi
+	$(call check_var,SERVER_PORT)
+	$(call check_var,VITE_DEV_PORT)
+	$(call check_var,GO_VERSION)
+	$(call check_var,NODE_VERSION)
+	$(call check_var_sudo,SUDO_PASSWORD)
 	@echo "✅ Environment looks good!"
 
 ensure-node: check-env
