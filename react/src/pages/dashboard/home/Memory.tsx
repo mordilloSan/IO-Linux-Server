@@ -33,7 +33,7 @@ const MemoryUsage = () => {
 
   const data = {
     title: "Memory Usage",
-    stats: isError ? (
+    stats2: isError ? (
       <ErrorMessage />
     ) : isPending ? (
       <Loader />
@@ -44,7 +44,7 @@ const MemoryUsage = () => {
         thickness={4}
       />
     ),
-    stats2: (
+    stats: (
       <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
         <Typography variant="body1">
           <strong>Total Memory:</strong>{" "}

@@ -12,7 +12,7 @@ export type SidebarProps = {
       width: number;
     };
   };
-  variant?: "permanent" | "persistent" | "temporary";
+  variant?: "permanent" | "temporary";
   open?: boolean;
   onClose?: () => void;
   items: SidebarItemsType[];
@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Set collapsed to false when hovered
   const handleMouseEnter = () => {
     setIsHovered(true);
-    setIsCollapsed(false); // Expand on hover only if collapsed
+    setIsCollapsed(false); // Expand on hover
   };
 
   // Reset collapsed back to true when mouse leaves
@@ -49,14 +49,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       slotProps={{
         paper: {
           sx: {
-            width: isCollapsed && !isHovered ? collapsedDrawerWidth : drawerWidth, // Adjust width when collapsed and hovered
+            width:
+              isCollapsed && !isHovered ? collapsedDrawerWidth : drawerWidth, // Adjust width when collapsed and hovered
             borderRight: 0,
             backgroundColor: theme.sidebar.background,
             scrollbarWidth: "none",
-            transition: theme.transitions.create(["width", "background-color"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.standard,
-            }),
+            transition: theme.transitions.create(
+              ["width", "background-color"],
+              {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.standard,
+              }
+            ),
             overflowX: "hidden",
             "& > div": {
               borderRight: 0,
@@ -64,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           },
         },
       }}
-      onMouseEnter={handleMouseEnter}  // Set hover state to true when hovering the sidebar
+      onMouseEnter={handleMouseEnter} // Set hover state to true when hovering the sidebar
       onMouseLeave={handleMouseLeave} // Set hover state to false when mouse leaves
     >
       {/* --- Sidebar Header (just logo) --- */}
@@ -88,21 +92,26 @@ const Sidebar: React.FC<SidebarProps> = ({
             marginRight: 2,
           }}
         />
-        {/* Collapse Sidebar button (only desktop) */}
-        {onSidebarCollapseToggle && (
-            <div
-              color="inherit"
-              aria-label="Collapse sidebar"
-              onClick={onSidebarCollapseToggle}
-
-            >
-              {(collapsed && isHovered)? (
-                <ChevronRight sx={{ width: 22, height: 22 }} />
-              ) : (
-                <ChevronLeft sx={{ width: 22, height: 22 }} />
-              )}
-            </div>
-          )}
+        {/* Collapse Sidebar button (only render if not collapsed) */}
+        {onSidebarCollapseToggle && !isCollapsed && (
+          <div
+            onClick={onSidebarCollapseToggle}
+            style={{
+              position: "absolute",
+              right: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              cursor: "pointer",
+              display: "inline-flex",
+            }}
+          >
+            {isCollapsed ? (
+              <ChevronRight sx={{ width: 22, height: 22 }} />
+            ) : (
+              <ChevronLeft sx={{ width: 22, height: 22 }} />
+            )}
+          </div>
+        )}
       </Box>
 
       {/* --- Sidebar Navigation --- */}

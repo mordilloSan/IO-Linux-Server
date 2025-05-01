@@ -8,7 +8,7 @@ import {
   Box,
   useTheme,
 } from "@mui/material";
-import {  Menu as MenuIcon,} from "@mui/icons-material";
+import { Menu as MenuIcon } from "@mui/icons-material";
 import { Search as SearchIcon } from "lucide-react";
 
 import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
@@ -21,9 +21,7 @@ type NavbarProps = {
   onDrawerToggle: React.MouseEventHandler<HTMLElement>;
 };
 
-const Navbar: React.FC<NavbarProps> = ({
-  onDrawerToggle,
-}) => {
+const Navbar: React.FC<NavbarProps> = ({ onDrawerToggle }) => {
   const theme = useTheme();
 
   return (
@@ -92,7 +90,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 }}
               />
             </Box>
-          </Grid> 
+          </Grid>
 
           {/* Spacer */}
           <Grid sx={{ flexGrow: 1 }} />

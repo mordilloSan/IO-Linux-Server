@@ -58,9 +58,7 @@ const Dashboard: React.FC = () => {
           ml: { md: `${sidebarWidth}px` },
         }}
       >
-        <Navbar
-          onDrawerToggle={handleDrawerToggle}
-        />
+        <Navbar onDrawerToggle={handleDrawerToggle} />
 
         {/* Scrollable Content Area */}
         <Box

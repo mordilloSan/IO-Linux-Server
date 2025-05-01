@@ -52,7 +52,7 @@ const SystemHealth = () => {
     IconComponent = SecurityUpdateWarningIcon;
   }
 
-  const stats = (
+  const stats2 = (
     <Box
       sx={{
         position: "relative",
@@ -84,7 +84,7 @@ const SystemHealth = () => {
     0
   );
 
-  const stats2 = (
+  const stats = (
     <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
       <Typography variant="body1">
         <strong>Distro:</strong> {distro}

@@ -1,10 +1,6 @@
 -include .env
 -include secret.env
 
-SERVER_PORT     ?= 8080
-VITE_DEV_PORT   ?= 3000
-VERSION         ?=0.0.1
-NODE_VERSION    ?= 22
 GO_VERSION      ?= 1.22.2
 GO_INSTALL_DIR := $(HOME)/.go
 NVM_SETUP = export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"
@@ -20,6 +16,7 @@ check-env:
 	@if [ -z "$(VITE_DEV_PORT)" ]; then echo "❌ VITE_DEV_PORT not set"; exit 1; fi
 	@if [ -z "$(GO_VERSION)" ]; then echo "❌ GO_VERSION not set"; exit 1; fi
 	@if [ -z "$(NODE_VERSION)" ]; then echo "❌ NODE_VERSION not set"; exit 1; fi
+	@if [ -z "$(SUDO_PASSWORD)" ]; then echo "❌ SUDO_PASSWORD not set"; exit 1; fi
 	@echo "✅ Environment looks good!"
 
 ensure-node: check-env

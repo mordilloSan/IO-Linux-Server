@@ -60,7 +60,7 @@ const Processor: React.FC = () => {
   const data = {
     title: "Processor",
     avatarIcon: "ph:cpu",
-    stats: isError ? (
+    stats2: isError ? (
       <ErrorMessage />
     ) : isPending ? (
       <ComponentLoader />
@@ -71,7 +71,7 @@ const Processor: React.FC = () => {
         thickness={4}
       />
     ),
-    stats2: (
+    stats: (
       <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
         <Typography variant="body1">
           <strong>CPU:</strong> {CPUInfo?.modelName}

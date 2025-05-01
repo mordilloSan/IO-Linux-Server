@@ -5,7 +5,7 @@ import SidebarNavListItem from "./SidebarNavListItem";
 
 type SidebarNavProps = {
   items: SidebarItemsType[];
-  collapsed?: boolean;
+  collapsed: boolean; // Make sure this is aware of the collapsed state
 };
 
 const SidebarNav: React.FC<SidebarNavProps> = ({
