@@ -21,11 +21,12 @@ export type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
   const theme = useTheme();
-  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop } = useSidebar();
+  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop } =
+    useSidebar();
 
   const effectiveWidth = !isDesktop
-  ? drawerWidth
-  : collapsed && !hovered
+    ? drawerWidth
+    : collapsed && !hovered
     ? collapsedDrawerWidth
     : drawerWidth;
 
@@ -92,9 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
               display: "inline-flex",
             }}
           >
-            { !collapsed && (
-              <ChevronLeft sx={{ width: 22, height: 22 }} />
-            )}
+            {!collapsed && <ChevronLeft sx={{ width: 22, height: 22 }} />}
             {hovered && collapsed && (
               <ChevronRight sx={{ width: 22, height: 22 }} />
             )}

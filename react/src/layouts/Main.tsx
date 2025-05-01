@@ -26,7 +26,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, setMobileOpen]);
-  
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
