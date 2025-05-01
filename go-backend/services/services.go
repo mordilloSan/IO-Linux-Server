@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go-backend/auth"
+	"go-backend/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +29,7 @@ func getServiceStatus(c *gin.Context) {
 	cmd := exec.Command("systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend")
 	out, err := cmd.Output()
 	if err != nil {
+		logger.Error.Printf("Failed to list services: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -55,6 +57,8 @@ func getServiceStatus(c *gin.Context) {
 
 		services = append(services, svc)
 	}
+
+	logger.Info.Printf("Checked %d services, %d failed", len(services), failedCount)
 
 	c.JSON(http.StatusOK, gin.H{
 		"units":    len(services),

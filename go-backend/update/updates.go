@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"go-backend/auth"
+	"go-backend/logger"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Define a strict regex: only letters, numbers, dashes, underscores, dots
 var validPackageName = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 func RegisterUpdateRoutes(router *gin.Engine) {
@@ -25,14 +25,17 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 }
 
 func getUpdatesHandler(c *gin.Context) {
+	logger.Info.Println("🔍 Checking for system updates...")
 	cmd := exec.Command("pkcon", "get-updates")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Treat exit code 5 ("no updates") as success
+		// pkcon returns exit code 5 if no updates
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
+			logger.Info.Println("✅ No updates available.")
 			c.JSON(http.StatusOK, gin.H{"updates": []UpdateGroup{}})
 			return
 		}
+		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, string(output))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to get updates",
 			"details": err.Error(),
@@ -40,6 +43,7 @@ func getUpdatesHandler(c *gin.Context) {
 		return
 	}
 
+	logger.Info.Printf("✅ Retrieved update list:\n%s", string(output))
 	groupMap := make(map[string]*UpdateGroup)
 	lines := strings.Split(string(output), "\n")
 
@@ -47,20 +51,16 @@ func getUpdatesHandler(c *gin.Context) {
 		if line == "" || !strings.Contains(line, "-") {
 			continue
 		}
-
 		fields := strings.Fields(line)
 		if len(fields) < 3 {
 			continue
 		}
-
 		severity := fields[0]
 		rawID := fields[1]
 		parts := strings.Split(rawID, "-")
-
 		if len(parts) < 3 {
 			continue
 		}
-
 		name := strings.Join(parts[:len(parts)-2], "-")
 		version := parts[len(parts)-2]
 		key := version + "|" + severity
@@ -92,22 +92,24 @@ func updatePackageHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageName) == "" {
+		logger.Warning.Println("⚠️ Missing or invalid package name in update request.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. 'package' field is required."})
 		return
 	}
 
-	// Validate input strictly
 	if !validPackageName.MatchString(req.PackageName) {
+		logger.Warning.Printf("⚠️ Invalid package name submitted: %s", req.PackageName)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package name"})
 		return
 	}
 
-	safePackageName := req.PackageName
+	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageName)
 
-	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", safePackageName)
+	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", req.PackageName)
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
+		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageName, err, string(output))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
 			"details": err.Error(),
@@ -116,6 +118,7 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
+	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageName, string(output))
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Package update triggered",
 		"output":  string(output),

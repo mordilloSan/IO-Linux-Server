@@ -2,6 +2,7 @@
 package session
 
 import (
+	"go-backend/logger"
 	"go-backend/utils"
 	"net/http"
 	"time"
@@ -31,14 +32,30 @@ func StartSessionGC() {
 		for range ticker.C {
 			now := time.Now()
 			SessionMux <- func() {
+				count := 0
 				for id, s := range Sessions {
 					if s.ExpiresAt.Before(now) {
 						delete(Sessions, id)
+						count++
 					}
+				}
+				if count > 0 {
+					logger.Info.Printf("[session] Garbage collected %d expired sessions", count)
 				}
 			}
 		}
 	}()
+}
+
+func CreateSession(id string, user utils.User, duration time.Duration) {
+	sess := Session{
+		User:      user,
+		ExpiresAt: time.Now().Add(duration),
+	}
+	SessionMux <- func() {
+		Sessions[id] = sess
+	}
+	logger.Info.Printf("[session] Created session for user '%s'", user.ID)
 }
 
 func IsValid(id string) bool {
@@ -58,16 +75,26 @@ func ValidateFromRequest(r *http.Request) (utils.User, string, bool) {
 	if err != nil || cookie.Value == "" {
 		return utils.User{}, "", false
 	}
+
 	var session Session
 	var exists bool
 	done := make(chan bool)
+
 	SessionMux <- func() {
 		session, exists = Sessions[cookie.Value]
 		done <- true
 	}
 	<-done
-	if !exists || session.ExpiresAt.Before(time.Now()) {
+
+	if !exists {
+		logger.Warning.Printf("[session] Access attempt with unknown session_id: %s", cookie.Value)
 		return utils.User{}, "", false
 	}
+
+	if session.ExpiresAt.Before(time.Now()) {
+		logger.Warning.Printf("[session] Expired session access attempt by user '%s'", session.User.ID)
+		return utils.User{}, "", false
+	}
+
 	return session.User, cookie.Value, true
 }

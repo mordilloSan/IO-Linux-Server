@@ -8,12 +8,15 @@ import (
 	"sort"
 	"strings"
 
+	"go-backend/logger"
+
 	"github.com/gin-gonic/gin"
 )
 
 func getUpdateHistoryHandler(c *gin.Context) {
 	history := parseUpdateHistory()
 	if len(history) == 0 {
+		logger.Warning.Println("No update history found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "No update history found"})
 		return
 	}
@@ -22,23 +25,26 @@ func getUpdateHistoryHandler(c *gin.Context) {
 
 func parseUpdateHistory() []UpdateHistoryEntry {
 	if _, err := os.Stat("/var/log/apt/history.log"); err == nil {
+		logger.Info.Println("Parsing apt update history")
 		return parseAptHistory("/var/log/apt/history.log")
 	}
 	if _, err := os.Stat("/var/log/dnf.log"); err == nil {
+		logger.Info.Println("Parsing dnf update history")
 		return parseDnfHistory("/var/log/dnf.log")
 	}
+	logger.Warning.Println("No known package manager log found")
 	return []UpdateHistoryEntry{}
 }
 
 func parseAptHistory(logPath string) []UpdateHistoryEntry {
 	file, err := os.Open(logPath)
 	if err != nil {
+		logger.Error.Printf("Failed to open APT log: %v", err)
 		return nil
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-
 	dateRe := regexp.MustCompile(`^Start-Date: (\d{4}-\d{2}-\d{2})`)
 	upgradeRe := regexp.MustCompile(`^(Upgrade|Remove): (.+)`)
 	pkgVerRe := regexp.MustCompile(`([a-zA-Z0-9+.\-]+)(:[^ ]+)? \(([^)]+)\)`)
@@ -70,6 +76,7 @@ func parseAptHistory(logPath string) []UpdateHistoryEntry {
 func parseDnfHistory(logPath string) []UpdateHistoryEntry {
 	file, err := os.Open(logPath)
 	if err != nil {
+		logger.Error.Printf("Failed to open DNF log: %v", err)
 		return nil
 	}
 	defer file.Close()
@@ -77,7 +84,7 @@ func parseDnfHistory(logPath string) []UpdateHistoryEntry {
 	scanner := bufio.NewScanner(file)
 	upgradeRe := regexp.MustCompile(`Upgrade:\s+([^\s-]+)-([^-]+-[^\s]+)`)
 
-	var historyMap = make(map[string][]UpgradeItem)
+	historyMap := make(map[string][]UpgradeItem)
 
 	for scanner.Scan() {
 		line := scanner.Text()

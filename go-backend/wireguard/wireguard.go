@@ -2,10 +2,12 @@ package wireguard
 
 import (
 	"fmt"
-	"go-backend/auth" // Make sure your auth middleware is implemented
 	"net/http"
 	"os/exec"
 	"time"
+
+	"go-backend/auth"
+	"go-backend/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vishvananda/netlink"
@@ -13,28 +15,29 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-// RegisterWireguardRoutes registers the routes for WireGuard setup and interface details
 func RegisterWireguardRoutes(router *gin.Engine) {
-	system := router.Group("/wireguard", auth.AuthMiddleware()) // Assuming auth middleware is implemented
+	system := router.Group("/wireguard", auth.AuthMiddleware())
 	{
-		system.POST("/setup", SetupInterfaceHandler)        // Setup the WireGuard interface
-		system.GET("/interface/:name", GetInterfaceDetails) // Get specific interface details
+		system.POST("/setup", SetupInterfaceHandler)
+		system.GET("/interface/:name", GetInterfaceDetails)
 	}
 }
 
-// SetupInterfaceHandler handles user input and configures the WireGuard interface
 func SetupInterfaceHandler(c *gin.Context) {
 	var input SetupInput
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.Warning.Printf("Invalid WireGuard setup input: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	if err := SetupInterface(input.Name, input.Endpoint, input.ListenPort, input.NumPeers); err != nil {
+		logger.Error.Printf("Failed to setup WireGuard interface %s: %v", input.Name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	logger.Info.Printf("WireGuard interface %s configured with %d peers", input.Name, input.NumPeers)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "WireGuard interface setup successfully",
 		"name":    input.Name,
@@ -42,23 +45,20 @@ func SetupInterfaceHandler(c *gin.Context) {
 	})
 }
 
-// GetInterfaceDetails retrieves the WireGuard interface details and its peers
 func GetInterfaceDetails(c *gin.Context) {
 	name := c.Param("name")
 
 	iface, err := GetInterface(name)
 	if err != nil {
+		logger.Warning.Printf("Failed to retrieve WireGuard interface %s: %v", name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"interface": iface,
-	})
+	c.JSON(http.StatusOK, gin.H{"interface": iface})
 }
 
-// GenerateKeyPair generates a new key pair (private & public) for WireGuard
-func GenerateKeyPair() (privateKey string, publicKey string, err error) {
+func GenerateKeyPair() (string, string, error) {
 	priv, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
 		return "", "", err
@@ -67,51 +67,42 @@ func GenerateKeyPair() (privateKey string, publicKey string, err error) {
 	return priv.String(), pub.String(), nil
 }
 
-// SetupInterface configures the WireGuard interface with peers and the provided details
 func SetupInterface(name, endpoint string, listenPort, numPeers int) error {
-	// Create the WireGuard interface
+	logger.Info.Printf("Creating WireGuard interface: %s", name)
+
 	if err := CreateInterface(name); err != nil {
 		return err
 	}
-
-	// Set the listen port
 	if err := SetListenPort(name, listenPort); err != nil {
 		return err
 	}
 
-	// Generate the private key for the interface
 	privKey, _, err := GenerateKeyPair()
 	if err != nil {
 		return err
 	}
-
-	// Set the private key on the interface
 	if err := SetPrivateKey(name, privKey); err != nil {
 		return err
 	}
 
-	// Add the peer(s)
 	for i := 0; i < numPeers; i++ {
-		// Generate random public key for each peer (simplified here)
 		peerPubKey := fmt.Sprintf("PEER%d_PUBLIC_KEY", i)
-		peerAllowedIPs := fmt.Sprintf("10.0.0.%d/32", i+2) // Example IPs (10.0.0.2/32, 10.0.0.3/32, etc.)
+		peerAllowedIPs := fmt.Sprintf("10.0.0.%d/32", i+2)
 
 		if err := AddPeer(name, peerPubKey, []string{peerAllowedIPs}); err != nil {
+			logger.Warning.Printf("Failed to add peer %d to %s: %v", i, name, err)
 			return err
 		}
+		logger.Debug.Printf("Added peer %d to %s with IP %s", i, name, peerAllowedIPs)
 	}
 
 	return nil
 }
 
-// SetListenPort configures the listen port for the WireGuard interface
 func SetListenPort(name string, port int) error {
-	// Normally this would configure routing to specific ports, but we can assume it's done here
-	cmd := exec.Command("wg", "set", name, "listen-port", fmt.Sprintf("%d", port))
-	return cmd.Run()
+	return exec.Command("wg", "set", name, "listen-port", fmt.Sprintf("%d", port)).Run()
 }
 
-// CreateInterface creates a WireGuard interface
 func CreateInterface(name string) error {
 	wg := &netlink.GenericLink{
 		LinkAttrs: netlink.LinkAttrs{Name: name},
@@ -123,7 +114,6 @@ func CreateInterface(name string) error {
 	return netlink.LinkSetUp(wg)
 }
 
-// AddPeer adds a peer to the WireGuard interface
 func AddPeer(name, pubkey string, allowedIPs []string) error {
 	cmd := exec.Command("wg", "set", name,
 		"peer", pubkey,
@@ -132,13 +122,10 @@ func AddPeer(name, pubkey string, allowedIPs []string) error {
 	return cmd.Run()
 }
 
-// SetPrivateKey sets the private key on the WireGuard interface
 func SetPrivateKey(name, privateKey string) error {
-	cmd := exec.Command("wg", "set", name, "private-key", privateKey)
-	return cmd.Run()
+	return exec.Command("wg", "set", name, "private-key", privateKey).Run()
 }
 
-// ListInterfaces lists all the WireGuard interfaces
 func ListInterfaces() ([]WGInterface, error) {
 	client, err := wgctrl.New()
 	if err != nil {
@@ -158,7 +145,6 @@ func ListInterfaces() ([]WGInterface, error) {
 	return result, nil
 }
 
-// GetInterface retrieves details of a specific WireGuard interface by name
 func GetInterface(name string) (*WGInterface, error) {
 	client, err := wgctrl.New()
 	if err != nil {
@@ -175,7 +161,6 @@ func GetInterface(name string) (*WGInterface, error) {
 	return &iface, nil
 }
 
-// convertDevice converts a wireguard device to WGInterface
 func convertDevice(dev *wgtypes.Device) WGInterface {
 	var peers []WGPeer
 	for _, peer := range dev.Peers {
@@ -184,21 +169,24 @@ func convertDevice(dev *wgtypes.Device) WGInterface {
 			allowed = append(allowed, ip.String())
 		}
 
-		// Get the last handshake and endpoint status for each peer
 		lastHandshake := "never"
 		if !peer.LastHandshakeTime.IsZero() {
 			lastHandshake = peer.LastHandshakeTime.Format(time.RFC3339)
 		}
 
+		endpoint := ""
+		if peer.Endpoint != nil {
+			endpoint = peer.Endpoint.String()
+		}
+
 		peers = append(peers, WGPeer{
 			PublicKey:     peer.PublicKey.String(),
-			Endpoint:      peer.Endpoint.String(),
+			Endpoint:      endpoint,
 			AllowedIPs:    allowed,
-			LastHandshake: lastHandshake, // Add this field
+			LastHandshake: lastHandshake,
 		})
 	}
 
-	// Return the device interface details
 	return WGInterface{
 		Name:       dev.Name,
 		PublicKey:  dev.PublicKey.String(),

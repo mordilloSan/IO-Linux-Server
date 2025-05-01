@@ -1,6 +1,8 @@
+// go-backend/update/changelog.go
 package update
 
 import (
+	"go-backend/logger"
 	"go-backend/utils"
 	"net/http"
 	"os/exec"
@@ -12,11 +14,13 @@ import (
 func getChangelogHandler(c *gin.Context) {
 	packageName := c.Query("package")
 	if strings.TrimSpace(packageName) == "" {
+		logger.Warning.Println("[update] Missing package query parameter")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing package query parameter"})
 		return
 	}
 
 	distro, _ := utils.GetDistroID()
+	logger.Info.Printf("[update] Fetching changelog for '%s' on distro '%s'\n", packageName, distro)
 	changelog := getChangelog(distro, packageName)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -41,11 +45,13 @@ func getChangelog(distro string, packageName string) string {
 	case containsAny(ids, "rhel", "fedora", "centos", "rocky", "almalinux"):
 		cmd = exec.Command("dnf", "changelog", "info", packageName)
 	default:
+		logger.Warning.Printf("[update] Unsupported distro for changelog: %s\n", distro)
 		return "Changelog not available"
 	}
 
 	output, err := cmd.CombinedOutput()
 	if err != nil || len(strings.TrimSpace(string(output))) == 0 {
+		logger.Warning.Printf("[update] No changelog found or command failed: %v\n", err)
 		return "Changelog not available"
 	}
 
@@ -104,7 +110,6 @@ func parseAptChangelog(lines []string) string {
 			break
 		}
 
-		// Capture lines starting from the changelog content
 		started = true
 		buf.WriteString(trimmed + "\n")
 		lineCount++

@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"go-backend/logger"
 	"go-backend/session"
 	"net/http"
 	"time"
@@ -28,7 +29,8 @@ func (c *Client) Close() {
 	c.closeOnce.Do(func() {
 		close(c.channel)
 		close(c.done)
-		c.conn.Close()
+		_ = c.conn.Close()
+		logger.Info.Printf("[ws] Closed connection for session %s", c.sessionID)
 	})
 }
 
@@ -49,15 +51,19 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 	router.GET("/ws/system", func(c *gin.Context) {
 		user, sessionID, ok := session.ValidateFromRequest(c.Request)
 		if !ok {
+			logger.Warning.Println("[ws] Unauthorized connection attempt")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
+			logger.Error.Printf("[ws] Upgrade failed: %v", err)
 			return
 		}
 		defer conn.Close()
+
+		logger.Info.Printf("[ws] Client connected: %s (%s)", user.Name, sessionID)
 
 		client := &Client{
 			conn:      conn,
@@ -71,8 +77,6 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 			client.lastPong = time.Now()
 			return nil
 		})
-
-		_ = user
 
 		clientsMux <- func() {
 			clients[client.sessionID] = client
@@ -96,20 +100,23 @@ func sendLoop(client *Client) {
 
 		case <-pingTicker.C:
 			if !session.IsValid(client.sessionID) {
-				client.conn.WriteMessage(websocket.CloseMessage,
+				logger.Warning.Printf("[ws] Session expired: %s", client.sessionID)
+				_ = client.conn.WriteMessage(websocket.CloseMessage,
 					websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "Session expired"))
 				client.Close()
 				return
 			}
 
 			if time.Since(client.lastPong) > 10*time.Second {
-				client.conn.WriteMessage(websocket.CloseMessage,
+				logger.Warning.Printf("[ws] Pong timeout: %s", client.sessionID)
+				_ = client.conn.WriteMessage(websocket.CloseMessage,
 					websocket.FormatCloseMessage(websocket.CloseNormalClosure, "pong timeout"))
 				client.Close()
 				return
 			}
 
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				logger.Error.Printf("[ws] Ping failed for %s: %v", client.sessionID, err)
 				client.Close()
 				return
 			}
@@ -119,6 +126,7 @@ func sendLoop(client *Client) {
 				"timestamp": time.Now().Format(time.RFC3339),
 				"message":   "system heartbeat",
 			}) {
+				logger.Warning.Printf("[ws] Heartbeat send failed for %s", client.sessionID)
 				client.Close()
 				return
 			}
@@ -127,8 +135,8 @@ func sendLoop(client *Client) {
 			if !ok {
 				return
 			}
-			err := client.conn.WriteJSON(msg)
-			if err != nil {
+			if err := client.conn.WriteJSON(msg); err != nil {
+				logger.Error.Printf("[ws] WriteJSON failed for %s: %v", client.sessionID, err)
 				client.Close()
 				return
 			}
@@ -141,6 +149,7 @@ func receiveLoop(client *Client) {
 	for {
 		_, _, err := client.conn.ReadMessage()
 		if err != nil {
+			logger.Info.Printf("[ws] ReadMessage closed for %s: %v", client.sessionID, err)
 			return
 		}
 	}
@@ -149,7 +158,8 @@ func receiveLoop(client *Client) {
 func CloseClientBySession(sessionID string) {
 	clientsMux <- func() {
 		if client, ok := clients[sessionID]; ok {
-			client.conn.WriteMessage(websocket.CloseMessage,
+			logger.Info.Printf("[ws] Closing client due to logout: %s", sessionID)
+			_ = client.conn.WriteMessage(websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Logged out"))
 			client.Close()
 			delete(clients, sessionID)

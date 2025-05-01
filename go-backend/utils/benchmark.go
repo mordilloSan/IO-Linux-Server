@@ -6,12 +6,15 @@ import (
 	"sync"
 	"time"
 
+	"go-backend/logger"
+
 	"github.com/gin-gonic/gin"
 )
 
 // RunBenchmark performs parallel benchmarking of all GET /system/* endpoints
 func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, concurrency int) []BenchmarkResult {
 	endpoints := getSystemEndpoints(router)
+	logger.Info.Printf("📈 Running benchmark for %d /system/ endpoints...", len(endpoints))
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -25,6 +28,7 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 
 			req, err := http.NewRequest("GET", baseURL+endpoint, nil)
 			if err != nil {
+				logger.Error.Printf("❌ Failed to create request for %s: %v", endpoint, err)
 				resultChan <- BenchmarkResult{Endpoint: endpoint, Error: err}
 				return
 			}
@@ -35,11 +39,14 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 			latency := time.Since(start)
 
 			if err != nil {
+				logger.Warning.Printf("⚠️ Request to %s failed: %v", endpoint, err)
 				resultChan <- BenchmarkResult{Endpoint: endpoint, Latency: latency, Error: err}
 				return
 			}
 			defer resp.Body.Close()
 			io.Copy(io.Discard, resp.Body)
+
+			logger.Debug.Printf("✅ %s -> %d in %.2fms", endpoint, resp.StatusCode, float64(latency.Microseconds())/1000)
 
 			resultChan <- BenchmarkResult{
 				Endpoint: endpoint,
@@ -58,6 +65,7 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 		i++
 	}
 
+	logger.Info.Println("✅ Benchmark completed.")
 	return results
 }
 
@@ -69,5 +77,6 @@ func getSystemEndpoints(router *gin.Engine) []string {
 			endpoints = append(endpoints, route.Path)
 		}
 	}
+	logger.Debug.Printf("🔍 Found %d GET /system/* routes to benchmark", len(endpoints))
 	return endpoints
 }
