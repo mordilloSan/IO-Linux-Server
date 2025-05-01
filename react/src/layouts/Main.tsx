@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Box, CssBaseline, useMediaQuery } from "@mui/material";
+import { Box, CssBaseline } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
 import Navbar from "@/components/navbar/Navbar";
@@ -8,27 +8,25 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import dashboardItems from "@/components/sidebar/dashboardItems";
-import { drawerWidth, collapsedDrawerWidth } from "@/constants";
+import useSidebar from "@/hooks/useSidebar";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
-  const handleDrawerToggle = () => setMobileOpen((prev) => !prev);
-  const handleSidebarCollapseToggle = () => setCollapsed((prev) => !prev);
+  const {
+    mobileOpen,
+    toggleMobileOpen,
+    setMobileOpen,
+    sidebarWidth,
+    isDesktop,
+  } = useSidebar();
 
+  // Auto-close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, [location.pathname]);
-
-  const sidebarWidth = isDesktop
-    ? collapsed
-      ? collapsedDrawerWidth
-      : drawerWidth
-    : drawerWidth;
+  }, [location.pathname, setMobileOpen]);
+  
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
@@ -39,10 +37,8 @@ const Dashboard: React.FC = () => {
         PaperProps={{ style: { width: sidebarWidth } }}
         variant={isDesktop ? "permanent" : "temporary"}
         open={mobileOpen}
-        onClose={handleDrawerToggle}
+        onClose={toggleMobileOpen}
         items={dashboardItems}
-        collapsed={collapsed}
-        onSidebarCollapseToggle={handleSidebarCollapseToggle}
       />
 
       {/* Main content */}
@@ -58,7 +54,7 @@ const Dashboard: React.FC = () => {
           ml: { md: `${sidebarWidth}px` },
         }}
       >
-        <Navbar onDrawerToggle={handleDrawerToggle} />
+        <Navbar onDrawerToggle={toggleMobileOpen} />
 
         {/* Scrollable Content Area */}
         <Box

@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Drawer, Box, useTheme } from "@mui/material";
 import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { SidebarItemsType } from "@/types/sidebar";
 import SidebarNav from "./SidebarNav";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
+import useSidebar from "@/hooks/useSidebar";
 
 export type SidebarProps = {
   PaperProps: {
@@ -16,31 +17,17 @@ export type SidebarProps = {
   open?: boolean;
   onClose?: () => void;
   items: SidebarItemsType[];
-  collapsed?: boolean;
-  onSidebarCollapseToggle?: () => void;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({
-  items,
-  collapsed = false,
-  onSidebarCollapseToggle,
-  ...rest
-}) => {
+const Sidebar: React.FC<SidebarProps> = ({ items, ...rest }) => {
   const theme = useTheme();
-  const [isHovered, setIsHovered] = useState(false); // Track hover state for hover expansion
-  const [isCollapsed, setIsCollapsed] = useState(collapsed); // Track actual collapsed state
+  const { collapsed, hovered, setHovered, toggleCollapse, isDesktop } = useSidebar();
 
-  // Set collapsed to false when hovered
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    setIsCollapsed(false); // Expand on hover
-  };
-
-  // Reset collapsed back to true when mouse leaves
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setIsCollapsed(collapsed); // Reset to collapsed state
-  };
+  const effectiveWidth = !isDesktop
+  ? drawerWidth
+  : collapsed && !hovered
+    ? collapsedDrawerWidth
+    : drawerWidth;
 
   return (
     <Drawer
@@ -49,8 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       slotProps={{
         paper: {
           sx: {
-            width:
-              isCollapsed && !isHovered ? collapsedDrawerWidth : drawerWidth, // Adjust width when collapsed and hovered
+            width: effectiveWidth,
             borderRight: 0,
             backgroundColor: theme.sidebar.background,
             scrollbarWidth: "none",
@@ -68,8 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           },
         },
       }}
-      onMouseEnter={handleMouseEnter} // Set hover state to true when hovering the sidebar
-      onMouseLeave={handleMouseLeave} // Set hover state to false when mouse leaves
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {/* --- Sidebar Header (just logo) --- */}
       <Box
@@ -92,10 +78,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             marginRight: 2,
           }}
         />
-        {/* Collapse Sidebar button (only render if not collapsed) */}
-        {onSidebarCollapseToggle && !isCollapsed && (
+
+        {/* Collapse button (only show if sidebar is expanded) */}
+        {isDesktop && (!collapsed || (hovered && collapsed)) && (
           <div
-            onClick={onSidebarCollapseToggle}
+            onClick={toggleCollapse}
             style={{
               position: "absolute",
               right: 0,
@@ -105,17 +92,18 @@ const Sidebar: React.FC<SidebarProps> = ({
               display: "inline-flex",
             }}
           >
-            {isCollapsed ? (
-              <ChevronRight sx={{ width: 22, height: 22 }} />
-            ) : (
+            { !collapsed && (
               <ChevronLeft sx={{ width: 22, height: 22 }} />
+            )}
+            {hovered && collapsed && (
+              <ChevronRight sx={{ width: 22, height: 22 }} />
             )}
           </div>
         )}
       </Box>
 
       {/* --- Sidebar Navigation --- */}
-      <SidebarNav items={items} collapsed={isCollapsed} />
+      <SidebarNav items={items} collapsed={collapsed && !hovered} />
     </Drawer>
   );
 };

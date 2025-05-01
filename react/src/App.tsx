@@ -13,6 +13,7 @@ import ReactQueryProvider from "./utils/ReactQueryProvider";
 
 import { AuthProvider } from "./contexts/AuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { Toaster } from "sonner";
 
 const clientSideEmotionCache = createEmotionCache();
@@ -30,7 +31,9 @@ function App({ emotionCache = clientSideEmotionCache }) {
       <MuiThemeProvider theme={theme}>
         <ReactQueryProvider>
           <AuthProvider>
-            <WebSocketProvider>{content}</WebSocketProvider>
+            <WebSocketProvider>
+              <SidebarProvider>{content}</SidebarProvider>
+            </WebSocketProvider>
           </AuthProvider>
         </ReactQueryProvider>
         <Toaster richColors position="top-right" />
