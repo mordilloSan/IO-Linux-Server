@@ -26,4 +26,3 @@ go-backend/server
 
 #password for dev mode
 secret.env
-secret.env
