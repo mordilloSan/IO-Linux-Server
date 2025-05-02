@@ -1,4 +1,3 @@
-// components/system/UpdateActions.tsx
 import React, { useState } from "react";
 import { Box, Typography, Button, LinearProgress } from "@mui/material";
 import axios from "@/utils/axios";
@@ -9,6 +8,7 @@ interface Props {
   onComplete: () => void;
   isUpdating: boolean;
   setIsUpdating: React.Dispatch<React.SetStateAction<boolean>>;
+  onUpdateOne?: (pkg: string) => void; // Optional: for single-package mode
 }
 
 const UpdateActions: React.FC<Props> = ({

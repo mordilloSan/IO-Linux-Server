@@ -82,9 +82,6 @@ const UpdateHistoryCard: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ pl: 2, pr: 2, pt: 3 }}>
-        Update History
-      </Typography>
       <CollapsibleTable
         rows={rows}
         columns={columns}

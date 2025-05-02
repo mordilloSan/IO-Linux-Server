@@ -24,9 +24,9 @@ func getUpdateHistoryHandler(c *gin.Context) {
 }
 
 func parseUpdateHistory() []UpdateHistoryEntry {
-	if _, err := os.Stat("/var/log/apt/history.log"); err == nil {
-		logger.Info.Println("Parsing apt update history")
-		return parseAptHistory("/var/log/apt/history.log")
+	if _, err := os.Stat("/var/log/dpkg.log"); err == nil {
+		logger.Info.Println("Parsing dpkg update history")
+		return parseDpkgLog("/var/log/dpkg.log")
 	}
 	if _, err := os.Stat("/var/log/dnf.log"); err == nil {
 		logger.Info.Println("Parsing dnf update history")
@@ -36,38 +36,48 @@ func parseUpdateHistory() []UpdateHistoryEntry {
 	return []UpdateHistoryEntry{}
 }
 
-func parseAptHistory(logPath string) []UpdateHistoryEntry {
+func parseDpkgLog(logPath string) []UpdateHistoryEntry {
 	file, err := os.Open(logPath)
 	if err != nil {
-		logger.Error.Printf("Failed to open APT log: %v", err)
+		logger.Error.Printf("Failed to open dpkg log: %v", err)
 		return nil
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	dateRe := regexp.MustCompile(`^Start-Date: (\d{4}-\d{2}-\d{2})`)
-	upgradeRe := regexp.MustCompile(`^(Upgrade|Remove): (.+)`)
-	pkgVerRe := regexp.MustCompile(`([a-zA-Z0-9+.\-]+)(:[^ ]+)? \(([^)]+)\)`)
+
+	installRe := regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(install|upgrade)\s+([^ ]+)\s+([^ ]+)`)
+	configureRe := regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+configure\s+([^ ]+)\s+([^ ]+)`)
 
 	historyMap := make(map[string][]UpgradeItem)
-	var currentDate string
+	pendingPackages := make(map[string]string)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if matches := dateRe.FindStringSubmatch(line); len(matches) == 2 {
-			currentDate = matches[1]
-		} else if matches := upgradeRe.FindStringSubmatch(line); len(matches) == 3 && currentDate != "" {
-			entries := strings.Split(matches[2], ", ")
-			for _, entry := range entries {
-				if m := pkgVerRe.FindStringSubmatch(entry); len(m) == 4 {
-					historyMap[currentDate] = append(historyMap[currentDate], UpgradeItem{
-						Package: m[1],
-						Version: m[3],
-					})
-				}
+		if matches := installRe.FindStringSubmatch(line); len(matches) == 5 {
+			date, pkg, version := matches[1], matches[3], matches[4]
+			if version == "<none>" {
+				pendingPackages[pkg] = date
+			} else {
+				historyMap[date] = append(historyMap[date], UpgradeItem{
+					Package: pkg,
+					Version: version,
+				})
 			}
 		}
+
+		if matches := configureRe.FindStringSubmatch(line); len(matches) == 4 {
+			_, pkg, version := matches[1], matches[2], matches[3]
+			if origDate, exists := pendingPackages[pkg]; exists {
+				historyMap[origDate] = append(historyMap[origDate], UpgradeItem{
+					Package: pkg,
+					Version: version,
+				})
+				delete(pendingPackages, pkg)
+			}
+		}
+
 	}
 
 	return mapToSortedHistory(historyMap)
