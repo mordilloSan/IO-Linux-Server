@@ -159,7 +159,7 @@ run: build-backend
 clean:
 	@rm -f go-backend/server || true
 	@rm -rf react/node_modules react/package-lock.json || true
-	@rm -rf go-backend/frontend go-backend/theme.txt || true
+	@rm -rf go-backend/frontend go-backend/theme.json || true
 	@echo "🧹 Cleaned workspace."
 
 help:

@@ -17,7 +17,7 @@ type ThemeSettings struct {
 	SidebarColapsed bool   `json:"sidebarColapsed"`
 }
 
-const themeFilePath = "./theme.txt"
+const themeFilePath = "./theme.json"
 
 var defaultTheme = ThemeSettings{
 	Theme:           "DARK",

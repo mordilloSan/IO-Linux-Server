@@ -6,7 +6,7 @@ react/package-lock.json
 go-backend/frontend/
 go-backend/tmp/
 go-backend/server
-go-backend/theme.txt
+go-backend/theme.json
 
 # Logs and misc
 *.log
