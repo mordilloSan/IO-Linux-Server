@@ -1,8 +1,8 @@
-# Go binaries
+# This file is used to ignore files and directories that should not be tracked by git
 
-
-# Node modules
+# React Files
 react/node_modules/
+react/package-lock.json
 
 # Go Folders and files
 go-backend/frontend/
@@ -27,3 +27,4 @@ go-backend/theme.txt
 
 #password for dev mode
 secret.env
+
