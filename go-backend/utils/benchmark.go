@@ -13,7 +13,7 @@ import (
 
 // RunBenchmark performs parallel benchmarking of all GET /system/* endpoints
 func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, concurrency int) []BenchmarkResult {
-	endpoints := getSystemEndpoints(router)
+	endpoints := getBenchmarkableEndpoints(router)
 	logger.Info.Printf("📈 Running benchmark for %d /system/ endpoints...", len(endpoints))
 
 	client := &http.Client{Timeout: 5 * time.Second}
@@ -69,14 +69,22 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 	return results
 }
 
-// getSystemEndpoints returns all GET routes starting with /system/
-func getSystemEndpoints(router *gin.Engine) []string {
+func getBenchmarkableEndpoints(router *gin.Engine) []string {
 	var endpoints []string
+	allowedPrefixes := []string{"/system/", "/docker/", "/wireguard/"}
+
 	for _, route := range router.Routes() {
-		if route.Method == "GET" && len(route.Path) > 7 && route.Path[:8] == "/system/" {
-			endpoints = append(endpoints, route.Path)
+		if route.Method != "GET" {
+			continue
+		}
+		for _, prefix := range allowedPrefixes {
+			if len(route.Path) >= len(prefix) && route.Path[:len(prefix)] == prefix {
+				endpoints = append(endpoints, route.Path)
+				break
+			}
 		}
 	}
-	logger.Debug.Printf("🔍 Found %d GET /system/* routes to benchmark", len(endpoints))
+
+	logger.Debug.Printf("🔍 Found %d GET benchmarkable routes", len(endpoints))
 	return endpoints
 }

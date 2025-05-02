@@ -1,65 +1,88 @@
-// components/system/UpdateList.tsx
-import React from "react";
-import { Card, Box, Typography } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CollapsibleTable from "@/components/tables/CollapsibleTable";
-import ComponentLoader from "@/components/ComponentLoader";
+import React, { useState } from "react";
+import {
+  Box,
+  CardContent,
+  Typography,
+  Chip,
+  Stack,
+  Collapse,
+} from "@mui/material";
 import { Update } from "@/types/update";
-import { CollapsibleColumn } from "@/types/collapsible";
+import FrostedCard from "@/components/cards/FrostedCard";
+import ChangelogPanel from "./ChangelogPanel";
 
 interface Props {
   updates: Update[];
-  loading: boolean;
-  renderCollapseContent: (row: Update) => React.ReactNode;
+  onUpdateClick: (pkg: string) => void;
 }
 
-const columns: CollapsibleColumn[] = [
-  { field: "name", headerName: "Name" },
-  { field: "version", headerName: "Version" },
-  { field: "severity", headerName: "Severity" },
-];
+const UpdateList: React.FC<Props> = ({ updates, onUpdateClick }) => {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
-const UpdateList: React.FC<Props> = ({
-  updates,
-  loading,
-  renderCollapseContent,
-}) => {
-  if (loading) {
+  if (!updates.length) {
     return (
-      <Box sx={{ padding: 2 }}>
-        <Card>
-          <Box sx={{ py: 2.8 }}>
-            <ComponentLoader />
-          </Box>
-        </Card>
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <Typography variant="h6">Your system is up to date 🎉</Typography>
       </Box>
     );
   }
 
-  if (updates.length === 0) {
-    return (
-      <Box sx={{ padding: 2 }}>
-        <Card>
-          <Box sx={{ display: "flex", alignItems: "center", py: 5 }}>
-            <CheckCircleIcon
-              color="success"
-              sx={{ ml: 9, mr: 8, fontSize: 22 }}
-            />
-            <Typography variant="body1" fontSize={15}>
-              System is up to date
-            </Typography>
-          </Box>
-        </Card>
-      </Box>
-    );
-  }
+  const toggleExpanded = (index: number) => {
+    setExpandedIdx(index === expandedIdx ? null : index);
+  };
 
   return (
-    <CollapsibleTable
-      rows={updates}
-      columns={columns}
-      renderCollapseContent={renderCollapseContent}
-    />
+    <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
+      {updates.map((update, idx) => (
+        <FrostedCard
+          key={idx}
+          variant="outlined"
+          sx={{ width: "100%", maxWidth: 500 }}
+        >
+          <CardContent>
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+              <Typography variant="h6">{update.name}</Typography>
+              <Chip
+                label={update.severity}
+                size="small"
+                sx={{
+                  backgroundColor: "transparent",
+                }}
+              />
+            </Box>
+
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Version: {update.version}
+            </Typography>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+              <Chip
+                label="View Changelog"
+                size="small"
+                variant="outlined"
+                onClick={() => toggleExpanded(idx)}
+                sx={{ cursor: "pointer" }}
+              />
+              {update.name && (
+                <Chip
+                  label="Update"
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onUpdateClick(update.name)}
+                  sx={{ cursor: "pointer" }}
+                />
+              )}
+            </Box>
+
+            <Collapse in={expandedIdx === idx} timeout="auto" unmountOnExit>
+              <Box sx={{ mt: 2 }}>
+                <ChangelogPanel packageName={update.name} />
+              </Box>
+            </Collapse>
+          </CardContent>
+        </FrostedCard>
+      ))}
+    </Stack>
   );
 };
 

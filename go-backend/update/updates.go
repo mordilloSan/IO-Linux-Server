@@ -26,64 +26,105 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 
 func getUpdatesHandler(c *gin.Context) {
 	logger.Info.Println("🔍 Checking for system updates...")
+
 	cmd := exec.Command("pkcon", "get-updates")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// pkcon returns exit code 5 if no updates
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
 			logger.Info.Println("✅ No updates available.")
-			c.JSON(http.StatusOK, gin.H{"updates": []UpdateGroup{}})
+			c.JSON(http.StatusOK, gin.H{"updates": []any{}})
 			return
 		}
 		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, string(output))
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to get updates",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get updates", "details": err.Error()})
 		return
 	}
 
-	logger.Info.Printf("✅ Retrieved update list:\n%s", string(output))
-	groupMap := make(map[string]*UpdateGroup)
 	lines := strings.Split(string(output), "\n")
+	logger.Debug.Printf("📦 Raw pkcon output:\n%s", string(output))
 
-	for _, line := range lines {
-		if line == "" || !strings.Contains(line, "-") {
-			continue
-		}
-		fields := strings.Fields(line)
-		if len(fields) < 3 {
-			continue
-		}
-		severity := fields[0]
-		rawID := fields[1]
-		parts := strings.Split(rawID, "-")
-		if len(parts) < 3 {
-			continue
-		}
-		name := strings.Join(parts[:len(parts)-2], "-")
-		version := parts[len(parts)-2]
-		key := version + "|" + severity
-
-		if group, exists := groupMap[key]; exists {
-			group.Packages = append(group.Packages, name)
-		} else {
-			groupMap[key] = &UpdateGroup{
-				Name:     name,
-				Version:  version,
-				Severity: severity,
-				Packages: []string{name},
-			}
-		}
+	type UpdateItem struct {
+		Name     string `json:"name"`
+		Version  string `json:"version"`
+		Severity string `json:"severity"`
 	}
 
-	var updates []UpdateGroup
-	for _, group := range groupMap {
-		group.Name = strings.Join(group.Packages, ", ")
-		updates = append(updates, *group)
+	var updates []UpdateItem
+
+	for _, line := range lines {
+		if severity, name, version, ok := parseUpdateLine(line); ok {
+			updates = append(updates, UpdateItem{
+				Name:     name,
+				Version:  version,
+				Severity: normalizeSeverity(severity),
+			})
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"updates": updates})
+}
+
+func parseUpdateLine(line string) (string, string, string, bool) {
+	if !strings.Contains(line, "(") || !strings.Contains(line, "-") {
+		return "", "", "", false
+	}
+
+	// Remove trailing repo info in parentheses
+	parts := strings.SplitN(line, "(", 2)
+	if len(parts) < 1 {
+		return "", "", "", false
+	}
+	line = strings.TrimSpace(parts[0])
+
+	fields := strings.Fields(line)
+	if len(fields) < 2 {
+		return "", "", "", false
+	}
+
+	// Multi-word severities (like "Bug fix", "Security update")
+	severity := fields[0]
+	if len(fields) > 2 && (strings.ToLower(fields[1]) == "fix" || strings.ToLower(fields[1]) == "update") {
+		severity += " " + fields[1]
+		fields = append([]string{severity}, fields[2:]...)
+	} else {
+		fields = append([]string{severity}, fields[1:]...)
+	}
+
+	if len(fields) < 2 {
+		return "", "", "", false
+	}
+
+	packageID := fields[1]
+
+	// Strip arch suffix (e.g. .amd64)
+	if idx := strings.LastIndex(packageID, "."); idx != -1 {
+		packageID = packageID[:idx]
+	}
+
+	parts = strings.Split(packageID, "-")
+	if len(parts) < 3 {
+		return "", "", "", false
+	}
+
+	version := parts[len(parts)-2] + "-" + parts[len(parts)-1]
+	name := strings.Join(parts[:len(parts)-2], "-")
+
+	return severity, name, version, true
+}
+
+func normalizeSeverity(raw string) string {
+	switch strings.ToLower(strings.ReplaceAll(raw, " ", "")) {
+	case "important":
+		return "🔴 Critical"
+	case "securityupdate", "security":
+		return "🟠 Security"
+	case "bugfix", "bug":
+		return "🟡 Bugfix"
+	case "enhancement":
+		return "🟢 Enhancement"
+	default:
+		return raw
+	}
 }
 
 func updatePackageHandler(c *gin.Context) {

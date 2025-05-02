@@ -3,5 +3,4 @@ export type Update = {
   version: string;
   severity: string;
   changelog?: string;
-  packages?: string[];
 };

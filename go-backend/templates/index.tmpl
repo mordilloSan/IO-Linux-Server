@@ -64,8 +64,11 @@
       }
     </style>
 
-    <script type="module" crossorigin src="/assets/index-DSfi3ChR.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-D9M7OYiJ.css">
+    <script type="module" crossorigin src="{{.JSBundle}}"></script>
+    {{if .CSSBundle}}
+    <link rel="stylesheet" crossorigin href="{{.CSSBundle}}">
+    {{end}}
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

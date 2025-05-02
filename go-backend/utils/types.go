@@ -13,3 +13,8 @@ type BenchmarkResult struct {
 	Latency  time.Duration
 	Error    error
 }
+
+type ManifestEntry struct {
+	File string   `json:"file"`
+	CSS  []string `json:"css"`
+}

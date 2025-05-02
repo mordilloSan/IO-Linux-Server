@@ -1,33 +1,48 @@
 // components/system/UpdateStatus.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "@/utils/axios";
 import UpdateActions from "./UpdateActions";
 import UpdateList from "./UpdateList";
 import { Update } from "@/types/update";
 import ChangelogPanel from "./ChangelogPanel";
 
-interface UpdateInfo {
-  updates: Update[];
-}
-
 const UpdateStatus: React.FC = () => {
+  const [isUpdating, setIsUpdating] = useState(false);
   const {
-    data: updateInfo,
-    isLoading,
+    data,
     refetch,
-  } = useQuery<UpdateInfo>({
+  } = useQuery<{ updates: Update[] }>({
     queryKey: ["updateInfo"],
     queryFn: () => axios.get("/system/updates").then((res) => res.data),
     refetchInterval: 50000,
+    enabled: !isUpdating,
   });
 
-  const updates = updateInfo?.updates || [];
+  const updates = data?.updates || [];
 
-  const renderCollapseContent = (row: Update) => (
-    <ChangelogPanel packageName={row.packages?.[0] || ""} />
-  );
+  const queryClient = useQueryClient();
+
+useEffect(() => {
+  if (updates.length > 0) {
+    updates.forEach((update) => {
+      if (update.name) {
+        queryClient.prefetchQuery({
+          queryKey: ["changelog", update.name],
+          queryFn: () =>
+            axios
+              .get("/system/updates/changelog", {
+                params: { package: update.name },
+              })
+              .then((res) => res.data),
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+    });
+  }
+}, [updates, queryClient]);
+
 
   return (
     <Box>
@@ -45,12 +60,11 @@ const UpdateStatus: React.FC = () => {
         </Typography>
       </Box>
 
-      <UpdateActions updates={updates} onComplete={refetch} />
+      <UpdateActions updates={updates} onComplete={refetch}   isUpdating={isUpdating}  setIsUpdating={setIsUpdating}/>
 
       <UpdateList
         updates={updates}
-        loading={isLoading}
-        renderCollapseContent={renderCollapseContent}
+        onUpdateClick={(pkg) => <ChangelogPanel packageName={pkg} />}
       />
     </Box>
   );

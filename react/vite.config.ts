@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "es2017",
     chunkSizeWarningLimit: 2000,
+    manifest: true,
     outDir: "../go-backend/frontend",
     emptyOutDir: true,
     minify: "esbuild",

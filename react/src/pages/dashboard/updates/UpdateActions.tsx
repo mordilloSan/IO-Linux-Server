@@ -7,15 +7,20 @@ import { Update } from "@/types/update";
 interface Props {
   updates: Update[];
   onComplete: () => void;
+  isUpdating: boolean;
+  setIsUpdating: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const UpdateActions: React.FC<Props> = ({ updates, onComplete }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
+const UpdateActions: React.FC<Props> = ({
+  updates,
+  onComplete,
+  isUpdating,
+  setIsUpdating,
+}) => {
   const [updateProgress, setUpdateProgress] = useState(0);
   const [currentPackage, setCurrentPackage] = useState("");
 
-  const allPackages = updates.flatMap((u) => u.packages || []);
-  const totalPackages = allPackages.length;
+  const totalPackages = updates.length;
 
   const handleUpdateAll = async () => {
     if (totalPackages === 0 || isUpdating) return;
@@ -25,7 +30,7 @@ const UpdateActions: React.FC<Props> = ({ updates, onComplete }) => {
     setCurrentPackage("");
 
     for (let i = 0; i < totalPackages; i++) {
-      const pkg = allPackages[i];
+      const pkg = updates[i].name;
       setCurrentPackage(pkg);
 
       try {

@@ -118,27 +118,24 @@ func main() {
 }
 
 func ServeIndex(c *gin.Context) {
-	theme, err := config.LoadTheme()
+	js, css, err := utils.ParseViteManifest("./frontend/.vite/manifest.json")
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Failed to load theme")
+		c.String(http.StatusInternalServerError, "Failed to load bundle info")
 		return
 	}
 
-	dark := theme.Theme == "DARK"
-
 	data := map[string]string{
-		"ThemeColor":        theme.PrimaryColor,
+		"JSBundle":          js,
+		"CSSBundle":         css,
+		"PrimaryColor":      "#1976d2",
+		"ThemeColor":        "#1976d2",
 		"Background":        "#1B2635",
 		"ShimmerBackground": "#233044",
-		"PrimaryColor":      theme.PrimaryColor,
-	}
-
-	if !dark {
-		data["Background"] = "#ffffff"
-		data["ShimmerBackground"] = "#eeeeee"
 	}
 
 	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	indexTemplate.Execute(c.Writer, data)
+	if err := indexTemplate.Execute(c.Writer, data); err != nil {
+		logger.Error.Printf("❌ Failed to execute index template: %v", err)
+	}
 }

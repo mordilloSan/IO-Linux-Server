@@ -17,7 +17,7 @@ var appConfig AppConfig
 
 // LoadConfig reads config.yaml or applies default values
 func LoadConfig() error {
-	file, err := os.Open("config.yaml")
+	file, err := os.Open("config/config.yaml")
 	if err != nil {
 		logger.Warning.Println("[config] No config.yaml found, using defaults")
 		appConfig = AppConfig{
