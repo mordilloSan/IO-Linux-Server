@@ -12,7 +12,8 @@ import (
 	"go-backend/utils"
 	"go-backend/websocket"
 	"go-backend/wireguard"
-
+	"html/template"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -20,17 +21,15 @@ import (
 )
 
 var env = "development"
+var indexTemplate = template.Must(template.ParseFiles("templates/index.tmpl"))
 
 func main() {
-	// Load .env
 	_ = godotenv.Load("../.env")
 
-	// Resolve environment
 	if goEnv := os.Getenv("GO_ENV"); goEnv != "" {
 		env = goEnv
 	}
 
-	// Initialize logger
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init(env, verbose)
 
@@ -62,7 +61,6 @@ func main() {
 		router.Use(gin.Logger())
 	}
 
-	// Register routes
 	auth.RegisterAuthRoutes(router)
 	registerSystemRoutes(router)
 	websocket.RegisterWebSocketRoutes(router)
@@ -79,7 +77,7 @@ func main() {
 		router.GET("/debug/benchmark", func(c *gin.Context) {
 			cookie, err := c.Cookie("session_id")
 			if err != nil {
-				c.JSON(401, gin.H{"error": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 				return
 			}
 			results := utils.RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
@@ -95,7 +93,7 @@ func main() {
 					})
 				}
 			}
-			c.JSON(200, output)
+			c.JSON(http.StatusOK, output)
 		})
 	}
 
@@ -106,9 +104,7 @@ func main() {
 		for i := 1; i <= 6; i++ {
 			router.StaticFile(fmt.Sprintf("/favicon-%d.png", i), fmt.Sprintf("./frontend/favicon-%d.png", i))
 		}
-		router.NoRoute(func(c *gin.Context) {
-			c.File("./frontend/index.html")
-		})
+		router.NoRoute(ServeIndex)
 	}
 
 	port := os.Getenv("SERVER_PORT")
@@ -119,4 +115,30 @@ func main() {
 
 	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
 	logger.Error.Fatal(router.Run(":" + port))
+}
+
+func ServeIndex(c *gin.Context) {
+	theme, err := config.LoadTheme()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to load theme")
+		return
+	}
+
+	dark := theme.Theme == "DARK"
+
+	data := map[string]string{
+		"ThemeColor":        theme.PrimaryColor,
+		"Background":        "#1B2635",
+		"ShimmerBackground": "#233044",
+		"PrimaryColor":      theme.PrimaryColor,
+	}
+
+	if !dark {
+		data["Background"] = "#ffffff"
+		data["ShimmerBackground"] = "#eeeeee"
+	}
+
+	c.Status(http.StatusOK)
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	indexTemplate.Execute(c.Writer, data)
 }
