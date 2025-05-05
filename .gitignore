@@ -22,3 +22,6 @@ go-backend/theme.json
 
 # Logs
 *.log
+
+# This file is used to store the sudo password for the go-backend server.
+secret.env
