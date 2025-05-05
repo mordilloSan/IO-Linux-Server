@@ -22,7 +22,3 @@ go-backend/theme.json
 
 # Logs
 *.log
-
-#password for dev mode
-secret.env
-
