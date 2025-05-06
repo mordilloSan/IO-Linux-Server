@@ -1,5 +1,6 @@
-import React from "react";
 import { Box, Typography, Paper } from "@mui/material";
+import React from "react";
+
 import { ReactComponent as Logo } from "@/assets/logo.svg";
 import SignInComponent from "@/components/auth/SignIn";
 

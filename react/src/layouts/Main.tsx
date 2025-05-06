@@ -1,15 +1,15 @@
-import React, { useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
 import { Box, CssBaseline } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import React, { useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 
-import Navbar from "@/components/navbar/Navbar";
-import Sidebar from "@/components/sidebar/Sidebar";
-import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import Footer from "@/components/Footer";
+import Navbar from "@/components/navbar/Navbar";
 import dashboardItems from "@/components/sidebar/dashboardItems";
-import useSidebar from "@/hooks/useSidebar";
+import Sidebar from "@/components/sidebar/Sidebar";
 import useAppTheme from "@/hooks/useAppTheme";
+import useSidebar from "@/hooks/useSidebar";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();

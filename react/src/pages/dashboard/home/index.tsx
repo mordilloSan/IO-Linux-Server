@@ -1,14 +1,15 @@
-import React from "react";
 import { Grid } from "@mui/material";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import React from "react";
 
-import Memory from "./Memory";
-import SystemHealth from "./SystemHealth";
 import FileSystem from "./FileSystem";
-import Processor from "./Processor";
-import NetworkInterfacesCard from "./NetworkInfo";
-import MotherBoardInfo from "./MotherBoardInfo";
 import GpuInfo from "./GpuInfo";
+import Memory from "./Memory";
+import MotherBoardInfo from "./MotherBoardInfo";
+import NetworkInterfacesCard from "./NetworkInfo";
+import Processor from "./Processor";
+import SystemHealth from "./SystemHealth";
+
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const MemoSystemHealth = React.memo(SystemHealth);
 const MemoProcessor = React.memo(Processor);

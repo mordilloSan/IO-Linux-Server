@@ -1,4 +1,4 @@
-import React from "react";
+import { Menu as MenuIcon } from "@mui/icons-material";
 import {
   Grid,
   InputBase,
@@ -8,13 +8,14 @@ import {
   Box,
   useTheme,
 } from "@mui/material";
-import { Menu as MenuIcon } from "@mui/icons-material";
 import { Search as SearchIcon } from "lucide-react";
+import React from "react";
 
-import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
-import NavbarUserDropdown from "./NavbarUserDropdown";
-import Settings from "./NavbarThemeToggle";
 import Customizer from "./NavbarCustomizer";
+import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
+import Settings from "./NavbarThemeToggle";
+import NavbarUserDropdown from "./NavbarUserDropdown";
+
 import { getHoverBackground } from "@/theme/components";
 
 type NavbarProps = {

@@ -1,6 +1,3 @@
-import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
-
 import {
   Badge,
   Box,
@@ -15,6 +12,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { Bell, Home, UserPlus, Server } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 function Notification({
   title,

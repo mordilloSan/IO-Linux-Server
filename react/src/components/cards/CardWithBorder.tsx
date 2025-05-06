@@ -1,4 +1,4 @@
-import React from "react";
+import { Icon } from "@iconify/react";
 import {
   Box,
   CardContent,
@@ -10,8 +10,10 @@ import {
   Tooltip,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import { Icon } from "@iconify/react";
+import React from "react";
+
 import FrostedCard from "./FrostedCard";
+
 import { cardHeight } from "@/constants";
 
 interface SelectOption {

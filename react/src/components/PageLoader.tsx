@@ -1,6 +1,6 @@
-import React from "react";
 import { Box, useTheme, alpha } from "@mui/material";
 import { motion } from "framer-motion";
+import React from "react";
 
 const animation = {
   animate: {

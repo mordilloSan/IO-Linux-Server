@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react";
 import {
   Home,
   RefreshCcw,
@@ -9,8 +10,6 @@ import {
   Folder,
   Network,
 } from "lucide-react";
-
-import { Icon } from "@iconify/react";
 
 import { SidebarItemsType } from "@/types/sidebar";
 

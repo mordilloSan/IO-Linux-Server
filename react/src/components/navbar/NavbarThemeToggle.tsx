@@ -1,6 +1,6 @@
-import React from "react";
 import { IconButton, Tooltip } from "@mui/material";
 import { Sun, Moon } from "lucide-react";
+import React from "react";
 
 import { THEMES } from "@/constants";
 import useTheme from "@/hooks/useAppTheme";

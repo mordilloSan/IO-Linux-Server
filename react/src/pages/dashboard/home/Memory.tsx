@@ -1,12 +1,12 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Typography, Box } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { Loader } from "lucide-react";
+import React from "react";
 
-import axios from "@/utils/axios"; // ✅ use your axios instance
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import CircularProgressWithLabel from "@/components/CircularProgress";
 import ErrorMessage from "@/components/Error";
-import { Loader } from "lucide-react";
+import axios from "@/utils/axios"; // ✅ use your axios instance
 
 // Utility functions
 const formatBytesToGB = (bytes: number) => (bytes / 1000 ** 3).toFixed(2);

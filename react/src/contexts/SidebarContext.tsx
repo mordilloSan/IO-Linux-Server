@@ -1,3 +1,4 @@
+import { useMediaQuery, useTheme as useMuiTheme } from "@mui/material";
 import React, {
   createContext,
   useState,
@@ -6,7 +7,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { useMediaQuery, useTheme as useMuiTheme } from "@mui/material";
+
 import { drawerWidth, collapsedDrawerWidth } from "@/constants";
 import useAppTheme from "@/hooks/useAppTheme";
 

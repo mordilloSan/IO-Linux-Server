@@ -1,8 +1,9 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Typography, Box } from "@mui/material";
-import CardWithBorder from "@/components/cards/CardWithBorder";
 import TemperatureIcon from "@mui/icons-material/Thermostat";
+import { Typography, Box } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
+
+import CardWithBorder from "@/components/cards/CardWithBorder";
 import axios from "@/utils/axios";
 
 interface MotherboardInfo {

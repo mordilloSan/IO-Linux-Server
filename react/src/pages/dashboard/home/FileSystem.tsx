@@ -1,12 +1,12 @@
-import React from "react";
-import axios from "@/utils/axios";
-import { useQuery } from "@tanstack/react-query";
 import { Typography, LinearProgress, Box, Tooltip } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import { FilesystemInfo } from "@/types/fs";
 import ComponentLoader from "@/components/ComponentLoader";
 import ErrorMessage from "@/components/Error";
+import { FilesystemInfo } from "@/types/fs";
+import axios from "@/utils/axios";
 
 const FsInfoCard: React.FC = () => {
   const {

@@ -1,6 +1,6 @@
-import React from "react";
 import { Box, Typography, CircularProgress, useTheme } from "@mui/material";
 import { grey } from "@mui/material/colors";
+import React from "react";
 
 interface CircularProgressWithLabelProps {
   value: number;

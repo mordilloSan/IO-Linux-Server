@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   CardContent,
@@ -8,9 +7,12 @@ import {
   Collapse,
   CircularProgress,
 } from "@mui/material";
-import { Update } from "@/types/update";
-import FrostedCard from "@/components/cards/FrostedCard";
+import React, { useEffect, useRef, useState } from "react";
+
 import ChangelogPanel from "./ChangelogPanel";
+
+import FrostedCard from "@/components/cards/FrostedCard";
+import { Update } from "@/types/update";
 
 interface Props {
   updates: Update[];

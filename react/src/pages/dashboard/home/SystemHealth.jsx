@@ -1,14 +1,15 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Typography, Box, useTheme } from "@mui/material";
 import GppGoodOutlinedIcon from "@mui/icons-material/GppGoodOutlined";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import SecurityUpdateWarningIcon from "@mui/icons-material/SecurityUpdateWarning";
-import CardWithBorder from "@/components/cards/CardWithBorder";
-import axios from "@/utils/axios";
-import { Link as RouterLink } from "react-router-dom";
+import { Typography, Box, useTheme } from "@mui/material";
 import { Link } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { Link as RouterLink } from "react-router-dom";
+
+import CardWithBorder from "@/components/cards/CardWithBorder";
 import ComponentLoader from "@/components/ComponentLoader";
+import axios from "@/utils/axios";
 
 const SystemHealth = () => {
   const theme = useTheme();

@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
+
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // This hides the loading from index.html

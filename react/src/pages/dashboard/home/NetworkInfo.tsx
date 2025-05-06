@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import axios from "@/utils/axios";
+import React, { useState, useEffect } from "react";
+
+import NetworkGraph from "./NetworkGraph";
+
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import ComponentLoader from "@/components/ComponentLoader";
-import NetworkGraph from "./NetworkGraph";
+import axios from "@/utils/axios";
 
 interface InterfaceStats {
   name: string;

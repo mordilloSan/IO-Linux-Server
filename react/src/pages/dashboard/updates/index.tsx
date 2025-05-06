@@ -1,4 +1,3 @@
-import React, { useState, useContext } from "react";
 import {
   Box,
   Fade,
@@ -6,8 +5,11 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import UpdateStatus from "./UpdateStatus";
+import React, { useState, useContext } from "react";
+
 import UpdateHistory from "./UpdateHistory";
+import UpdateStatus from "./UpdateStatus";
+
 import { ThemeContext } from "@/contexts/ThemeContext";
 
 const Updates: React.FC = () => {

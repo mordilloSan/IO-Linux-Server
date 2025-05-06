@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Box,
   CircularProgress,
@@ -7,11 +6,14 @@ import {
   Typography,
   Fade,
 } from "@mui/material";
-import ActionButton from "./ActionButton";
-import { ContainerInfo } from "@/types/container";
-import FrostedCard from "@/components/cards/FrostedCard";
-import axios from "@/utils/axios";
 import { useQueryClient } from "@tanstack/react-query";
+import React from "react";
+
+import ActionButton from "./ActionButton";
+
+import FrostedCard from "@/components/cards/FrostedCard";
+import { ContainerInfo } from "@/types/container";
+import axios from "@/utils/axios";
 
 const getContainerIconUrl = (name: string) => {
   const sanitized = name.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();

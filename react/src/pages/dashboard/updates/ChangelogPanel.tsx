@@ -1,7 +1,8 @@
 // components/system/ChangelogPanel.tsx
-import React from "react";
 import { Typography, Box } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import React from "react";
+
 import axios from "@/utils/axios";
 
 interface Props {

@@ -1,7 +1,9 @@
-import React from "react";
 import { List } from "@mui/material";
-import { SidebarItemsType } from "@/types/sidebar";
+import React from "react";
+
 import SidebarNavListItem from "./SidebarNavListItem";
+
+import { SidebarItemsType } from "@/types/sidebar";
 
 type SidebarNavProps = {
   items: SidebarItemsType[];

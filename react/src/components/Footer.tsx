@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Grid,
   List,
@@ -7,6 +6,7 @@ import {
   Box,
   useTheme,
 } from "@mui/material";
+import React from "react";
 
 function Footer() {
   const theme = useTheme();

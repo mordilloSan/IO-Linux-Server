@@ -1,6 +1,6 @@
-import React from "react";
-import { Box, Typography } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { Box, Typography } from "@mui/material";
+import React from "react";
 
 const ErrorMessage: React.FC = () => {
   return (

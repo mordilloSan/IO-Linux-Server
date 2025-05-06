@@ -1,11 +1,13 @@
-import React from "react";
-import { Drawer, Box, useTheme } from "@mui/material";
-import { ReactComponent as Logo } from "@/assets/logo.svg";
-import { SidebarItemsType } from "@/types/sidebar";
-import SidebarNav from "./SidebarNav";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { Drawer, Box, useTheme } from "@mui/material";
+import React from "react";
+
+import SidebarNav from "./SidebarNav";
+
+import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
+import { SidebarItemsType } from "@/types/sidebar";
 
 export type SidebarProps = {
   items: SidebarItemsType[];

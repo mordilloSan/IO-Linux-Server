@@ -1,5 +1,6 @@
-import React from "react";
 import { Card, CardProps } from "@mui/material";
+import React from "react";
+
 import { cardBorderRadius } from "@/constants";
 
 type FrostedCardProps = CardProps;

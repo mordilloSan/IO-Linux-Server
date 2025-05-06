@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   TextField,
   Button,
@@ -7,7 +6,8 @@ import {
   InputAdornment,
   IconButton,
 } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import useAuth from "@/hooks/useAuth";
 

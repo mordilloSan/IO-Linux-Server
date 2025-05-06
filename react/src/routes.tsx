@@ -2,13 +2,14 @@
 import React, { lazy } from "react";
 
 // Layouts
+import GuestGuard from "./components/guards/GuestGuard";
+import Docker from "./pages/dashboard/docker";
+
+import AuthGuard from "@/components/guards/AuthGuard";
 import AuthLayout from "@/layouts/Auth";
 import MainLayout from "@/layouts/Main";
 
 // Guards
-import AuthGuard from "@/components/guards/AuthGuard";
-import GuestGuard from "./components/guards/GuestGuard";
-import Docker from "./pages/dashboard/docker";
 
 const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
   const Wrapped = (props: any) => <Component {...props} />;

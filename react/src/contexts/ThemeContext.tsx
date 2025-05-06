@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+
 import {
   DEFAULT_PRIMARY_COLOR,
   SIDEBAR_COLAPSED_STATE,

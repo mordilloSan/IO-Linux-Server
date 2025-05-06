@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
+
 import useAuth from "@/hooks/useAuth";
 
 interface GuestGuardType {

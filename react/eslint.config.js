@@ -5,6 +5,8 @@ import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import prettier from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
+import importPlugin from "eslint-plugin-import";
+import unusedImports from "eslint-plugin-unused-imports";
 import globals from "globals";
 import { FlatCompat } from "@eslint/eslintrc";
 
@@ -14,10 +16,8 @@ const compat = new FlatCompat({
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
-  // Base JS rules
   js.configs.recommended,
 
-  // 🔍 Global definitions (fixes console, document, HTMLElement, etc.)
   {
     languageOptions: {
       globals: {
@@ -28,7 +28,6 @@ export default [
     },
   },
 
-  // ✅ TypeScript config
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
@@ -45,13 +44,12 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       "@typescript-eslint/no-empty-interface": "warn",
-      "@typescript-eslint/no-explicit-any": "off", // safe override now
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 
-  // ✅ React + JSX
   {
-    files: ["**/*.js", "**/*.jsx"],
+    files: ["**/*.js", "**/*.jsx", "**/*.tsx"],
     languageOptions: {
       parserOptions: {
         ecmaFeatures: { jsx: true },
@@ -60,6 +58,8 @@ export default [
     plugins: {
       react,
       "react-hooks": reactHooks,
+      import: importPlugin,
+      "unused-imports": unusedImports,
     },
     settings: {
       react: {
@@ -72,10 +72,48 @@ export default [
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react/no-unescaped-entities": "warn",
+
+      // ✅ Unused imports and vars
+      "unused-imports/no-unused-imports": "warn",
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
+
+      // ✅ Import order and grouping
+      "import/order": [
+        "warn",
+        {
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            ["parent", "sibling", "index"],
+          ],
+          "newlines-between": "always",
+          alphabetize: { order: "asc", caseInsensitive: true },
+        },
+      ],
+
+      // ✅ Warn if unused React is imported
+      "no-unused-vars": "off", // 🔁 turn off core rule
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 
-  // ✅ Prettier integration
   {
     plugins: {
       prettier,
@@ -85,11 +123,9 @@ export default [
     },
   },
 
-  // ✅ Legacy config (TanStack Query rules)
   ...compat.config({
     extends: ["plugin:@tanstack/query/recommended"],
   }),
 
-  // Optional: Prettier overrides from config
   prettierConfig,
 ];

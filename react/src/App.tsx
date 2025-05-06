@@ -1,20 +1,18 @@
-import React, { useMemo } from "react";
-import { useRoutes } from "react-router-dom";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
-
-import createTheme from "./theme";
-import routes from "./routes";
-
-import useTheme from "@/hooks/useAppTheme";
-
-import createEmotionCache from "@/utils/createEmotionCache";
-import ReactQueryProvider from "./utils/ReactQueryProvider";
+import React, { useMemo } from "react";
+import { useRoutes } from "react-router-dom";
+import { Toaster } from "sonner";
 
 import { AuthProvider } from "./contexts/AuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
+import routes from "./routes";
+import createTheme from "./theme";
+import ReactQueryProvider from "./utils/ReactQueryProvider";
+
 import { SidebarProvider } from "@/contexts/SidebarContext";
-import { Toaster } from "sonner";
+import useTheme from "@/hooks/useAppTheme";
+import createEmotionCache from "@/utils/createEmotionCache";
 
 const clientSideEmotionCache = createEmotionCache();
 

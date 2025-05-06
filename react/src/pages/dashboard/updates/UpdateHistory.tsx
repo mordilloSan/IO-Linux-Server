@@ -1,13 +1,14 @@
-import React from "react";
 import { Typography, Box } from "@mui/material";
-import CollapsibleTable from "@/components/tables/CollapsibleTable";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 import { useQuery } from "@tanstack/react-query";
-import axios from "@/utils/axios";
+import React from "react";
+
+import CollapsibleTable from "@/components/tables/CollapsibleTable";
 import { CollapsibleColumn } from "@/types/tables";
+import axios from "@/utils/axios";
 
 interface UpgradeItem {
   package: string;

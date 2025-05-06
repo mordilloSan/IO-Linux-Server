@@ -1,7 +1,8 @@
-import React, { useState } from "react";
 import { Box, Typography, Button, LinearProgress } from "@mui/material";
-import axios from "@/utils/axios";
+import React, { useState } from "react";
+
 import { Update } from "@/types/update";
+import axios from "@/utils/axios";
 
 interface Props {
   updates: Update[];

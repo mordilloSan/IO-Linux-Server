@@ -1,9 +1,9 @@
-import React from "react";
-import { Card, CardContent, Typography, Box, IconButton } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
-import { motion } from "framer-motion";
+import { Card, CardContent, Typography, Box, IconButton } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { motion } from "framer-motion";
+import React from "react";
 
 const InterfaceCard = ({
   iface,

@@ -1,12 +1,13 @@
 // src/providers/ReactQueryProvider.tsx
-import React, { ReactNode } from "react";
 import {
   QueryClient,
   QueryClientProvider,
   QueryCache,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import React, { ReactNode } from "react";
 import { toast } from "sonner";
+
 import { getErrorMessage } from "./getErrorMessage";
 
 function makeQueryClient() {

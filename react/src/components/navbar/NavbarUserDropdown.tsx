@@ -1,10 +1,9 @@
+import { Divider, Tooltip, Menu, MenuItem, IconButton } from "@mui/material";
+import { LucidePower } from "lucide-react";
 import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Divider, Tooltip, Menu, MenuItem, IconButton } from "@mui/material";
-
 import useAuth from "@/hooks/useAuth";
-import { LucidePower } from "lucide-react";
 
 function NavbarUserDropdown() {
   const ref = useRef(null);

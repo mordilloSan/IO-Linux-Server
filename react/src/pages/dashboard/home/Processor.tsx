@@ -1,14 +1,15 @@
 "use client";
 
-import React from "react";
 import TemperatureIcon from "@mui/icons-material/Thermostat";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import React from "react";
+
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import CircularProgressWithLabel from "@/components/CircularProgress";
-import axios from "@/utils/axios";
-import ErrorMessage from "@/components/Error";
 import ComponentLoader from "@/components/ComponentLoader";
+import ErrorMessage from "@/components/Error";
+import axios from "@/utils/axios";
 
 interface CPUInfoResponse {
   vendorId: string;

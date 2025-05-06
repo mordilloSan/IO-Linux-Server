@@ -1,6 +1,6 @@
 // components/ErrorBoundary.tsx
-import React, { Component, ReactNode } from "react";
 import { Box, Typography } from "@mui/material";
+import React, { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
