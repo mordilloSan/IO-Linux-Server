@@ -8,28 +8,32 @@ import {
 } from "@mui/material";
 import { Paintbrush } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ColorPicker, useColor, type IColor } from "react-color-palette";
+import { ColorPicker, type IColor } from "react-color-palette";
 
 import "react-color-palette/css";
 import { DEFAULT_PRIMARY_COLOR } from "@/constants";
 import useTheme from "@/hooks/useAppTheme";
+import { hexToIColor } from "@/utils/hexToIColor";
 
 function NavbarColorCustomizer() {
   const { primaryColor, setPrimaryColor } = useTheme();
   const muiTheme = useMuiTheme();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [color, setColor] = useColor(primaryColor);
+  const [color, setColor] = useState<IColor>(() => hexToIColor(primaryColor));
 
-  // Keep picker synced with context
+  // Sync picker color when context color changes
   useEffect(() => {
-    if (primaryColor && primaryColor !== color.hex) {
-      setColor({ ...color, hex: primaryColor });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryColor, color.hex]);
+    setColor((prev) => {
+      if (prev.hex !== primaryColor) {
+        return hexToIColor(primaryColor);
+      }
+      return prev;
+    });
+  }, [primaryColor]);
 
   const handleChangeComplete = (newColor: IColor) => {
+    setColor(newColor);
     setPrimaryColor(newColor.hex);
   };
 
@@ -55,14 +59,8 @@ function NavbarColorCustomizer() {
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           paper: {
             elevation: 6,
@@ -86,13 +84,15 @@ function NavbarColorCustomizer() {
           onChangeComplete={handleChangeComplete}
           hideInput={["rgb", "hsv"]}
         />
+
         <Button
           variant="outlined"
           fullWidth
           size="small"
           onClick={() => {
+            const reset = hexToIColor(DEFAULT_PRIMARY_COLOR);
+            setColor(reset);
             setPrimaryColor(DEFAULT_PRIMARY_COLOR);
-            setColor({ ...color, hex: DEFAULT_PRIMARY_COLOR });
           }}
           sx={{ mt: 2 }}
         >

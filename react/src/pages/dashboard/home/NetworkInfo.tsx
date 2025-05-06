@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import NetworkGraph from "./NetworkGraph";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import ComponentLoader from "@/components/ComponentLoader";
+import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
 interface InterfaceStats {

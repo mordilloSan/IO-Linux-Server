@@ -3,8 +3,8 @@ import { useTheme } from "@mui/material/styles";
 import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
-import ErrorBoundary from "@/components/ErrorBoundary";
-import Footer from "@/components/Footer";
+import ErrorBoundary from "@/components/errors/ErrorBoundary";
+import Footer from "@/components/footer/Footer";
 import Navbar from "@/components/navbar/Navbar";
 import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";

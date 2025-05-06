@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import ComponentLoader from "@/components/ComponentLoader";
-import ErrorMessage from "@/components/Error";
+import ErrorMessage from "@/components/errors/Error";
+import ComponentLoader from "@/components/loaders/ComponentLoader";
 import { FilesystemInfo } from "@/types/fs";
 import axios from "@/utils/axios";
 

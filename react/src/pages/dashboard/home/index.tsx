@@ -9,7 +9,7 @@ import NetworkInterfacesCard from "./NetworkInfo";
 import Processor from "./Processor";
 import SystemHealth from "./SystemHealth";
 
-import ErrorBoundary from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/errors/ErrorBoundary";
 
 const MemoSystemHealth = React.memo(SystemHealth);
 const MemoProcessor = React.memo(Processor);

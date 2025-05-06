@@ -8,7 +8,7 @@ import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import ComponentLoader from "@/components/ComponentLoader";
+import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
 const SystemHealth = () => {

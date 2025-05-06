@@ -16,18 +16,21 @@ const compat = new FlatCompat({
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
+  // ✅ Base JS rules
   js.configs.recommended,
 
+  // ✅ Global definitions (console, window, React, etc.)
   {
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.node,
-        React: "readonly",
+        React: "readonly", // for new JSX transform
       },
     },
   },
 
+  // ✅ TypeScript support
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
@@ -48,6 +51,7 @@ export default [
     },
   },
 
+  // ✅ React + JSX + Hooks + Import Handling
   {
     files: ["**/*.js", "**/*.jsx", "**/*.tsx"],
     languageOptions: {
@@ -69,11 +73,16 @@ export default [
     rules: {
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+
+      // ✅ React Compiler rule (manually enabled)
+      "react-hooks/react-compiler": "error",
+
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react/no-unescaped-entities": "warn",
 
-      // ✅ Unused imports and vars
+      // 🧹 Unused import handling
+      "no-unused-vars": "off",
       "unused-imports/no-unused-imports": "warn",
       "unused-imports/no-unused-vars": [
         "warn",
@@ -85,7 +94,7 @@ export default [
         },
       ],
 
-      // ✅ Import order and grouping
+      // 📦 Import order and sorting
       "import/order": [
         "warn",
         {
@@ -99,21 +108,10 @@ export default [
           alphabetize: { order: "asc", caseInsensitive: true },
         },
       ],
-
-      // ✅ Warn if unused React is imported
-      "no-unused-vars": "off", // 🔁 turn off core rule
-      "unused-imports/no-unused-vars": [
-        "warn",
-        {
-          vars: "all",
-          varsIgnorePattern: "^_",
-          args: "after-used",
-          argsIgnorePattern: "^_",
-        },
-      ],
     },
   },
 
+  // ✅ Prettier enforcement
   {
     plugins: {
       prettier,
@@ -123,9 +121,11 @@ export default [
     },
   },
 
+  // ✅ TanStack Query via compat
   ...compat.config({
     extends: ["plugin:@tanstack/query/recommended"],
   }),
 
+  // ✅ Additional Prettier formatting config
   prettierConfig,
 ];
