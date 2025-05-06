@@ -120,7 +120,7 @@ build-backend: setup build-vite-prod
 	go build \
 	-ldflags "\
 		-X 'main.version=$(VERSION)' \
-		-X 'main.env=$(GO_ENV)' \
+		-X 'main.env=production' \
 		-X 'main.buildTime=$$(date -u +%Y-%m-%dT%H:%M:%SZ)'" \
 	-o server && \
 	echo "✅ Backend built successfully!" && \

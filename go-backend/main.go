@@ -124,13 +124,31 @@ func ServeIndex(c *gin.Context) {
 		return
 	}
 
+	theme, err := config.LoadTheme()
+	if err != nil {
+		logger.Warning.Println("⚠️ Failed to load theme, using defaults:", err)
+		theme = config.ThemeSettings{
+			Theme:           "DARK",
+			PrimaryColor:    "#1976d2",
+			SidebarColapsed: false,
+		}
+	}
+
+	background := "#ffffff"
+	shimmer := "#eeeeee"
+
+	if theme.Theme == "DARK" {
+		background = "#1B2635"
+		shimmer = "#233044"
+	}
+
 	data := map[string]string{
 		"JSBundle":          js,
 		"CSSBundle":         css,
-		"PrimaryColor":      "#1976d2",
-		"ThemeColor":        "#1976d2",
-		"Background":        "#1B2635",
-		"ShimmerBackground": "#233044",
+		"PrimaryColor":      theme.PrimaryColor,
+		"ThemeColor":        theme.PrimaryColor,
+		"Background":        background,
+		"ShimmerBackground": shimmer,
 	}
 
 	c.Status(http.StatusOK)
