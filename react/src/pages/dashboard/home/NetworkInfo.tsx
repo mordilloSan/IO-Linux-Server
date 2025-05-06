@@ -35,7 +35,7 @@ const NetworkInterfacesCard: React.FC = () => {
     (iface) =>
       !iface.name.startsWith("veth") &&
       !iface.name.startsWith("docker") &&
-      iface.name !== "lo"
+      iface.name !== "lo",
   );
 
   useEffect(() => {
@@ -45,7 +45,7 @@ const NetworkInterfacesCard: React.FC = () => {
   }, [filteredInterfaces, selected]);
 
   const selectedInterface = filteredInterfaces.find(
-    (iface) => iface.name === selected
+    (iface) => iface.name === selected,
   );
 
   useEffect(() => {
@@ -75,7 +75,7 @@ const NetworkInterfacesCard: React.FC = () => {
           <strong>IP:</strong>{" "}
           {(() => {
             const ipv4 = selectedInterface.addresses.find((addr) =>
-              addr.includes(".")
+              addr.includes("."),
             );
             return ipv4 || "None";
           })()}

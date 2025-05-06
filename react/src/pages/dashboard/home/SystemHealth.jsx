@@ -81,7 +81,7 @@ const SystemHealth = () => {
 
   const totalPackages = updates.reduce(
     (sum, u) => sum + (u.packages?.length || 1),
-    0
+    0,
   );
 
   const stats = (

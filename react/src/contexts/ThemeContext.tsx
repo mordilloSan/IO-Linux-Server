@@ -30,7 +30,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, _setTheme] = useState(initialState.theme);
   const [primaryColor, _setPrimaryColor] = useState(DEFAULT_PRIMARY_COLOR);
   const [sidebarColapsed, _setSidebarColapsed] = useState(
-    SIDEBAR_COLAPSED_STATE
+    SIDEBAR_COLAPSED_STATE,
   );
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -67,7 +67,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             console.error("Error saving theme settings:", error);
           });
       },
-      500
+      500,
     ); // Save only after 500ms of inactivity
   }, []);
 
@@ -76,7 +76,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       _setTheme(newTheme);
       debouncedSaveThemeSettings(newTheme, primaryColor, sidebarColapsed);
     },
-    [primaryColor, sidebarColapsed, debouncedSaveThemeSettings]
+    [primaryColor, sidebarColapsed, debouncedSaveThemeSettings],
   );
 
   const setPrimaryColor = useCallback(
@@ -84,7 +84,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       _setPrimaryColor(color);
       debouncedSaveThemeSettings(theme, color, sidebarColapsed);
     },
-    [theme, sidebarColapsed, debouncedSaveThemeSettings]
+    [theme, sidebarColapsed, debouncedSaveThemeSettings],
   );
 
   const setSidebarColapsed = useCallback(
@@ -99,7 +99,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         return newValue;
       });
     },
-    [theme, primaryColor, debouncedSaveThemeSettings]
+    [theme, primaryColor, debouncedSaveThemeSettings],
   );
 
   const toggleTheme = useCallback(() => {
@@ -127,7 +127,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       setSidebarColapsed,
       toggleTheme,
       isLoaded,
-    ]
+    ],
   );
 
   return (

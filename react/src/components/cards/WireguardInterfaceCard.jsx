@@ -68,7 +68,7 @@ const InterfaceCard = ({
                   e.stopPropagation();
                   handleToggleInterface(
                     iface.name,
-                    iface.isConnected === "Active" ? "down" : "up"
+                    iface.isConnected === "Active" ? "down" : "up",
                   );
                 }}
               >

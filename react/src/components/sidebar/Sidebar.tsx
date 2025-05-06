@@ -27,8 +27,8 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
   const effectiveWidth = !isDesktop
     ? drawerWidth
     : collapsed && !hovered
-    ? collapsedDrawerWidth
-    : drawerWidth;
+      ? collapsedDrawerWidth
+      : drawerWidth;
 
   const handleMouseEnter = () => {
     if (hoverEnabledRef.current) setHovered(true);

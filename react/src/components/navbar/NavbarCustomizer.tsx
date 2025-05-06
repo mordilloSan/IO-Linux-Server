@@ -25,7 +25,6 @@ function NavbarColorCustomizer() {
     if (primaryColor && primaryColor !== color.hex) {
       setColor({ ...color, hex: primaryColor });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryColor, color.hex]);
 
   const handleChangeComplete = (newColor: IColor) => {

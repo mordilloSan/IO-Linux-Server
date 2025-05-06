@@ -12,7 +12,7 @@ function AuthGuard({ children }: AuthGuardType) {
 
   if (isInitialized && !isAuthenticated) {
     const redirectPath = `/sign-in?redirect=${encodeURIComponent(
-      location.pathname + location.search
+      location.pathname + location.search,
     )}`;
     return <Navigate to={redirectPath} replace />;
   }

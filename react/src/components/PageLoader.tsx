@@ -54,7 +54,7 @@ function PageLoader() {
             top: 0,
             background: `linear-gradient(90deg, ${color}, ${alpha(
               color,
-              0.5
+              0.5,
             )})`,
             filter: "blur(1px)",
             borderRadius: 3,

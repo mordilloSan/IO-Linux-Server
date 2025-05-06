@@ -18,7 +18,7 @@ axiosInstance.interceptors.response.use(
       ) {
         const redirectPath = window.location.pathname + window.location.search;
         window.location.href = `/sign-in?redirect=${encodeURIComponent(
-          redirectPath
+          redirectPath,
         )}`;
         return;
       }
@@ -29,7 +29,7 @@ axiosInstance.interceptors.response.use(
     // Low-level network or timeout error
     console.error("Network error:", error.message);
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

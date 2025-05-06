@@ -24,7 +24,7 @@ export interface SidebarContextType {
 }
 
 export const SidebarContext = createContext<SidebarContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -102,7 +102,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
       setMobileOpen,
       toggleCollapse,
       toggleMobileOpen,
-    ]
+    ],
   );
 
   return (

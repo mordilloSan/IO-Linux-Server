@@ -32,7 +32,7 @@ const initialState: AuthState = {
 
 const reducer = (
   state: AuthState,
-  action: ActionMap<AuthActionTypes>[keyof ActionMap<AuthActionTypes>]
+  action: ActionMap<AuthActionTypes>[keyof ActionMap<AuthActionTypes>],
 ): AuthState => {
   switch (action.type) {
     case INITIALIZE:

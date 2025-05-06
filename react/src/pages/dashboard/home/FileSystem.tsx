@@ -58,7 +58,7 @@ const FsInfoCard: React.FC = () => {
               <Typography variant="body2">{fs.mountpoint}</Typography>
               <Tooltip
                 title={`Free: ${formatBytes(fs.free)} / Total: ${formatBytes(
-                  fs.total
+                  fs.total,
                 )}`}
                 placement="top"
                 arrow

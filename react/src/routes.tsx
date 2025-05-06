@@ -20,20 +20,20 @@ const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
 // Lazy-loaded components
 const SignIn = Loadable(
   lazy(() => import("@/pages/auth/SignIn")),
-  "SignIn"
+  "SignIn",
 );
 const Page404 = Loadable(
   lazy(() => import("@/pages/auth/Page404")),
-  "Page404"
+  "Page404",
 );
 const Default = Loadable(
   lazy(() => import("@/pages/dashboard/home")),
-  "Default"
+  "Default",
 );
 
 const Updates = Loadable(
   lazy(() => import("@/pages/dashboard/updates")),
-  "Default"
+  "Default",
 );
 
 const routes = [

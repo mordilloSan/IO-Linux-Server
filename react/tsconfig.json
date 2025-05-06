@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -21,44 +21,20 @@
     "baseUrl": "src/",
     "paths": {
       // Folders
-      "@/components/*": [
-        "components/*"
-      ],
-      "@/contexts/*": [
-        "contexts/*"
-      ],
-      "@/hooks/*": [
-        "hooks/*"
-      ],
-      "@/layouts/*": [
-        "layouts/*"
-      ],
-      "@/pages/*": [
-        "pages/*"
-      ],
-      "@/theme/*": [
-        "theme/*"
-      ],
-      "@/types/*": [
-        "types/*"
-      ],
-      "@/utils/*": [
-        "utils/*"
-      ],
-      "@/assets/*": [
-        "assets/*"
-      ],
+      "@/components/*": ["components/*"],
+      "@/contexts/*": ["contexts/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/layouts/*": ["layouts/*"],
+      "@/pages/*": ["pages/*"],
+      "@/theme/*": ["theme/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
+      "@/assets/*": ["assets/*"],
       // Files
-      "@/constants": [
-        "constants"
-      ],
-      "@/config": [
-        "config"
-      ],
-      "@/theme": [
-        "theme/index"
-      ]
-    },
+      "@/constants": ["constants"],
+      "@/config": ["config"],
+      "@/theme": ["theme/index"]
+    }
   },
   "include": ["src"]
 }

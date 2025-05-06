@@ -1,7 +1,7 @@
 // src/utils/debounce.ts
 export function debounce<T extends (...args: any[]) => void>(
   fn: T,
-  delay: number
+  delay: number,
 ): T {
   let timeout: ReturnType<typeof setTimeout>;
 

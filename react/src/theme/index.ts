@@ -38,7 +38,7 @@ const createTheme = (name: string, primaryColor?: string): Theme => {
       header: themeConfig.header,
       footer: themeConfig.footer,
       sidebar: themeConfig.sidebar,
-    }
+    },
   );
 };
 

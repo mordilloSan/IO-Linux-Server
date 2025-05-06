@@ -54,7 +54,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ container }) => {
 
   const handleAction = async (
     id: string,
-    action: "start" | "stop" | "restart" | "remove"
+    action: "start" | "stop" | "restart" | "remove",
   ) => {
     setLoading(true);
     try {

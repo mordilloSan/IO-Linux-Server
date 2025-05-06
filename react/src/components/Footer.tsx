@@ -51,7 +51,7 @@ function Footer() {
                     }}
                   />
                 </ListItemButton>
-              )
+              ),
             )}
           </List>
         </Grid>

@@ -65,7 +65,7 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
         "&.Mui-selected": {
           background: `linear-gradient(90deg, ${lighten(
             0.25,
-            activeColor
+            activeColor,
           )} 0%, ${activeColor} 50%)`,
           color: "#fff",
           "& svg": {
