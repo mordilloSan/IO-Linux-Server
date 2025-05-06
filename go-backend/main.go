@@ -6,6 +6,7 @@ import (
 	"go-backend/config"
 	"go-backend/docker"
 	"go-backend/logger"
+	"go-backend/power"
 	"go-backend/services"
 	"go-backend/session"
 	"go-backend/update"
@@ -70,6 +71,7 @@ func main() {
 	docker.RegisterDockerComposeRoutes(router)
 	config.RegisterThemeRoutes(router)
 	wireguard.RegisterWireguardRoutes(router)
+	power.RegisterPowerRoutes(router)
 
 	session.StartSessionGC()
 

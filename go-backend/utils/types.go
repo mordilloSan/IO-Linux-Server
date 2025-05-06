@@ -3,10 +3,10 @@ package utils
 import "time"
 
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	IsAdmin bool   `json:"isAdmin"`
 }
-
 type BenchmarkResult struct {
 	Endpoint string
 	Status   int

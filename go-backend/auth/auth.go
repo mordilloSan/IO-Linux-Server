@@ -51,10 +51,21 @@ func loginHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
 		return
 	}
-
+	isAdmin, err := utils.IsUserInGroup(req.Username, "sudo")
+	if err != nil {
+		logger.Warning.Printf("⚠️ Could not check group for user %s: %v", req.Username, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+	
+	if !isAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "user not authorized for admin actions"})
+		return
+	}
+	
 	sessionID := uuid.New().String()
 	sess := session.Session{
-		User:      utils.User{ID: req.Username, Name: req.Username},
+		User: utils.User{ID: req.Username, Name: req.Username, IsAdmin: isAdmin},
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
 
@@ -83,34 +94,4 @@ func logoutHandler(c *gin.Context) {
 		logger.Info.Printf("👋 Logged out session: %s", sessionID)
 	}
 	c.Status(http.StatusOK)
-}
-
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		cookie, err := c.Cookie("session_id")
-		if err != nil || cookie == "" {
-			logger.Warning.Println("⚠️  Unauthorized request: missing session_id cookie")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return
-		}
-
-		var sess session.Session
-		var exists bool
-		done := make(chan bool)
-
-		session.SessionMux <- func() {
-			sess, exists = session.Sessions[cookie]
-			done <- true
-		}
-		<-done
-
-		if !exists || sess.ExpiresAt.Before(time.Now()) {
-			logger.Warning.Printf("⚠️  Session expired or invalid: %s", cookie)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired"})
-			return
-		}
-
-		c.Set("user", sess.User)
-		c.Next()
-	}
 }

@@ -77,6 +77,7 @@ require (
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-ole/go-ole v1.3.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/jaypipes/ghw v0.16.0
