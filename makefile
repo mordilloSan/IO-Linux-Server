@@ -116,7 +116,7 @@ build-vite-prod: test
 build-backend: setup build-vite-prod
 	@echo ""
 	@echo "📦 Building backend..."
-	@cd go-backend && \
+	@cd go-backend/cmd/server && \
 	go build \
 	-ldflags "\
 		-X 'main.version=$(VERSION)' \
@@ -137,7 +137,7 @@ dev: setup check-env
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 
 	@bash -c '\
-	cd go-backend && \
+	cd go-backend/cmd/server && \
 	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="$(shell dirname $(GO_BIN)):/usr/bin:/bin" $(AIR_BIN) \
 	' &
 
@@ -150,10 +150,10 @@ dev: setup check-env
 
 prod: check-env build-vite-prod
 	@echo "🚀 Server running at http://localhost:"$(SERVER_PORT)
-	@cd go-backend && echo "$(SUDO_PASSWORD)" | GO_ENV=production SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
+	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | GO_ENV=production SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
 run: build-backend
-	@cd go-backend && \
+	@cd go-backend/cmd/server && \
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
 clean:
