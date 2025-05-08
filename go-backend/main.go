@@ -116,6 +116,7 @@ func main() {
 	}
 
 	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
+	fmt.Printf("🚀 Server running at http://localhost:%s", port)
 	logger.Error.Fatal(router.Run(":" + port))
 }
 

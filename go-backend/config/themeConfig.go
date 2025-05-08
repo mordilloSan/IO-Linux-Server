@@ -28,10 +28,15 @@ var defaultTheme = ThemeSettings{
 func InitTheme() error {
 	if _, err := os.Stat(themeFilePath); os.IsNotExist(err) {
 		logger.Info.Println("[theme] No theme file found, creating default...")
-		return SaveThemeToFile(defaultTheme)
+		if err := SaveThemeToFile(defaultTheme); err != nil {
+			return err
+		}
+		// Ensure the file has user/group rw access
+		return os.Chmod(themeFilePath, 0660)
 	}
 	return nil
 }
+
 
 func LoadTheme() (ThemeSettings, error) {
 	var settings ThemeSettings
@@ -57,7 +62,15 @@ func SaveThemeToFile(settings ThemeSettings) error {
 		return err
 	}
 
-	err = os.WriteFile(themeFilePath, data, 0644)
+	// Open file with group and user write/read permissions
+	file, err := os.OpenFile(themeFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0660)
+	if err != nil {
+		logger.Error.Printf("[theme] Failed to open theme file: %v", err)
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
 	if err != nil {
 		logger.Error.Printf("[theme] Failed to write theme file: %v", err)
 		return err
