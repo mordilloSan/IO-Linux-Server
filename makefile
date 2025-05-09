@@ -153,9 +153,12 @@ run: build-backend
 	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
 
 clean:
-	@rm -f go-backend/server || true
-	@rm -rf react/node_modules react/package-lock.json || true
-	@rm -rf go-backend/frontend go-backend/theme.json || true
+	@rm -f go-backend/cmd/server/server || true
+	@rm -f go-backend/cmd/server/theme.json || true
+	@rm -f go-backend/theme.json || true
+	@rm -rf react/node_modules || true
+	@rm -f react/package-lock.json || true
+	@find go-backend/frontend -mindepth 1 -exec rm -rf {} + 2>/dev/null || true
 	@echo "🧹 Cleaned workspace."
 
 help:
