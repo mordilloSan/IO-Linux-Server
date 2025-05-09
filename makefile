@@ -135,21 +135,17 @@ build-backend: setup build-vite-prod
 dev: setup check-env
 	@echo ""
 	@echo "🚀 Starting dev mode (frontend + backend)..."
-
 	@bash -c '\
-	cd go-backend/cmd/server && \
+	cd go-backend && \
 	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="$(shell dirname $(GO_BIN)):/usr/bin:/bin" $(AIR_BIN) \
 	' &
-
 	@sleep 1
-
 	@bash -c '\
 	$(NVM_SETUP); \
 	cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
 	'
 
 prod: check-env build-vite-prod
-	@echo "🚀 Server running at http://localhost:"$(SERVER_PORT)
 	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | GO_ENV=production SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
 run: build-backend
