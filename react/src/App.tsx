@@ -28,11 +28,11 @@ function App({ emotionCache = clientSideEmotionCache }) {
     <CacheProvider value={emotionCache}>
       <MuiThemeProvider theme={theme}>
         <ReactQueryProvider>
-          <AuthProvider>
-            <WebSocketProvider>
+          <WebSocketProvider>
+            <AuthProvider>
               <SidebarProvider>{content}</SidebarProvider>
-            </WebSocketProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </WebSocketProvider>
         </ReactQueryProvider>
         <Toaster richColors position="top-right" />
       </MuiThemeProvider>

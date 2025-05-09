@@ -1,5 +1,6 @@
 import { Grid } from "@mui/material";
 import React from "react";
+import { useEffect } from "react";
 
 import FileSystem from "./FileSystem";
 import GpuInfo from "./GpuInfo";
@@ -10,6 +11,7 @@ import Processor from "./Processor";
 import SystemHealth from "./SystemHealth";
 
 import ErrorBoundary from "@/components/errors/ErrorBoundary";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const MemoSystemHealth = React.memo(SystemHealth);
 const MemoProcessor = React.memo(Processor);
@@ -30,6 +32,17 @@ const cards = [
 ];
 
 const Dashboard: React.FC = () => {
+  const { subscribe, unsubscribe } = useWebSocket();
+  useEffect(() => {
+    subscribe("dashboard", (msg) => {
+      console.log("[dashboard] WS message:", msg);
+      // optional: dispatch to context or state here
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribe, unsubscribe]);
   return (
     <Grid container spacing={4}>
       {cards.map(({ id, component: CardComponent }) => (

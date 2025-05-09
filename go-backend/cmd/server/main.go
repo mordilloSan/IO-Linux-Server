@@ -119,9 +119,11 @@ func main() {
 		logger.Warning.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
 	}
 
+	// Start the server
 	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
 	fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
 	logger.Error.Fatal(router.Run(":" + port))
+
 }
 
 func ServeIndex(c *gin.Context) {

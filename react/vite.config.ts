@@ -9,7 +9,10 @@ function removeIndexHtmlPlugin() {
   return {
     name: "remove-index-html",
     closeBundle() {
-      const indexPath = path.resolve(__dirname, "../go-backend/frontend/index.html");
+      const indexPath = path.resolve(
+        __dirname,
+        "../go-backend/frontend/index.html",
+      );
       if (fs.existsSync(indexPath)) {
         fs.unlinkSync(indexPath);
         console.log("🧹 Removed index.html from build output");
@@ -21,7 +24,21 @@ function removeIndexHtmlPlugin() {
 export default defineConfig(({ mode }) => ({
   base: "/",
   clearScreen: false,
-  plugins: [react(), svgr(), tsconfigPaths(), ...(mode === "production" ? [removeIndexHtmlPlugin()] : [])],
+  plugins: [
+    react(),
+    svgr(),
+    tsconfigPaths(),
+    ...(mode === "production" ? [removeIndexHtmlPlugin()] : []),
+  ],
+  server: {
+    proxy: {
+      "/ws": {
+        target: "http://localhost:8080", // your Go backend
+        ws: true, // very important!
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     target: "es2017",
     chunkSizeWarningLimit: 2000,

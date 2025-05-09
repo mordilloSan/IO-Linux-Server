@@ -1,14 +1,26 @@
 package websocket
 
 import (
+	"encoding/json"
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
+
+type Client struct {
+	conn      *websocket.Conn
+	send      chan any
+	sessionID string
+	channel   string
+	done      chan struct{}
+	closeOnce sync.Once
+	lastPong  time.Time
+}
 
 var clients = make(map[string]*Client)
 var clientsMux = make(chan func())
@@ -25,31 +37,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func (c *Client) Close() {
-	c.closeOnce.Do(func() {
-		close(c.channel)
-		close(c.done)
-		_ = c.conn.Close()
-		logger.Info.Printf("[ws] Closed connection for session %s", c.sessionID)
-	})
-}
-
-func (c *Client) Send(msg any) bool {
-	return safeSend(c.channel, msg)
-}
-
-func safeSend(c chan any, msg any) bool {
-	select {
-	case c <- msg:
-		return true
-	default:
-		return false
-	}
-}
-
 func RegisterWebSocketRoutes(router *gin.Engine) {
-	router.GET("/ws/system", func(c *gin.Context) {
-		user, sessionID, ok := session.ValidateFromRequest(c.Request)
+	router.GET("/ws", func(c *gin.Context) {
+		_, sessionID, ok := session.ValidateFromRequest(c.Request)
 		if !ok {
 			logger.Warning.Println("[ws] Unauthorized connection attempt")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -63,23 +53,22 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 		}
 		defer conn.Close()
 
-		logger.Info.Printf("[ws] Client connected: %s (%s)", user.Name, sessionID)
-
 		client := &Client{
 			conn:      conn,
-			channel:   make(chan any),
+			send:      make(chan any),
 			sessionID: sessionID,
+			channel:   "",
 			done:      make(chan struct{}),
 			lastPong:  time.Now(),
 		}
 
-		conn.SetPongHandler(func(appData string) error {
+		conn.SetPongHandler(func(string) error {
 			client.lastPong = time.Now()
 			return nil
 		})
 
 		clientsMux <- func() {
-			clients[client.sessionID] = client
+			clients[sessionID] = client
 		}
 
 		go sendLoop(client)
@@ -89,9 +78,7 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 
 func sendLoop(client *Client) {
 	pingTicker := time.NewTicker(2 * time.Second)
-	heartbeatTicker := time.NewTicker(5 * time.Second)
 	defer pingTicker.Stop()
-	defer heartbeatTicker.Stop()
 
 	for {
 		select {
@@ -100,43 +87,27 @@ func sendLoop(client *Client) {
 
 		case <-pingTicker.C:
 			if !session.IsValid(client.sessionID) {
-				logger.Warning.Printf("[ws] Session expired: %s", client.sessionID)
-				_ = client.conn.WriteMessage(websocket.CloseMessage,
-					websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "Session expired"))
+				client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "Session expired"))
 				client.Close()
 				return
 			}
 
 			if time.Since(client.lastPong) > 10*time.Second {
-				logger.Warning.Printf("[ws] Pong timeout: %s", client.sessionID)
-				_ = client.conn.WriteMessage(websocket.CloseMessage,
-					websocket.FormatCloseMessage(websocket.CloseNormalClosure, "pong timeout"))
+				client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Pong timeout"))
 				client.Close()
 				return
 			}
 
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				logger.Error.Printf("[ws] Ping failed for %s: %v", client.sessionID, err)
 				client.Close()
 				return
 			}
 
-		case <-heartbeatTicker.C:
-			if !client.Send(map[string]any{
-				"timestamp": time.Now().Format(time.RFC3339),
-				"message":   "system heartbeat",
-			}) {
-				logger.Warning.Printf("[ws] Heartbeat send failed for %s", client.sessionID)
-				client.Close()
-				return
-			}
-
-		case msg, ok := <-client.channel:
+		case msg, ok := <-client.send:
 			if !ok {
 				return
 			}
 			if err := client.conn.WriteJSON(msg); err != nil {
-				logger.Error.Printf("[ws] WriteJSON failed for %s: %v", client.sessionID, err)
 				client.Close()
 				return
 			}
@@ -147,10 +118,46 @@ func sendLoop(client *Client) {
 func receiveLoop(client *Client) {
 	defer client.Close()
 	for {
-		_, _, err := client.conn.ReadMessage()
+		_, data, err := client.conn.ReadMessage()
 		if err != nil {
-			logger.Info.Printf("[ws] ReadMessage closed for %s: %v", client.sessionID, err)
 			return
+		}
+logger.Info.Printf("[ws] Received raw: %s", string(data))
+		var msg map[string]string
+if err := json.Unmarshal(data, &msg); err != nil {
+	logger.Warning.Printf("[ws] Invalid JSON from %s: %s", client.sessionID, string(data))
+	continue
+}
+
+		switch msg["type"] {
+		case "subscribe":
+			client.channel = msg["channel"]
+			logger.Info.Printf("[ws] %s subscribed to channel: %s", client.sessionID, client.channel)
+		}
+	}
+}
+
+func (c *Client) Close() {
+	c.closeOnce.Do(func() {
+		close(c.send)
+		close(c.done)
+		_ = c.conn.Close()
+		clientsMux <- func() {
+			delete(clients, c.sessionID)
+		}
+	})
+}
+
+func BroadcastToChannel(channel string, payload any) {
+	clientsMux <- func() {
+		for _, client := range clients {
+			if client.channel == channel {
+				select {
+				case client.send <- payload:
+				default:
+					logger.Warning.Printf("[ws] Dropped message to %s (slow consumer)", client.sessionID)
+				}
+			}
 		}
 	}
 }
@@ -164,5 +171,19 @@ func CloseClientBySession(sessionID string) {
 			client.Close()
 			delete(clients, sessionID)
 		}
+	}
+}
+
+// This function is called in a separate goroutine to broadcast
+// a message to the "dashboard" channel every 5 seconds
+// use --> go websocket.Tester() 
+func Tester() {
+	for {
+		logger.Info.Println("[ws] Broadcasting to dashboard channel")
+		time.Sleep(5 * time.Second)
+		BroadcastToChannel("dashboard", map[string]any{
+			"type":      "heartbeat",
+			"timestamp": time.Now().Format(time.RFC3339),
+		})
 	}
 }

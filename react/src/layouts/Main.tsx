@@ -61,8 +61,6 @@ const Dashboard: React.FC = () => {
             <Outlet />
           </ErrorBoundary>
         </Box>
-
-        {/* Footer Always at Bottom */}
         <Footer />
       </Box>
     </Box>
