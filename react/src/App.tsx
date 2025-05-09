@@ -5,7 +5,6 @@ import { useRoutes } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { AuthProvider } from "./contexts/AuthContext";
-import { WebSocketProvider } from "./contexts/WebSocketContext";
 import routes from "./routes";
 import createTheme from "./theme";
 import ReactQueryProvider from "./utils/ReactQueryProvider";
@@ -28,11 +27,9 @@ function App({ emotionCache = clientSideEmotionCache }) {
     <CacheProvider value={emotionCache}>
       <MuiThemeProvider theme={theme}>
         <ReactQueryProvider>
-          <WebSocketProvider>
-            <AuthProvider>
-              <SidebarProvider>{content}</SidebarProvider>
-            </AuthProvider>
-          </WebSocketProvider>
+          <AuthProvider>
+            <SidebarProvider>{content}</SidebarProvider>
+          </AuthProvider>
         </ReactQueryProvider>
         <Toaster richColors position="top-right" />
       </MuiThemeProvider>

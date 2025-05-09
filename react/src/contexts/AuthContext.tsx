@@ -8,7 +8,6 @@ import React, {
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { AuthContextType, ActionMap, AuthState, AuthUser } from "@/types/auth";
 import axios from "@/utils/axios";
 import { getErrorMessage } from "@/utils/getErrorMessage"; // Optional helper
@@ -50,7 +49,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const location = useLocation();
-  const { unsubscribe } = useWebSocket();
   const fetchUser = async () => {
     const response = await axios.get("/auth/me");
     return response.data.user;
@@ -97,7 +95,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await axios.get("/auth/logout");
-      unsubscribe();
       dispatch({ type: SIGN_OUT });
     } catch (err) {
       toast.error(getErrorMessage(err));
