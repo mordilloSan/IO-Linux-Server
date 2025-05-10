@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -52,7 +51,7 @@ func getCPUInfo(c *gin.Context) {
 		return
 	}
 
-	percent, _ := cpu.Percent(200*time.Millisecond, true)
+	percent, _ := cpu.Percent(0, true)
 	counts, _ := cpu.Counts(true)
 	loadAvg, _ := load.Avg()
 	allTemps := getTemperatureMap()

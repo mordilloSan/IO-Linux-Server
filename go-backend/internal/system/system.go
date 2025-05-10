@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -37,15 +36,6 @@ func getHostInfo(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, hostInfo)
-}
-
-func getMemInfo(c *gin.Context) {
-	memInfo, err := mem.VirtualMemory()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get memory info", "details": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, memInfo)
 }
 
 func getFsInfo(c *gin.Context) {
