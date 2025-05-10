@@ -2,13 +2,13 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-|---------|--------------------|
-| Latest  | ✅                  |
+| Version | Supported |
+| ------- | --------- |
+| Latest  | ✅        |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in **LinuxI/O**, please follow these steps:
+If you discover a security vulnerability in **Linuxi/O**, please follow these steps:
 
 1. **Do not open a public GitHub issue.**
 2. **Privately contact the maintainer** by email:  

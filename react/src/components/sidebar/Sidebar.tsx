@@ -2,12 +2,12 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { Drawer, Box, useTheme, List } from "@mui/material";
 import React from "react";
 
+import SidebarLogo from "./SidebarLogo";
 import SidebarNavListItem from "./SidebarNavListItem";
 
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
 import { SidebarItemsType } from "@/types/sidebar";
-import SidebarLogo from "./SidebarLogo";
 
 export type SidebarProps = {
   items: SidebarItemsType[];

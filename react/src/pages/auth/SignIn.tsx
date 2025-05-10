@@ -1,29 +1,20 @@
 import { Box, Typography, Paper } from "@mui/material";
 import React from "react";
 
-import { ReactComponent as Logo } from "@/assets/logo.svg";
 import SignInComponent from "@/components/auth/SignIn";
+import LogoDisplay from "@/components/logo/LogoDisplay";
 
 const SignIn: React.FC = () => {
   return (
-    <React.Fragment>
+    <>
       {/* Logo */}
-      <Box
-        component={Logo}
-        sx={{
-          fill: (theme) => theme.palette.primary.main,
-          width: 150,
-          height: 64,
-          mb: 4,
-        }}
-      />
+      <Box mb={2} display="flex" justifyContent="center">
+        <LogoDisplay showText />
+      </Box>
 
       {/* Title and subtitle */}
       <Box textAlign="center" mb={4}>
-        <Typography component="h1" variant="h3" gutterBottom>
-          Welcome back!
-        </Typography>
-        <Typography component="h2" variant="subtitle1">
+        <Typography component="h1" variant="h5">
           Sign in to your account to continue
         </Typography>
       </Box>
@@ -42,7 +33,7 @@ const SignIn: React.FC = () => {
       >
         <SignInComponent />
       </Paper>
-    </React.Fragment>
+    </>
   );
 };
 

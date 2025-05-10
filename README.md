@@ -1,10 +1,10 @@
-# Linux I/O
+# Linux i/O
 
 [![CodeQL Advanced](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml)
 
-![Logo](react/public/favicon-2.png)
+![Logo](react/public/Logo.png)
 
-**Linux I/O** is a modern dashboard for managing your Linux system using native tools.  
+**Linux i/O** is a modern dashboard for managing your Linux system using native tools.  
 It aims to unify essential functionality in a single web-based interface without reinventing the wheel.
 
 ---
@@ -13,9 +13,9 @@ It aims to unify essential functionality in a single web-based interface without
 
 Most Linux distributions already come with powerful tools for monitoring and control — `docker`, `systemctl`, `nmcli`, etc.  
 This project is about **leveraging those existing tools** by exposing their input/output via a friendly, minimal, and customizable web UI.  
-As such we aim to rely on D-Bus connectivity, docker SDK and parsing linux commands. Hence the I/O meaning input/output
+As such we aim to rely on D-Bus connectivity, docker SDK and parsing linux commands. Hence the i/O meaning input/output
 
-Instead of replacing the Linux experience, **Linux I/O visualizes it.**
+Instead of replacing the Linux experience, **Linux i/O visualizes it.**
 
 ---
 
