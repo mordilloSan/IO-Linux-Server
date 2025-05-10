@@ -1,6 +1,6 @@
-import React from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import { motion } from "framer-motion";
+import React from "react";
 
 type LogoDisplayProps = {
   showText?: boolean;
@@ -14,7 +14,7 @@ const LogoDisplay: React.FC<LogoDisplayProps> = ({ showText = true }) => {
       variant="h6"
       noWrap
       sx={{
-        fontWeight: 500,
+        fontWeight: 400,
         fontSize: "1.25rem",
         display: "inline-flex",
         alignItems: "center",
@@ -24,7 +24,7 @@ const LogoDisplay: React.FC<LogoDisplayProps> = ({ showText = true }) => {
         initial={false}
         animate={{
           opacity: showText ? 1 : 0,
-          marginRight: showText ? 8 : -52,
+          marginRight: showText ? 8 : -50,
         }}
         transition={{
           duration: theme.transitions.duration.standard / 1000,
@@ -44,11 +44,11 @@ const LogoDisplay: React.FC<LogoDisplayProps> = ({ showText = true }) => {
           width: 36,
           height: 36,
           borderRadius: "50%",
-          border: `2px solid ${theme.palette.primary.main}`,
+          border: `3px solid ${theme.palette.primary.main}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontWeight: 700,
+          fontWeight: 900,
           color: theme.palette.primary.main,
           fontSize: "0.95rem",
           whiteSpace: "nowrap",

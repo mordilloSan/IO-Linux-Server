@@ -2,12 +2,12 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { Drawer, Box, useTheme, List } from "@mui/material";
 import React from "react";
 
-import SidebarLogo from "./SidebarLogo";
 import SidebarNavListItem from "./SidebarNavListItem";
 
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
 import { SidebarItemsType } from "@/types/sidebar";
+import LogoDisplay from "../logo/LogoDisplay";
 
 export type SidebarProps = {
   items: SidebarItemsType[];
@@ -37,6 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
   };
 
   const handleMouseLeave = () => setHovered(false);
+
+  const showText = !collapsed || (hovered && isDesktop);
 
   return (
     <Drawer
@@ -70,11 +72,10 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
           justifyContent: "center",
           backgroundColor: theme.sidebar.header.background,
           minHeight: { xs: 56, sm: 64 },
-          px: 6,
           position: "relative",
         }}
       >
-        <SidebarLogo />
+        <LogoDisplay showText={showText} />
 
         {isDesktop && (!collapsed || (hovered && collapsed)) && (
           <div
