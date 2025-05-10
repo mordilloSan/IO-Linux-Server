@@ -2,7 +2,7 @@
 
 [![CodeQL Advanced](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml)
 
-![Logo](react/src/assets/logo.svg)
+![Logo](react/public/favicon-2.png)
 
 **Linux I/O** is a modern dashboard for managing your Linux system using native tools.  
 It aims to unify essential functionality in a single web-based interface without reinventing the wheel.
@@ -21,7 +21,7 @@ Instead of replacing the Linux experience, **Linux I/O visualizes it.**
 
 ## ⚙️ Stack
 
-- **Frontend:** React (Vite + MUI - based on [Mira Pro theme](https://mira.bootlab.io/))  
+- **Frontend:** React (Vite + MUI - based on [Mira Pro theme](https://mira.bootlab.io/))
 - **Backend:** Go + Air (for development)
 - **Go Rest API:** Gin
 - **Go Websocket:** gorilla
@@ -71,7 +71,7 @@ cd IO-Linux-Server
 
 This repo uses `make` to simplify standard operations.
 
-✅ Run `make` inside the project directory to view available commands  
+✅ Run `make` inside the project directory to view available commands
 
 ```bash
 make check-env        # Verify .env and required environment variables
@@ -118,7 +118,6 @@ Runs Vite dev server with proxying to Go API
 
 Outputs all API paths and logs (from Gin)
 
-
 ### 🚀 Production Mode
 
 ```bash
@@ -130,7 +129,6 @@ make prod
 - Serves static assets using go run .
 
 - No logging enabled by default
-
 
 ### 📦 Binary Mode
 
@@ -183,5 +181,4 @@ MIT License — feel free to use, fork, or contribute!
 ## 🙋‍♂️ Author
 
 Created by [@mordilloSan](https://github.com/mordilloSan)  
-📧 miguelgalizamariz@gmail.com  
-
+📧 miguelgalizamariz@gmail.com

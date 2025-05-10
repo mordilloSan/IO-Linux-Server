@@ -1,13 +1,13 @@
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
-import { Drawer, Box, useTheme } from "@mui/material";
+import { Drawer, Box, useTheme, List } from "@mui/material";
 import React from "react";
 
-import SidebarNav from "./SidebarNav";
+import SidebarNavListItem from "./SidebarNavListItem";
 
-import { ReactComponent as Logo } from "@/assets/logo.svg";
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
 import { SidebarItemsType } from "@/types/sidebar";
+import SidebarLogo from "./SidebarLogo";
 
 export type SidebarProps = {
   items: SidebarItemsType[];
@@ -74,14 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
           position: "relative",
         }}
       >
-        <Box
-          component={Logo}
-          sx={{
-            fill: theme.palette.primary.main,
-            height: 42,
-            marginRight: 2,
-          }}
-        />
+        <SidebarLogo />
 
         {isDesktop && (!collapsed || (hovered && collapsed)) && (
           <div
@@ -103,10 +96,17 @@ const Sidebar: React.FC<SidebarProps> = ({ items }) => {
         )}
       </Box>
 
-      <SidebarNav
-        items={items}
-        collapsed={isDesktop && collapsed && !hovered}
-      />
+      <List disablePadding>
+        {items.map((page) => (
+          <SidebarNavListItem
+            key={page.title}
+            href={page.href}
+            icon={page.icon}
+            title={page.title}
+            collapsed={isDesktop && collapsed && !hovered}
+          />
+        ))}
+      </List>
     </Drawer>
   );
 };

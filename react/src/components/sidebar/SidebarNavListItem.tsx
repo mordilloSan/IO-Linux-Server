@@ -55,13 +55,13 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
         textTransform: "none",
         width: "auto",
         justifyContent: collapsed ? "center" : "flex-start",
-        transition: "background-color 0.3s, color 0.3s",
+        transition: "all 0.3s ease",
         "& svg": {
           color: theme.sidebar.color,
           width: 26,
           height: 26,
+          transition: "margin 0.3s, color 0.3s",
           marginRight: collapsed ? 0 : theme.spacing(2),
-          transition: "color 0.3s",
         },
         "&.Mui-selected": {
           background: `linear-gradient(90deg, ${lighten(
@@ -72,7 +72,7 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
           "& svg": {
             color: "#fff",
           },
-          "& span": {
+          "& .MuiListItemText-primary": {
             color: "#fff",
             fontWeight: theme.typography.fontWeightMedium,
           },
@@ -83,29 +83,29 @@ const SidebarNavListItem: React.FC<SidebarNavListItemProps> = ({
         <ListItemIcon
           sx={{
             minWidth: 0,
-            mr: collapsed ? 0 : 2,
             justifyContent: "center",
             color: "inherit",
+            transition: "margin 0.3s ease",
           }}
         >
           {renderIcon()}
         </ListItemIcon>
       )}
 
-      {!collapsed && ( // 👈 Only show title if not collapsed
-        <ListItemText
-          primary={title}
-          slotProps={{
-            primary: {
-              sx: {
-                fontSize: theme.typography.body1.fontSize,
-                fontWeight: theme.typography.fontWeightRegular,
-                transition: "color 0.3s",
-              },
+      <ListItemText
+        primary={title}
+        slotProps={{
+          primary: {
+            sx: {
+              opacity: collapsed ? 0 : 1,
+              transition: "opacity 0.3s ease",
+              fontSize: theme.typography.body1.fontSize,
+              fontWeight: theme.typography.fontWeightRegular,
+              whiteSpace: "nowrap",
             },
-          }}
-        />
-      )}
+          },
+        }}
+      />
     </ListItemButton>
   );
 };

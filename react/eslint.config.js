@@ -36,6 +36,7 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
+        project: "./tsconfig.json",
         ecmaVersion: 2020,
         sourceType: "module",
         ecmaFeatures: { jsx: true },
@@ -48,6 +49,7 @@ export default [
       ...tseslint.configs.recommended.rules,
       "@typescript-eslint/no-empty-interface": "warn",
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-deprecated": "warn",
     },
   },
 

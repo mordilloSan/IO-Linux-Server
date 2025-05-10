@@ -70,11 +70,13 @@ function NavbarNotificationsDropdown() {
         anchorEl={ref.current}
         onClose={handleClose}
         open={isOpen}
-        PaperProps={{
-          sx: {
-            width: 300,
-            border: `1px solid ${theme.palette.divider}`,
-            boxShadow: theme.shadows[1],
+        slotProps={{
+          paper: {
+            sx: {
+              width: 300,
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: theme.shadows[1],
+            },
           },
         }}
       >
