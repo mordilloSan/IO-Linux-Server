@@ -12,7 +12,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import React from "react";
 
-import FrostedCard from "./FrostedCard";
+import FrostedCard from "./RootCard";
 
 import { cardHeight } from "@/constants";
 
@@ -22,7 +22,7 @@ interface SelectOption {
   id?: string;
 }
 
-interface CardWithBorderProps {
+interface GeneralCardProps {
   title: string;
   stats: React.ReactNode;
   stats2?: React.ReactNode;
@@ -37,7 +37,7 @@ interface CardWithBorderProps {
   connectionStatus?: "online" | "offline";
 }
 
-const CardWithBorder: React.FC<CardWithBorderProps> = ({
+const GeneralCard: React.FC<GeneralCardProps> = ({
   title,
   stats,
   stats2,
@@ -67,6 +67,7 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
         sx={{
           width: 10,
           height: 10,
+          mb: 0.5,
           borderRadius: "50%",
           bgcolor:
             connectionStatus === "online" ? "success.main" : "error.main",
@@ -80,7 +81,8 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
     <FormControl
       size="small"
       sx={{
-        m: -1,
+        ml: -2,
+        mb: 1,
         minWidth: "auto",
         "& .MuiOutlinedInput-root": {
           color: "text.secondary",
@@ -173,7 +175,8 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
                   alignItems: "center",
                   gap: 0,
                   lineHeight: 1,
-                  ml: 1,
+                  ml: -1,
+                  mb: 1,
                 }}
               >
                 <Box
@@ -250,4 +253,4 @@ const CardWithBorder: React.FC<CardWithBorderProps> = ({
   );
 };
 
-export default CardWithBorder;
+export default GeneralCard;

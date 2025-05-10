@@ -2,13 +2,14 @@ import { Grid } from "@mui/material";
 import React from "react";
 import { useEffect } from "react";
 
+import Drive from "./Drive";
 import FileSystem from "./FileSystem";
-import GpuInfo from "./GpuInfo";
+import GpuInfo from "./Gpu";
 import Memory from "./Memory";
-import MotherBoardInfo from "./MotherBoardInfo";
-import NetworkInterfacesCard from "./NetworkInfo";
+import MotherBoardInfo from "./MotherBoard";
+import NetworkInterfacesCard from "./NetworkI";
 import Processor from "./Processor";
-import SystemHealth from "./SystemHealth";
+import SystemHealth from "./System";
 
 import ErrorBoundary from "@/components/errors/ErrorBoundary";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -20,6 +21,7 @@ const MemoFileSystem = React.memo(FileSystem);
 const MemoNetworkInterfacesCard = React.memo(NetworkInterfacesCard);
 const MemoMotherBoardInfo = React.memo(MotherBoardInfo);
 const MemoGpuInfo = React.memo(GpuInfo);
+const DriveInfo = React.memo(Drive);
 
 const cards = [
   { id: "system", component: MemoSystemHealth },
@@ -29,6 +31,7 @@ const cards = [
   { id: "fs", component: MemoFileSystem },
   { id: "mb", component: MemoMotherBoardInfo },
   { id: "gpu", component: MemoGpuInfo },
+  { id: "drive", component: DriveInfo },
 ];
 
 const Dashboard: React.FC = () => {

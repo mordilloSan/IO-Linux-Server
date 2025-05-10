@@ -2,7 +2,7 @@ import { Typography, LinearProgress, Box, Tooltip } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import ErrorMessage from "@/components/errors/Error";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import { FilesystemInfo } from "@/types/fs";
@@ -16,7 +16,7 @@ const FsInfoCard: React.FC = () => {
   } = useQuery<FilesystemInfo[]>({
     queryKey: ["fsInfo"],
     queryFn: async () => {
-      const response = await axios.get("/system/disk");
+      const response = await axios.get("/system/fs");
       return response.data;
     },
     refetchInterval: 2000,
@@ -112,7 +112,7 @@ const FsInfoCard: React.FC = () => {
     avatarIcon: "eos-icons:file-system",
   };
 
-  return <CardWithBorder {...data} />;
+  return <GeneralCard {...data} />;
 };
 
 export default FsInfoCard;

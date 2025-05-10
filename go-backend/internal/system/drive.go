@@ -1,0 +1,204 @@
+package system
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+type LSBLKOutput struct {
+	BlockDevices []BlockDevice `json:"blockdevices"`
+}
+
+type BlockDevice struct {
+	Name       string        `json:"name"`
+	Model      string        `json:"model"`
+	Serial     string        `json:"serial"`
+	Size       string        `json:"size"`
+	RO         bool          `json:"ro"`
+	Type       string        `json:"type"` // "disk", "part", etc.
+	Tran       string        `json:"tran"` // sata, nvme, etc.
+	Vendor     string        `json:"vendor"`
+	Mountpoint string        `json:"mountpoint"`
+	Children   []BlockDevice `json:"children,omitempty"`
+}
+
+func getDriveInfo(c *gin.Context) {
+	out, err := exec.Command("lsblk", "-d", "-O", "-J").Output()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute lsblk", "details": err.Error()})
+		return
+	}
+
+	var parsed LSBLKOutput
+	if err := json.Unmarshal(out, &parsed); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse lsblk output", "details": err.Error()})
+		return
+	}
+
+	var drives []gin.H
+	for _, dev := range parsed.BlockDevices {
+		if dev.Type != "disk" {
+			continue
+		}
+
+		drive := gin.H{
+			"name":   dev.Name,
+			"model":  strings.TrimSpace(dev.Model),
+			"serial": strings.TrimSpace(dev.Serial),
+			"size":   dev.Size,
+			"type":   dev.Tran,
+			"vendor": strings.TrimSpace(dev.Vendor),
+			"ro":     dev.RO,
+		}
+
+		if dev.Tran == "nvme" {
+			power, err := GetNVMePowerState(dev.Name)
+			if err != nil {
+				drive["powerError"] = err.Error() // include error for debugging
+			} else {
+				var states []gin.H
+				for _, s := range power.States {
+					states = append(states, gin.H{
+						"state":       s.State,
+						"maxPowerW":   s.MaxPowerW,
+						"description": s.Description,
+					})
+				}
+				drive["power"] = gin.H{
+					"currentState": power.CurrentState,
+					"estimatedW":   power.EstimatedW,
+					"states":       states,
+				}
+			}
+		}
+
+		drives = append(drives, drive)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"drives": drives})
+}
+
+func getSmartInfo(c *gin.Context) {
+	device := c.Param("device")
+
+	// Validate device name (e.g., sda, nvme0n1)
+	validName := regexp.MustCompile(`^(sd[a-z]|hd[a-z]|nvme\d+n\d+)$`)
+	if !validName.MatchString(device) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid device name"})
+		return
+	}
+
+	// Find smartctl in the system PATH
+	smartctlPath, err := exec.LookPath("smartctl")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "smartctl not found in PATH",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	cmd := exec.Command(smartctlPath, "--json", "-x", "/dev/"+device)
+	out, err := cmd.Output()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to execute smartctl",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	var parsed map[string]any
+	if err := json.Unmarshal(out, &parsed); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to parse smartctl output",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, parsed)
+}
+
+// PowerStateInfo represents a single NVMe power state and its max power
+type PowerStateInfo struct {
+	State       int
+	MaxPowerW   float64
+	Description string
+}
+
+// InferredPowerData holds result of analysis
+type InferredPowerData struct {
+	CurrentState int              `json:"currentState"`
+	EstimatedW   float64          `json:"estimatedW"`
+	States       []PowerStateInfo `json:"states"`
+}
+
+// GetNVMePowerState estimates current power draw by mapping current PS to spec
+func GetNVMePowerState(device string) (*InferredPowerData, error) {
+	// Step 1: Get supported power states
+	cmd := exec.Command("nvme", "id-ctrl", "/dev/"+device)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run nvme id-ctrl: %w", err)
+	}
+
+	psRegex := regexp.MustCompile(`ps\s+(\d+)\s+:\s+mp:([\d.]+)W`)
+	var states []PowerStateInfo
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if match := psRegex.FindStringSubmatch(line); len(match) == 3 {
+			stateNum, _ := strconv.Atoi(match[1])
+			maxPower, _ := strconv.ParseFloat(match[2], 64)
+			states = append(states, PowerStateInfo{
+				State:       stateNum,
+				MaxPowerW:   maxPower,
+				Description: strings.TrimSpace(line),
+			})
+		}
+	}
+
+	if len(states) == 0 {
+		return nil, fmt.Errorf("no power states found for %s", device)
+	}
+
+	// Step 2: Get current power state
+	cmd = exec.Command("nvme", "smart-log", "/dev/"+device)
+	out, err = cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run nvme smart-log: %w", err)
+	}
+	stateRe := regexp.MustCompile(`Power State:\s+(\d+)`)
+	match := stateRe.FindStringSubmatch(string(out))
+
+	var currentState int
+	var estimated float64
+
+	if len(match) == 2 {
+		currentState, _ = strconv.Atoi(match[1])
+		for _, s := range states {
+			if s.State == currentState {
+				estimated = s.MaxPowerW
+				break
+			}
+		}
+	} else {
+		currentState = -1
+		if len(states) > 0 {
+			estimated = states[0].MaxPowerW // fallback to first power state
+		}
+	}
+
+	return &InferredPowerData{
+		CurrentState: currentState,
+		EstimatedW:   estimated,
+		States:       states,
+	}, nil
+}

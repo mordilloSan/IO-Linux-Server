@@ -3,7 +3,7 @@ import { Typography, Box } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import axios from "@/utils/axios";
 
 interface GPU {
@@ -40,7 +40,7 @@ const GpuInfo: React.FC = () => {
   );
 
   return (
-    <CardWithBorder
+    <GeneralCard
       title="GPU"
       stats={visibleDetails}
       icon={TemperatureIcon}

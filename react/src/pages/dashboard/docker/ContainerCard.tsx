@@ -11,7 +11,7 @@ import React from "react";
 
 import ActionButton from "./ActionButton";
 
-import FrostedCard from "@/components/cards/FrostedCard";
+import FrostedCard from "@/components/cards/RootCard";
 import { ContainerInfo } from "@/types/container";
 import axios from "@/utils/axios";
 

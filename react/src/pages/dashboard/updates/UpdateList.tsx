@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 import ChangelogPanel from "./ChangelogPanel";
 
-import FrostedCard from "@/components/cards/FrostedCard";
+import FrostedCard from "@/components/cards/RootCard";
 import { Update } from "@/types/update";
 
 interface Props {
@@ -66,7 +66,11 @@ const UpdateList: React.FC<Props> = ({ updates, onUpdateClick, isLoading }) => {
           >
             <CardContent>
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
               >
                 <Typography
                   variant="h6"

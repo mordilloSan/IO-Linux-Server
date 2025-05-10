@@ -137,7 +137,7 @@ dev: setup check-env
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 	@bash -c '\
 	cd go-backend && \
-	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="$(shell dirname $(GO_BIN)):/usr/bin:/bin" $(AIR_BIN) \
+	echo "$(SUDO_PASSWORD)" | 	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
 	' &
 	@sleep 1
 	@bash -c '\

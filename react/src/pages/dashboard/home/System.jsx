@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
@@ -117,7 +117,7 @@ const SystemHealth = () => {
   );
 
   return (
-    <CardWithBorder
+    <GeneralCard
       title="System Health"
       stats={stats}
       stats2={stats2}

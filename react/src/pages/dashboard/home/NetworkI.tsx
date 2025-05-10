@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 
 import NetworkGraph from "./NetworkGraph";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
@@ -107,7 +107,7 @@ const NetworkInterfacesCard: React.FC = () => {
   );
 
   return (
-    <CardWithBorder
+    <GeneralCard
       title="Network"
       avatarIcon="mdi:ethernet"
       stats={content}

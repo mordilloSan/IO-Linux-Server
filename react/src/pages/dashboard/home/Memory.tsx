@@ -1,8 +1,7 @@
 import { Typography, Box } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import ErrorMessage from "@/components/errors/Error";
 import CircularProgressWithLabel from "@/components/gauge/CircularProgress";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
@@ -64,7 +63,7 @@ const MemoryUsage = () => {
     avatarIcon: "la:memory",
   };
 
-  return <CardWithBorder {...data} />;
+  return <GeneralCard {...data} />;
 };
 
 export default MemoryUsage;

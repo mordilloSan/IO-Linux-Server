@@ -1,11 +1,9 @@
-"use client";
-
 import TemperatureIcon from "@mui/icons-material/Thermostat";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 
-import CardWithBorder from "@/components/cards/CardWithBorder";
+import GeneralCard from "@/components/cards/GeneralCard";
 import ErrorMessage from "@/components/errors/Error";
 import CircularProgressWithLabel from "@/components/gauge/CircularProgress";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
@@ -91,7 +89,7 @@ const Processor: React.FC = () => {
     iconProps: { sx: { color: "grey" } },
   };
 
-  return <CardWithBorder {...data} />;
+  return <GeneralCard {...data} />;
 };
 
 export default Processor;
