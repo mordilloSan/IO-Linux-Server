@@ -1,78 +1,49 @@
 // React
 import React, { lazy } from "react";
 
-// Layouts
-import GuestGuard from "./components/guards/GuestGuard";
-import Docker from "./pages/dashboard/docker";
-
-import AuthGuard from "@/components/guards/AuthGuard";
+// Guards & Layouts
+import { AuthGuard } from "@/components/guards/AuthGuard";
+import { GuestGuard } from "@/components/guards/GuestGuard";
 import AuthLayout from "@/layouts/Auth";
 import MainLayout from "@/layouts/Main";
+import Default from "@/pages/dashboard/home";
 
-// Guards
-
+// Helper: Loadable wrapper
 const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
   const Wrapped = (props: any) => <Component {...props} />;
-
   Wrapped.displayName = `Loadable(${name})`;
   return Wrapped;
 };
 
-// Lazy-loaded components
-const SignIn = Loadable(
-  lazy(() => import("@/pages/auth/SignIn")),
-  "SignIn",
-);
-const Page404 = Loadable(
-  lazy(() => import("@/pages/auth/Page404")),
-  "Page404",
-);
-const Default = Loadable(
-  lazy(() => import("@/pages/dashboard/home")),
-  "Default",
-);
+const lazyLoad = (
+  factory: () => Promise<{ default: React.ComponentType<any> }>,
+  name: string,
+) => Loadable(lazy(factory), name);
 
-const Updates = Loadable(
-  lazy(() => import("@/pages/dashboard/updates")),
-  "Default",
-);
+// Lazy-loaded pages
+const SignIn = lazyLoad(() => import("@/pages/auth/SignIn"), "SignIn");
+const Page404 = lazyLoad(() => import("@/pages/auth/Page404"), "Page404");
+const Updates = lazyLoad(() => import("@/pages/dashboard/updates"), "Updates");
+const Docker = lazyLoad(() => import("@/pages/dashboard/docker"), "Docker");
 
 const routes = [
   {
     path: "/",
-    element: <MainLayout />,
+    element: (
+      <AuthGuard>
+        <MainLayout />
+      </AuthGuard>
+    ),
     children: [
-      {
-        path: "",
-        element: (
-          <AuthGuard>
-            <Default />
-          </AuthGuard>
-        ),
-      },
-      {
-        path: "updates",
-        element: (
-          <AuthGuard>
-            <Updates />
-          </AuthGuard>
-        ),
-      },
-      {
-        path: "docker",
-        element: (
-          <AuthGuard>
-            <Docker />
-          </AuthGuard>
-        ),
-      },
+      { path: "", element: <Default /> },
+      { path: "updates", element: <Updates /> },
+      { path: "docker", element: <Docker /> },
     ],
   },
   {
     path: "*",
     element: <AuthLayout />,
     children: [
-      { path: "*", element: <Page404 /> },
       {
         path: "sign-in",
         element: (
@@ -81,6 +52,7 @@ const routes = [
           </GuestGuard>
         ),
       },
+      { path: "*", element: <Page404 /> },
     ],
   },
 ];

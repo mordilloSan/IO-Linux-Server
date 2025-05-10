@@ -12,10 +12,7 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      if (
-        status === 401 &&
-        !error.config?.url?.includes("/auth/me") // ⛔️ Don't redirect if the request was to /auth/me
-      ) {
+      if (status === 401 && !error.config?.url?.includes("/auth/me")) {
         const redirectPath = window.location.pathname + window.location.search;
         window.location.href = `/sign-in?redirect=${encodeURIComponent(
           redirectPath,

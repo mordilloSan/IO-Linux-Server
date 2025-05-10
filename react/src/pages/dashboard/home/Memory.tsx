@@ -1,12 +1,12 @@
 import { Typography, Box } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { Loader } from "lucide-react";
 import React from "react";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
 import CircularProgressWithLabel from "@/components/CircularProgress";
 import ErrorMessage from "@/components/errors/Error";
-import axios from "@/utils/axios"; // ✅ use your axios instance
+import ComponentLoader from "@/components/loaders/ComponentLoader";
+import axios from "@/utils/axios";
 
 // Utility functions
 const formatBytesToGB = (bytes: number) => (bytes / 1000 ** 3).toFixed(2);
@@ -36,7 +36,7 @@ const MemoryUsage = () => {
     stats2: isError ? (
       <ErrorMessage />
     ) : isPending ? (
-      <Loader />
+      <ComponentLoader />
     ) : (
       <CircularProgressWithLabel
         value={ramUsagePercentage}

@@ -1,17 +1,19 @@
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+
+import PageLoader from "../loaders/PageLoader";
 
 import useAuth from "@/hooks/useAuth";
 
-interface AuthGuardType {
-  children: React.ReactNode;
-}
-
-function AuthGuard({ children }: AuthGuardType) {
+export const AuthGuard: React.FC<PropsWithChildren> = ({ children }) => {
   const { isAuthenticated, isInitialized } = useAuth();
   const location = useLocation();
 
-  if (isInitialized && !isAuthenticated) {
+  if (!isInitialized) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
     const redirectPath = `/sign-in?redirect=${encodeURIComponent(
       location.pathname + location.search,
     )}`;
@@ -19,6 +21,4 @@ function AuthGuard({ children }: AuthGuardType) {
   }
 
   return <>{children}</>;
-}
-
-export default AuthGuard;
+};

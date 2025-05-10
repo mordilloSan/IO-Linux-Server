@@ -10,14 +10,18 @@ import { toast } from "sonner";
 
 import { AuthContextType, ActionMap, AuthState, AuthUser } from "@/types/auth";
 import axios from "@/utils/axios";
-import { getErrorMessage } from "@/utils/getErrorMessage"; // Optional helper
+import { getErrorMessage } from "@/utils/getErrorMessage";
 
-const INITIALIZE = "INITIALIZE";
+const INITIALIZE_START = "INITIALIZE_START";
+const INITIALIZE_SUCCESS = "INITIALIZE_SUCCESS";
+const INITIALIZE_FAILURE = "INITIALIZE_FAILURE";
 const SIGN_IN = "SIGN_IN";
 const SIGN_OUT = "SIGN_OUT";
 
 type AuthActionTypes = {
-  [INITIALIZE]: { isAuthenticated: boolean; user: AuthUser | null };
+  [INITIALIZE_START]: undefined;
+  [INITIALIZE_SUCCESS]: { user: AuthUser };
+  [INITIALIZE_FAILURE]: undefined;
   [SIGN_IN]: { user: AuthUser };
   [SIGN_OUT]: undefined;
 };
@@ -33,8 +37,22 @@ const reducer = (
   action: ActionMap<AuthActionTypes>[keyof ActionMap<AuthActionTypes>],
 ): AuthState => {
   switch (action.type) {
-    case INITIALIZE:
-      return { ...state, isInitialized: true, ...action.payload };
+    case INITIALIZE_START:
+      return { ...state, isInitialized: false };
+    case INITIALIZE_SUCCESS:
+      return {
+        ...state,
+        isInitialized: true,
+        isAuthenticated: true,
+        user: action.payload.user,
+      };
+    case INITIALIZE_FAILURE:
+      return {
+        ...state,
+        isInitialized: true,
+        isAuthenticated: false,
+        user: null,
+      };
     case SIGN_IN:
       return { ...state, isAuthenticated: true, user: action.payload.user };
     case SIGN_OUT:
@@ -49,37 +67,25 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const location = useLocation();
+
   const fetchUser = async () => {
     const response = await axios.get("/auth/me");
     return response.data.user;
   };
 
   const initialize = useCallback(async () => {
+    dispatch({ type: INITIALIZE_START });
     try {
       const user = await fetchUser();
-      dispatch({
-        type: INITIALIZE,
-        payload: { isAuthenticated: true, user },
-      });
+      dispatch({ type: INITIALIZE_SUCCESS, payload: { user } });
     } catch {
-      dispatch({ type: SIGN_OUT });
+      dispatch({ type: INITIALIZE_FAILURE });
     }
   }, []);
 
   useEffect(() => {
     initialize(); // always re-check session on route change
   }, [location.pathname, initialize]);
-
-  useEffect(() => {
-    if (!state.isAuthenticated && state.isInitialized) {
-      initialize();
-    }
-  }, [
-    location.pathname,
-    state.isAuthenticated,
-    state.isInitialized,
-    initialize,
-  ]);
 
   const signIn = async (username: string, password: string) => {
     try {

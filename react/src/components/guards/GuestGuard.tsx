@@ -1,14 +1,9 @@
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import useAuth from "@/hooks/useAuth";
 
-interface GuestGuardType {
-  children: React.ReactNode;
-}
-
-// For routes that can only be accessed by unauthenticated users
-function GuestGuard({ children }: GuestGuardType) {
+export const GuestGuard: React.FC<PropsWithChildren> = ({ children }) => {
   const { isAuthenticated, isInitialized } = useAuth();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -18,6 +13,4 @@ function GuestGuard({ children }: GuestGuardType) {
   }
 
   return <>{children}</>;
-}
-
-export default GuestGuard;
+};
