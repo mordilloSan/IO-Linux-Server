@@ -3,11 +3,11 @@ import { Drawer, Box, useTheme, List } from "@mui/material";
 import React from "react";
 
 import SidebarNavListItem from "./SidebarNavListItem";
+import LogoDisplay from "../logo/LogoDisplay";
 
 import { collapsedDrawerWidth, drawerWidth } from "@/constants";
 import useSidebar from "@/hooks/useSidebar";
 import { SidebarItemsType } from "@/types/sidebar";
-import LogoDisplay from "../logo/LogoDisplay";
 
 export type SidebarProps = {
   items: SidebarItemsType[];

@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 
 import CardWithBorder from "@/components/cards/CardWithBorder";
-import CircularProgressWithLabel from "@/components/gauge/CircularProgress";
 import ErrorMessage from "@/components/errors/Error";
+import CircularProgressWithLabel from "@/components/gauge/CircularProgress";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
