@@ -50,6 +50,10 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Initialize cache functions
+
+	system.InitGPUInfo()
+
 	router := gin.New()
 	router.Use(gin.Recovery())
 
@@ -181,4 +185,3 @@ func ServeIndex(c *gin.Context) {
 		logger.Error.Printf("❌ Failed to execute index template: %v", err)
 	}
 }
-

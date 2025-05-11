@@ -2,14 +2,36 @@ package system
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jaypipes/ghw/pkg/gpu"
 )
 
+// Cached GPU info and lock
+var (
+	cachedGPUInfo *gpu.Info
+	gpuInitErr    error
+	gpuCacheLock  sync.RWMutex
+)
+
+// Called once at server start to populate GPU info
+func InitGPUInfo() {
+	info, err := gpu.New()
+	gpuCacheLock.Lock()
+	cachedGPUInfo = info
+	gpuInitErr = err
+	gpuCacheLock.Unlock()
+}
+
+// Handler to serve GPU info
 func getGPUInfo(c *gin.Context) {
-	gpuInfo, err := gpu.New()
-	if err != nil {
+	gpuCacheLock.RLock()
+	info := cachedGPUInfo
+	err := gpuInitErr
+	gpuCacheLock.RUnlock()
+
+	if err != nil || info == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to retrieve GPU information",
 			"details": err.Error(),
@@ -18,7 +40,7 @@ func getGPUInfo(c *gin.Context) {
 	}
 
 	var gpus []gin.H
-	for _, card := range gpuInfo.GraphicsCards {
+	for _, card := range info.GraphicsCards {
 		gpus = append(gpus, gin.H{
 			"address":      card.Address,
 			"vendor":       card.DeviceInfo.Vendor.Name,
@@ -32,7 +54,5 @@ func getGPUInfo(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"gpus": gpus,
-	})
+	c.JSON(http.StatusOK, gin.H{"gpus": gpus})
 }
