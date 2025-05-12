@@ -1,6 +1,7 @@
 package system
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -24,24 +25,20 @@ func InitGPUInfo() {
 	gpuCacheLock.Unlock()
 }
 
-// Handler to serve GPU info
-func getGPUInfo(c *gin.Context) {
+// Reusable function to fetch GPU data
+func FetchGPUInfo() ([]map[string]any, error) {
 	gpuCacheLock.RLock()
 	info := cachedGPUInfo
 	err := gpuInitErr
 	gpuCacheLock.RUnlock()
 
 	if err != nil || info == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to retrieve GPU information",
-			"details": err.Error(),
-		})
-		return
+		return nil, fmt.Errorf("failed to retrieve GPU information: %w", err)
 	}
 
-	var gpus []gin.H
+	var gpus []map[string]any
 	for _, card := range info.GraphicsCards {
-		gpus = append(gpus, gin.H{
+		gpus = append(gpus, map[string]any{
 			"address":      card.Address,
 			"vendor":       card.DeviceInfo.Vendor.Name,
 			"model":        card.DeviceInfo.Product.Name,
@@ -54,5 +51,18 @@ func getGPUInfo(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"gpus": gpus})
+	return gpus, nil
+}
+
+// HTTP handler
+func getGPUInfo(c *gin.Context) {
+	data, err := FetchGPUInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to retrieve GPU information",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"gpus": data})
 }

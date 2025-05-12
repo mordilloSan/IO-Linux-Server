@@ -26,8 +26,10 @@ const MemoryUsage = () => {
     refetchInterval: 2000,
   });
 
-  const ramUsagePercentage = memoryData?.active
-    ? parseFloat(calculatePercentage(memoryData.active, memoryData.total))
+  const ramUsagePercentage = memoryData?.system.active
+    ? parseFloat(
+        calculatePercentage(memoryData.system.active, memoryData.system.total)
+      )
     : 0;
 
   const data = {
@@ -47,16 +49,18 @@ const MemoryUsage = () => {
       <Box sx={{ display: "flex", gap: 1, flexDirection: "column" }}>
         <Typography variant="body1">
           <strong>Total Memory:</strong>{" "}
-          {formatBytesToGB(memoryData?.total || 0)} GB
+          {formatBytesToGB(memoryData?.system.total || 0)} GB
         </Typography>
         <Typography variant="body1">
           <strong>Used Memory:</strong>{" "}
-          {formatBytesToGB(memoryData?.active || 0)} GB
+          {formatBytesToGB(memoryData?.system.active || 0)} GB
         </Typography>
         <Typography variant="body1">
           <strong>Swap:</strong>{" "}
-          {formatBytesToGB(memoryData?.swapTotal - memoryData?.swapFree || 0)}{" "}
-          of {formatBytesToGB(memoryData?.swapTotal || 0)} GB
+          {formatBytesToGB(
+            memoryData?.system.swapTotal - memoryData?.system.swapFree || 0
+          )}{" "}
+          of {formatBytesToGB(memoryData?.system.swapTotal || 0)} GB
         </Typography>
       </Box>
     ),

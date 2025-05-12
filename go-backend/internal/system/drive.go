@@ -2,6 +2,7 @@ package system
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -29,26 +30,24 @@ type BlockDevice struct {
 	Children   []BlockDevice `json:"children,omitempty"`
 }
 
-func getDriveInfo(c *gin.Context) {
+func FetchDriveInfo() ([]map[string]any, error) {
 	out, err := exec.Command("lsblk", "-d", "-O", "-J").Output()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to execute lsblk", "details": err.Error()})
-		return
+		return nil, fmt.Errorf("failed to execute lsblk: %w", err)
 	}
 
 	var parsed LSBLKOutput
 	if err := json.Unmarshal(out, &parsed); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse lsblk output", "details": err.Error()})
-		return
+		return nil, fmt.Errorf("failed to parse lsblk output: %w", err)
 	}
 
-	var drives []gin.H
+	var drives []map[string]any
 	for _, dev := range parsed.BlockDevices {
 		if dev.Type != "disk" {
 			continue
 		}
 
-		drive := gin.H{
+		drive := map[string]any{
 			"name":   dev.Name,
 			"model":  strings.TrimSpace(dev.Model),
 			"serial": strings.TrimSpace(dev.Serial),
@@ -61,17 +60,17 @@ func getDriveInfo(c *gin.Context) {
 		if dev.Tran == "nvme" {
 			power, err := GetNVMePowerState(dev.Name)
 			if err != nil {
-				drive["powerError"] = err.Error() // include error for debugging
+				drive["powerError"] = err.Error()
 			} else {
-				var states []gin.H
+				var states []map[string]any
 				for _, s := range power.States {
-					states = append(states, gin.H{
+					states = append(states, map[string]any{
 						"state":       s.State,
 						"maxPowerW":   s.MaxPowerW,
 						"description": s.Description,
 					})
 				}
-				drive["power"] = gin.H{
+				drive["power"] = map[string]any{
 					"currentState": power.CurrentState,
 					"estimatedW":   power.EstimatedW,
 					"states":       states,
@@ -82,49 +81,51 @@ func getDriveInfo(c *gin.Context) {
 		drives = append(drives, drive)
 	}
 
+	return drives, nil
+}
+
+func getDriveInfo(c *gin.Context) {
+	drives, err := FetchDriveInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"drives": drives})
 }
 
-func getSmartInfo(c *gin.Context) {
-	device := c.Param("device")
-
-	// Validate device name (e.g., sda, nvme0n1)
+func FetchSmartInfo(device string) (map[string]any, error) {
 	validName := regexp.MustCompile(`^(sd[a-z]|hd[a-z]|nvme\d+n\d+)$`)
 	if !validName.MatchString(device) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid device name"})
-		return
+		return nil, errors.New("invalid device name")
 	}
 
-	// Find smartctl in the system PATH
 	smartctlPath, err := exec.LookPath("smartctl")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "smartctl not found in PATH",
-			"details": err.Error(),
-		})
-		return
+		return nil, fmt.Errorf("smartctl not found: %w", err)
 	}
 
 	cmd := exec.Command(smartctlPath, "--json", "-x", "/dev/"+device)
 	out, err := cmd.Output()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to execute smartctl",
-			"details": err.Error(),
-		})
-		return
+		return nil, fmt.Errorf("smartctl failed: %w", err)
 	}
 
 	var parsed map[string]any
 	if err := json.Unmarshal(out, &parsed); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to parse smartctl output",
-			"details": err.Error(),
-		})
-		return
+		return nil, fmt.Errorf("failed to parse smartctl output: %w", err)
 	}
 
-	c.JSON(http.StatusOK, parsed)
+	return parsed, nil
+}
+
+func getSmartInfo(c *gin.Context) {
+	device := c.Param("device")
+	info, err := FetchSmartInfo(device)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, info)
 }
 
 // PowerStateInfo represents a single NVMe power state and its max power

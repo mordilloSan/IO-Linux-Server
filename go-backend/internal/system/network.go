@@ -18,8 +18,10 @@ type netStats struct {
 	lastTime int64
 }
 
-var netStatsMap = make(map[string]netStats)
-var netStatsLock = sync.Mutex{}
+var (
+	netStatsMap  = make(map[string]netStats)
+	netStatsLock = sync.Mutex{}
+)
 
 func getInterfaceSpeed(interfaceName string) (string, string, error) {
 	speedPath := fmt.Sprintf("/sys/class/net/%s/speed", interfaceName)
@@ -37,7 +39,7 @@ func getInterfaceSpeed(interfaceName string) (string, string, error) {
 	return strings.TrimSpace(string(speedBytes)), strings.TrimSpace(string(duplexBytes)), nil
 }
 
-func getNetworkInfo(c *gin.Context) {
+func FetchNetworkInfo() ([]map[string]any, error) {
 	stats, _ := net.IOCounters(true)
 	ifaces, _ := net.Interfaces()
 
@@ -48,7 +50,6 @@ func getNetworkInfo(c *gin.Context) {
 	defer netStatsLock.Unlock()
 
 	for _, iface := range ifaces {
-		// Skip loopback and docker/veth
 		if strings.HasPrefix(iface.Name, "lo") || strings.HasPrefix(iface.Name, "docker") || strings.HasPrefix(iface.Name, "veth") {
 			continue
 		}
@@ -67,7 +68,6 @@ func getNetworkInfo(c *gin.Context) {
 			"duplex":       "unknown",
 		}
 
-		// Try to fetch speed only for real interfaces
 		speed, duplex, err := getInterfaceSpeed(iface.Name)
 		if err == nil {
 			if speed != "" {
@@ -78,12 +78,10 @@ func getNetworkInfo(c *gin.Context) {
 			}
 		}
 
-		// Add IP addresses
 		for _, addr := range iface.Addrs {
 			entry["addresses"] = append(entry["addresses"].([]string), addr.Addr)
 		}
 
-		// Add IO counters
 		for _, s := range stats {
 			if s.Name == iface.Name {
 				entry["bytesSent"] = s.BytesSent
@@ -108,5 +106,14 @@ func getNetworkInfo(c *gin.Context) {
 		result = append(result, entry)
 	}
 
-	c.JSON(http.StatusOK, result)
+	return result, nil
+}
+
+func getNetworkInfo(c *gin.Context) {
+	data, err := FetchNetworkInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get network info", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
 }

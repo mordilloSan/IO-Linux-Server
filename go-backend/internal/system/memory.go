@@ -3,7 +3,6 @@ package system
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -14,11 +13,11 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
-func getMemInfo(c *gin.Context) {
+// FetchMemoryInfo returns the system memory, docker usage, and ZFS arc cache info
+func FetchMemoryInfo() (map[string]any, error) {
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get memory info", "details": err.Error()})
-		return
+		return nil, err
 	}
 
 	// ZFS ARC Cache (if available)
@@ -40,11 +39,20 @@ func getMemInfo(c *gin.Context) {
 
 	dockerUsed, _ := getDockerMemoryUsage()
 
-	c.JSON(http.StatusOK, gin.H{
+	return map[string]any{
 		"system": memInfo,
-		"docker": gin.H{"used": dockerUsed},
-		"zfs":    gin.H{"arc": arc},
-	})
+		"docker": map[string]any{"used": dockerUsed},
+		"zfs":    map[string]any{"arc": arc},
+	}, nil
+}
+
+func getMemInfo(c *gin.Context) {
+	data, err := FetchMemoryInfo()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to get memory info", "details": err.Error()})
+		return
+	}
+	c.JSON(200, data)
 }
 
 func getDockerMemoryUsage() (uint64, error) {

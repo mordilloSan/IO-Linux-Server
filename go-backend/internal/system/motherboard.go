@@ -1,6 +1,7 @@
 package system
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getBaseboardInfo(c *gin.Context) {
+func FetchBaseboardInfo() (map[string]any, error) {
 	basePath := "/sys/class/dmi/id"
 	fields := map[string]string{
 		"board_name":    "model",
@@ -30,23 +31,19 @@ func getBaseboardInfo(c *gin.Context) {
 	}
 
 	if len(info) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "unable to read motherboard info",
-		})
-		return
+		return nil, fmt.Errorf("unable to read motherboard info")
 	}
 
 	// Include motherboard temperatures
 	tempMap := getTemperatureMap()
-	socketTemps := make([]float64, 0)
-
+	var socketTemps []float64
 	for key, value := range tempMap {
 		if strings.HasPrefix(key, "mb") {
 			socketTemps = append(socketTemps, value)
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return map[string]any{
 		"baseboard": map[string]string{
 			"manufacturer": info["manufacturer"],
 			"model":        info["model"],
@@ -61,5 +58,14 @@ func getBaseboardInfo(c *gin.Context) {
 		"temperatures": map[string]any{
 			"socket": socketTemps,
 		},
-	})
+	}, nil
+}
+
+func getBaseboardInfo(c *gin.Context) {
+	data, err := FetchBaseboardInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
 }

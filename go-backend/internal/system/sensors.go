@@ -22,7 +22,7 @@ type SensorGroup struct {
 	Readings []SensorReading `json:"readings"`
 }
 
-func parseSensors() []SensorGroup {
+func FetchSensorsInfo() []SensorGroup {
 	out, err := exec.Command("sensors").Output()
 	if err != nil {
 		return nil
@@ -76,11 +76,11 @@ func parseSensors() []SensorGroup {
 }
 
 func getSensorData(c *gin.Context) {
-	c.JSON(http.StatusOK, parseSensors())
+	c.JSON(http.StatusOK, FetchSensorsInfo())
 }
 
 func getTemperatureMap() map[string]float64 {
-	groups := parseSensors()
+	groups := FetchSensorsInfo()
 	temps := make(map[string]float64)
 
 	coreIndex := 0

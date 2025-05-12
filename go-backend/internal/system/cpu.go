@@ -44,11 +44,10 @@ func getCurrentFrequencies() ([]float64, error) {
 	return freqs, nil
 }
 
-func getCPUInfo(c *gin.Context) {
+func FetchCPUInfo() (map[string]any, error) {
 	info, err := cpu.Info()
 	if err != nil || len(info) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get CPU info", "details": err.Error()})
-		return
+		return nil, err
 	}
 
 	percent, _ := cpu.Percent(0, true)
@@ -57,7 +56,7 @@ func getCPUInfo(c *gin.Context) {
 	allTemps := getTemperatureMap()
 	currentFreqs, _ := getCurrentFrequencies()
 
-	// Filter only CPU-related temps: coreX and package
+	// Filter only CPU-related temps
 	cpuTemps := make(map[string]float64)
 	for k, v := range allTemps {
 		if strings.HasPrefix(k, "core") || k == "package" {
@@ -66,7 +65,7 @@ func getCPUInfo(c *gin.Context) {
 	}
 
 	cpuData := info[0]
-	c.JSON(http.StatusOK, gin.H{
+	return map[string]any{
 		"vendorId":           cpuData.VendorID,
 		"modelName":          cpuData.ModelName,
 		"family":             cpuData.Family,
@@ -77,14 +76,35 @@ func getCPUInfo(c *gin.Context) {
 		"loadAverage":        loadAvg,
 		"perCoreUsage":       percent,
 		"temperature":        cpuTemps,
-	})
+	}, nil
+}
+
+func FetchLoadInfo() (map[string]any, error) {
+	loadAvg, err := load.Avg()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"load1":  loadAvg.Load1,
+		"load5":  loadAvg.Load5,
+		"load15": loadAvg.Load15,
+	}, nil
+}
+
+func getCPUInfo(c *gin.Context) {
+	data, err := FetchCPUInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get CPU info", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
 }
 
 func getLoadInfo(c *gin.Context) {
-	loadAvg, err := load.Avg()
+	data, err := FetchLoadInfo()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get load average", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, loadAvg)
+	c.JSON(http.StatusOK, data)
 }

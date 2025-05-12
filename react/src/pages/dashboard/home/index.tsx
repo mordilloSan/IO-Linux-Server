@@ -37,15 +37,15 @@ const cards = [
 const Dashboard: React.FC = () => {
   const { subscribe, unsubscribe } = useWebSocket();
   useEffect(() => {
-    subscribe("dashboard", (msg) => {
-      console.log("[dashboard] WS message:", msg);
-      // optional: dispatch to context or state here
-    });
+    const handler = (msg: any) => {};
+
+    subscribe("dashboard", handler);
 
     return () => {
-      unsubscribe();
+      unsubscribe("dashboard", handler);
     };
   }, [subscribe, unsubscribe]);
+
   return (
     <Grid container spacing={4}>
       {cards.map(({ id, component: CardComponent }) => (

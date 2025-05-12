@@ -122,18 +122,19 @@ func receiveLoop(client *Client) {
 		if err != nil {
 			return
 		}
-logger.Info.Printf("[ws] Received raw: %s", string(data))
+		logger.Info.Printf("[ws] Received raw: %s", string(data))
 		var msg map[string]string
-if err := json.Unmarshal(data, &msg); err != nil {
-	logger.Warning.Printf("[ws] Invalid JSON from %s: %s", client.sessionID, string(data))
-	continue
-}
+		if err := json.Unmarshal(data, &msg); err != nil {
+			logger.Warning.Printf("[ws] Invalid JSON from %s: %s", client.sessionID, string(data))
+			continue
+		}
 
-		switch msg["type"] {
+		switch msg["action"] {
 		case "subscribe":
 			client.channel = msg["channel"]
 			logger.Info.Printf("[ws] %s subscribed to channel: %s", client.sessionID, client.channel)
 		}
+
 	}
 }
 
@@ -176,7 +177,7 @@ func CloseClientBySession(sessionID string) {
 
 // This function is called in a separate goroutine to broadcast
 // a message to the "dashboard" channel every 5 seconds
-// use --> go websocket.Tester() 
+// use --> go websocket.Tester()
 func Tester() {
 	for {
 		logger.Info.Println("[ws] Broadcasting to dashboard channel")
@@ -185,5 +186,37 @@ func Tester() {
 			"type":      "heartbeat",
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
+	}
+}
+
+// RunBroadcasterMultiWithIntervals allows broadcasting multiple named sources to a channel,
+// each with their own interval.
+func RunBroadcasterMultiWithIntervals(channel string, funcs map[string]struct {
+	Fn       func() (any, error)
+	Interval time.Duration
+}) {
+	for dataType, cfg := range funcs {
+		go func(dataType string, cfg struct {
+			Fn       func() (any, error)
+			Interval time.Duration
+		}) {
+			ticker := time.NewTicker(cfg.Interval)
+			defer ticker.Stop()
+
+			for range ticker.C {
+				payload, err := cfg.Fn()
+				if err != nil {
+					logger.Error.Printf("[ws] Error fetching %s: %v", dataType, err)
+					continue
+				}
+				logger.Info.Printf("[ws] Sending %s update on channel '%s'", dataType, channel)
+
+				BroadcastToChannel(channel, map[string]interface{}{
+					"type":    dataType,
+					"channel": channel,
+					"payload": payload,
+				})
+			}
+		}(dataType, cfg)
 	}
 }
