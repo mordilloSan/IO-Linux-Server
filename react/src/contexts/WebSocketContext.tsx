@@ -16,7 +16,7 @@ interface WebSocketContextValue {
 }
 
 export const WebSocketContext = createContext<WebSocketContextValue | null>(
-  null
+  null,
 );
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -95,7 +95,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         wsRef.current?.send(JSON.stringify({ action: "unsubscribe", channel }));
       }
     },
-    []
+    [],
   );
 
   return (

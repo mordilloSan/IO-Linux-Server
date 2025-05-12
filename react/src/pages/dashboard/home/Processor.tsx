@@ -1,6 +1,6 @@
-import React from "react";
-import { Box, Typography } from "@mui/material";
 import TemperatureIcon from "@mui/icons-material/Thermostat";
+import { Box, Typography } from "@mui/material";
+import React from "react";
 
 import GeneralCard from "@/components/cards/GeneralCard";
 import CircularProgressWithLabel from "@/components/gauge/CircularProgress";

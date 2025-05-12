@@ -28,7 +28,7 @@ const MemoryUsage = () => {
 
   const ramUsagePercentage = memoryData?.system.active
     ? parseFloat(
-        calculatePercentage(memoryData.system.active, memoryData.system.total)
+        calculatePercentage(memoryData.system.active, memoryData.system.total),
       )
     : 0;
 
@@ -58,7 +58,7 @@ const MemoryUsage = () => {
         <Typography variant="body1">
           <strong>Swap:</strong>{" "}
           {formatBytesToGB(
-            memoryData?.system.swapTotal - memoryData?.system.swapFree || 0
+            memoryData?.system.swapTotal - memoryData?.system.swapFree || 0,
           )}{" "}
           of {formatBytesToGB(memoryData?.system.swapTotal || 0)} GB
         </Typography>

@@ -37,7 +37,7 @@ const cards = [
 const Dashboard: React.FC = () => {
   const { subscribe, unsubscribe } = useWebSocket();
   useEffect(() => {
-    const handler = (msg: any) => {};
+    const handler = (_msg: any) => {};
 
     subscribe("dashboard", handler);
 
