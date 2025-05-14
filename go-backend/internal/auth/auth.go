@@ -4,7 +4,7 @@ import (
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
 	"go-backend/internal/utils"
-	"go-backend/internal/websocket"
+	"go-backend/internal/websocket/control"
 	"net/http"
 	"time"
 
@@ -57,15 +57,15 @@ func loginHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-	
+
 	if !isAdmin {
 		c.JSON(http.StatusForbidden, gin.H{"error": "user not authorized for admin actions"})
 		return
 	}
-	
+
 	sessionID := uuid.New().String()
 	sess := session.Session{
-		User: utils.User{ID: req.Username, Name: req.Username, IsAdmin: isAdmin},
+		User:      utils.User{ID: req.Username, Name: req.Username, IsAdmin: isAdmin},
 		ExpiresAt: time.Now().Add(sessionDuration),
 	}
 
@@ -90,7 +90,7 @@ func logoutHandler(c *gin.Context) {
 			delete(session.Sessions, sessionID)
 		}
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
-		go websocket.CloseClientBySession(sessionID)
+		go control.CloseClientBySession(sessionID)
 		logger.Info.Printf("👋 Logged out session: %s", sessionID)
 	}
 	c.Status(http.StatusOK)

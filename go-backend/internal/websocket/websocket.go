@@ -1,9 +1,12 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
+	"go-backend/internal/websocket/broadcast"
+	"go-backend/internal/websocket/internalstate"
 	"net/http"
 	"sync"
 	"time"
@@ -22,8 +25,14 @@ type Client struct {
 	lastPong  time.Time
 }
 
-var clients = make(map[string]*Client)
 var clientsMux = make(chan func())
+
+var (
+	channelCounts       = make(map[string]int)
+	sessionChannelMap   = make(map[string]string)
+	channelCountsMux    sync.Mutex
+	dashboardCancelFunc context.CancelFunc
+)
 
 func init() {
 	go func() {
@@ -62,14 +71,10 @@ func RegisterWebSocketRoutes(router *gin.Engine) {
 			lastPong:  time.Now(),
 		}
 
-		conn.SetPongHandler(func(string) error {
-			client.lastPong = time.Now()
-			return nil
+		internalstate.SetClient(sessionID, &internalstate.Client{
+			Send:    client.send,
+			Channel: "",
 		})
-
-		clientsMux <- func() {
-			clients[sessionID] = client
-		}
 
 		go sendLoop(client)
 		receiveLoop(client)
@@ -84,7 +89,6 @@ func sendLoop(client *Client) {
 		select {
 		case <-client.done:
 			return
-
 		case <-pingTicker.C:
 			if !session.IsValid(client.sessionID) {
 				client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "Session expired"))
@@ -92,7 +96,7 @@ func sendLoop(client *Client) {
 				return
 			}
 
-			if time.Since(client.lastPong) > 10*time.Second {
+			if time.Since(client.lastPong) > 60*time.Second {
 				client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Pong timeout"))
 				client.Close()
 				return
@@ -102,7 +106,6 @@ func sendLoop(client *Client) {
 				client.Close()
 				return
 			}
-
 		case msg, ok := <-client.send:
 			if !ok {
 				return
@@ -120,9 +123,10 @@ func receiveLoop(client *Client) {
 	for {
 		_, data, err := client.conn.ReadMessage()
 		if err != nil {
+			logger.Info.Printf("[ws] Read error for %s: %v", client.sessionID, err)
 			return
 		}
-		logger.Info.Printf("[ws] Received raw: %s", string(data))
+
 		var msg map[string]string
 		if err := json.Unmarshal(data, &msg); err != nil {
 			logger.Warning.Printf("[ws] Invalid JSON from %s: %s", client.sessionID, string(data))
@@ -131,10 +135,14 @@ func receiveLoop(client *Client) {
 
 		switch msg["action"] {
 		case "subscribe":
+			handleSubscription(client.sessionID, msg["channel"])
 			client.channel = msg["channel"]
+			internalstate.SetClient(client.sessionID, &internalstate.Client{
+				Send:    client.send,
+				Channel: msg["channel"],
+			})
 			logger.Info.Printf("[ws] %s subscribed to channel: %s", client.sessionID, client.channel)
 		}
-
 	}
 }
 
@@ -143,80 +151,58 @@ func (c *Client) Close() {
 		close(c.send)
 		close(c.done)
 		_ = c.conn.Close()
-		clientsMux <- func() {
-			delete(clients, c.sessionID)
-		}
+		handleUnsubscribe(c.sessionID)
+		internalstate.RemoveClient(c.sessionID)
 	})
 }
 
-func BroadcastToChannel(channel string, payload any) {
-	clientsMux <- func() {
-		for _, client := range clients {
-			if client.channel == channel {
-				select {
-				case client.send <- payload:
-				default:
-					logger.Warning.Printf("[ws] Dropped message to %s (slow consumer)", client.sessionID)
-				}
+func handleSubscription(sessionID, channel string) {
+	channelCountsMux.Lock()
+	defer channelCountsMux.Unlock()
+
+	prev, exists := sessionChannelMap[sessionID]
+	if exists && prev == channel {
+		return
+	}
+
+	if exists {
+		channelCounts[prev]--
+		if prev == "dashboard" && channelCounts[prev] == 0 {
+			logger.Info.Println("[ws] Stopping dashboard broadcaster (last subscriber left)")
+			if dashboardCancelFunc != nil {
+				dashboardCancelFunc()
+				dashboardCancelFunc = nil
 			}
 		}
 	}
+
+	sessionChannelMap[sessionID] = channel
+	channelCounts[channel]++
+
+	if channel == "dashboard" && channelCounts[channel] == 1 {
+		logger.Info.Println("[ws] Starting dashboard broadcaster (first subscriber)")
+		var ctx context.Context
+		ctx, dashboardCancelFunc = context.WithCancel(context.Background())
+		go broadcast.StartDashboardBroadcaster(ctx)
+	}
 }
 
-func CloseClientBySession(sessionID string) {
-	clientsMux <- func() {
-		if client, ok := clients[sessionID]; ok {
-			logger.Info.Printf("[ws] Closing client due to logout: %s", sessionID)
-			_ = client.conn.WriteMessage(websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Logged out"))
-			client.Close()
-			delete(clients, sessionID)
+func handleUnsubscribe(sessionID string) {
+	channelCountsMux.Lock()
+	defer channelCountsMux.Unlock()
+
+	prev, exists := sessionChannelMap[sessionID]
+	if !exists {
+		return
+	}
+
+	delete(sessionChannelMap, sessionID)
+	channelCounts[prev]--
+	if prev == "dashboard" && channelCounts[prev] == 0 {
+		logger.Info.Println("[ws] Stopping dashboard broadcaster (last subscriber left)")
+		if dashboardCancelFunc != nil {
+			dashboardCancelFunc()
+			dashboardCancelFunc = nil
 		}
-	}
-}
-
-// This function is called in a separate goroutine to broadcast
-// a message to the "dashboard" channel every 5 seconds
-// use --> go websocket.Tester()
-func Tester() {
-	for {
-		logger.Info.Println("[ws] Broadcasting to dashboard channel")
-		time.Sleep(5 * time.Second)
-		BroadcastToChannel("dashboard", map[string]any{
-			"type":      "heartbeat",
-			"timestamp": time.Now().Format(time.RFC3339),
-		})
-	}
-}
-
-// RunBroadcasterMultiWithIntervals allows broadcasting multiple named sources to a channel,
-// each with their own interval.
-func RunBroadcasterMultiWithIntervals(channel string, funcs map[string]struct {
-	Fn       func() (any, error)
-	Interval time.Duration
-}) {
-	for dataType, cfg := range funcs {
-		go func(dataType string, cfg struct {
-			Fn       func() (any, error)
-			Interval time.Duration
-		}) {
-			ticker := time.NewTicker(cfg.Interval)
-			defer ticker.Stop()
-
-			for range ticker.C {
-				payload, err := cfg.Fn()
-				if err != nil {
-					logger.Error.Printf("[ws] Error fetching %s: %v", dataType, err)
-					continue
-				}
-				logger.Info.Printf("[ws] Sending %s update on channel '%s'", dataType, channel)
-
-				BroadcastToChannel(channel, map[string]interface{}{
-					"type":    dataType,
-					"channel": channel,
-					"payload": payload,
-				})
-			}
-		}(dataType, cfg)
 	}
 }

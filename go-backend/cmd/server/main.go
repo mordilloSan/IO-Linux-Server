@@ -14,7 +14,6 @@ import (
 	"go-backend/internal/update"
 	"go-backend/internal/utils"
 	"go-backend/internal/websocket"
-	"go-backend/internal/websocket/channels"
 	"go-backend/internal/wireguard"
 	"net/http"
 	"os"
@@ -123,9 +122,6 @@ func main() {
 		port = "8080"
 		logger.Warning.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
 	}
-
-	// 🧠 Start dashboard WebSocket broadcaster
-	go channels.StartDashboardBroadcaster()
 
 	// Start the server
 	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)

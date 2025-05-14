@@ -27,46 +27,44 @@ const Dashboard: React.FC = () => {
   if (!isLoaded) return null;
 
   return (
-    <WebSocketProvider>
-      <Box sx={{ display: "flex", height: "100vh" }}>
-        <CssBaseline />
+    <Box sx={{ display: "flex", height: "100vh" }}>
+      <CssBaseline />
 
-        {/* Sidebar */}
-        <Sidebar items={dashboardItems} />
+      {/* Sidebar */}
+      <Sidebar items={dashboardItems} />
 
-        {/* Main content */}
+      {/* Main content */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          transition: theme.transitions.create(["margin-left", "width"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          ml: { md: `${sidebarWidth}px` },
+        }}>
+        <Navbar onDrawerToggle={toggleMobileOpen} />
+
+        {/* Scrollable Content Area */}
         <Box
+          className="custom-scrollbar"
           sx={{
             flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            transition: theme.transitions.create(["margin-left", "width"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-            ml: { md: `${sidebarWidth}px` },
-          }}
-        >
-          <Navbar onDrawerToggle={toggleMobileOpen} />
-
-          {/* Scrollable Content Area */}
-          <Box
-            className="custom-scrollbar"
-            sx={{
-              flex: 1,
-              overflow: "auto",
-              background: theme.palette.background.default,
-              p: { xs: 5, lg: 7 },
-            }}
-          >
+            overflow: "auto",
+            background: theme.palette.background.default,
+            p: { xs: 5, lg: 7 },
+          }}>
+          <WebSocketProvider>
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
-          </Box>
-          <Footer />
+          </WebSocketProvider>
         </Box>
+        <Footer />
       </Box>
-    </WebSocketProvider>
+    </Box>
   );
 };
 
