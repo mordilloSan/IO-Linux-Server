@@ -17,12 +17,20 @@ import { Update } from "@/types/update";
 interface Props {
   updates: Update[];
   onUpdateClick: (pkg: string) => Promise<void>;
+  isUpdating?: boolean;
+  currentPackage?: string | null;
+  onComplete: () => void;
   isLoading?: boolean;
 }
 
-const UpdateList: React.FC<Props> = ({ updates, onUpdateClick, isLoading }) => {
+const UpdateList: React.FC<Props> = ({
+  updates,
+  onUpdateClick,
+  isUpdating,
+  currentPackage,
+  onComplete,
+}) => {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  const [updatingPackage, setUpdatingPackage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const toggleExpanded = (index: number) => {
@@ -42,9 +50,9 @@ const UpdateList: React.FC<Props> = ({ updates, onUpdateClick, isLoading }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!updates.length && !isLoading) {
+  if (!updates.length && !isUpdating) {
     return (
-      <Box sx={{ textAlign: "Left" }}>
+      <Box sx={{ textAlign: "left" }}>
         <Typography variant="h6">Your system is up to date 🎉</Typography>
       </Box>
     );
@@ -103,26 +111,23 @@ const UpdateList: React.FC<Props> = ({ updates, onUpdateClick, isLoading }) => {
                   onClick={() => toggleExpanded(idx)}
                   sx={{ cursor: "pointer" }}
                 />
-                {update.name && (
-                  <Chip
-                    label={
-                      updatingPackage === update.name ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        "Update"
-                      )
-                    }
-                    size="small"
-                    variant="outlined"
-                    disabled={updatingPackage === update.name}
-                    onClick={async () => {
-                      setUpdatingPackage(update.name);
-                      await onUpdateClick(update.name);
-                      setUpdatingPackage(null);
-                    }}
-                    sx={{ cursor: "pointer" }}
-                  />
-                )}
+                <Chip
+                  label={
+                    currentPackage === update.name ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      "Update"
+                    )
+                  }
+                  size="small"
+                  variant="outlined"
+                  disabled={!!isUpdating}
+                  onClick={async () => {
+                    await onUpdateClick(update.name);
+                    onComplete();
+                  }}
+                  sx={{ cursor: "pointer" }}
+                />
               </Box>
 
               <Collapse in={expandedIdx === idx} timeout="auto" unmountOnExit>

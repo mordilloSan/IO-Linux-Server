@@ -8,16 +8,14 @@ import {
 import React, { useState, useContext } from "react";
 
 import UpdateHistory from "./UpdateHistory";
+import UpdateSettings from "./UpdateSettings";
 import UpdateStatus from "./UpdateStatus";
 
 import { ThemeContext } from "@/contexts/ThemeContext";
 
 const Updates: React.FC = () => {
   const [tab, setTab] = useState<"updates" | "history" | "settings">("updates");
-  const { primaryColor, isLoaded } = useContext(ThemeContext);
-
-  // ❗ Block rendering until theme is loaded
-  if (!isLoaded) return null;
+  const { primaryColor } = useContext(ThemeContext);
 
   return (
     <Box sx={{ px: 2 }}>
@@ -93,7 +91,7 @@ const Updates: React.FC = () => {
               width: "100%",
             }}
           >
-            <UpdateStatus />
+            <UpdateSettings />
           </Box>
         </Fade>
       </Box>

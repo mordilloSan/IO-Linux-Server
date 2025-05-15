@@ -21,6 +21,8 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 		system.POST("/update", updatePackageHandler)
 		system.GET("/updates/update-history", getUpdateHistoryHandler)
 		system.GET("/updates/changelog", getChangelogHandler)
+		system.GET("/updates/settings", getUpdateSettings)
+		system.POST("/updates/settings", postUpdateSettings)
 	}
 }
 
@@ -164,4 +166,29 @@ func updatePackageHandler(c *gin.Context) {
 		"message": "Package update triggered",
 		"output":  string(output),
 	})
+}
+
+// GET /system/updates/settings
+func getUpdateSettings(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"enabled":   true,
+		"frequency": "daily",
+		"lastRun":   "2025-05-15T12:34:00Z",
+	})
+}
+
+// POST /system/updates/settings
+func postUpdateSettings(c *gin.Context) {
+	var req struct {
+		Enabled   bool   `json:"enabled"`
+		Frequency string `json:"frequency"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid settings"})
+		return
+	}
+
+	// Save logic here...
+
+	c.Status(http.StatusNoContent)
 }
