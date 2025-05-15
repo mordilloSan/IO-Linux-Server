@@ -8,7 +8,6 @@ import Footer from "@/components/footer/Footer";
 import Navbar from "@/components/navbar/Navbar";
 import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";
-import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import useAppTheme from "@/hooks/useAppTheme";
 import useSidebar from "@/hooks/useSidebar";
 
@@ -44,7 +43,8 @@ const Dashboard: React.FC = () => {
             duration: theme.transitions.duration.leavingScreen,
           }),
           ml: { md: `${sidebarWidth}px` },
-        }}>
+        }}
+      >
         <Navbar onDrawerToggle={toggleMobileOpen} />
 
         {/* Scrollable Content Area */}
@@ -55,12 +55,11 @@ const Dashboard: React.FC = () => {
             overflow: "auto",
             background: theme.palette.background.default,
             p: { xs: 5, lg: 7 },
-          }}>
-          <WebSocketProvider>
-            <ErrorBoundary>
-              <Outlet />
-            </ErrorBoundary>
-          </WebSocketProvider>
+          }}
+        >
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </Box>
         <Footer />
       </Box>

@@ -13,7 +13,6 @@ import (
 	"go-backend/internal/templates"
 	"go-backend/internal/update"
 	"go-backend/internal/utils"
-	"go-backend/internal/websocket"
 	"go-backend/internal/wireguard"
 	"net/http"
 	"os"
@@ -66,7 +65,6 @@ func main() {
 	// Backend routes
 	auth.RegisterAuthRoutes(router)
 	system.RegisterSystemRoutes(router)
-	websocket.RegisterWebSocketRoutes(router)
 	update.RegisterUpdateRoutes(router)
 	services.RegisterServiceRoutes(router)
 	docker.RegisterDockerRoutes(router)
