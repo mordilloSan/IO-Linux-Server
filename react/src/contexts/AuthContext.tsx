@@ -1,30 +1,20 @@
 import React, {
   createContext,
-  ReactNode,
   useEffect,
   useReducer,
   useCallback,
 } from "react";
 import { useLocation } from "react-router-dom";
-import { toast } from "sonner";
 
-import { AuthContextType, ActionMap, AuthState, AuthUser } from "@/types/auth";
+import {
+  AuthContextType,
+  AuthState,
+  AuthActions,
+  AuthProviderProps,
+  AUTH_ACTIONS,
+  AuthUser,
+} from "@/types/auth";
 import axios from "@/utils/axios";
-import { getErrorMessage } from "@/utils/getErrorMessage";
-
-const INITIALIZE_START = "INITIALIZE_START";
-const INITIALIZE_SUCCESS = "INITIALIZE_SUCCESS";
-const INITIALIZE_FAILURE = "INITIALIZE_FAILURE";
-const SIGN_IN = "SIGN_IN";
-const SIGN_OUT = "SIGN_OUT";
-
-type AuthActionTypes = {
-  [INITIALIZE_START]: undefined;
-  [INITIALIZE_SUCCESS]: { user: AuthUser };
-  [INITIALIZE_FAILURE]: undefined;
-  [SIGN_IN]: { user: AuthUser };
-  [SIGN_OUT]: undefined;
-};
 
 const initialState: AuthState = {
   isAuthenticated: false,
@@ -32,80 +22,84 @@ const initialState: AuthState = {
   user: null,
 };
 
-const reducer = (
-  state: AuthState,
-  action: ActionMap<AuthActionTypes>[keyof ActionMap<AuthActionTypes>],
-): AuthState => {
+const reducer = (state: AuthState, action: AuthActions): AuthState => {
   switch (action.type) {
-    case INITIALIZE_START:
+    case AUTH_ACTIONS.INITIALIZE_START:
       return { ...state, isInitialized: false };
-    case INITIALIZE_SUCCESS:
+    case AUTH_ACTIONS.INITIALIZE_SUCCESS:
       return {
         ...state,
         isInitialized: true,
         isAuthenticated: true,
         user: action.payload.user,
       };
-    case INITIALIZE_FAILURE:
+    case AUTH_ACTIONS.INITIALIZE_FAILURE:
       return {
         ...state,
         isInitialized: true,
         isAuthenticated: false,
         user: null,
       };
-    case SIGN_IN:
+    case AUTH_ACTIONS.SIGN_IN:
       return { ...state, isAuthenticated: true, user: action.payload.user };
-    case SIGN_OUT:
+    case AUTH_ACTIONS.SIGN_OUT:
       return { ...state, isAuthenticated: false, user: null };
-    default:
+    default: {
+      const exhaustiveCheck: never = action;
+      void exhaustiveCheck; // mark as intentionally unused
       return state;
+    }
   }
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+AuthContext.displayName = "AuthContext";
 
-function AuthProvider({ children }: { children: ReactNode }) {
+function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const location = useLocation();
 
-  const fetchUser = async () => {
-    const response = await axios.get("/auth/me");
-    return response.data.user;
+  const fetchUser = async (): Promise<AuthUser> => {
+    const { data } = await axios.get<{ user: AuthUser }>("/auth/me");
+    return data.user;
   };
 
   const initialize = useCallback(async () => {
-    dispatch({ type: INITIALIZE_START });
+    dispatch({ type: AUTH_ACTIONS.INITIALIZE_START });
     try {
       const user = await fetchUser();
-      dispatch({ type: INITIALIZE_SUCCESS, payload: { user } });
+      dispatch({ type: AUTH_ACTIONS.INITIALIZE_SUCCESS, payload: { user } });
     } catch {
-      dispatch({ type: INITIALIZE_FAILURE });
+      dispatch({ type: AUTH_ACTIONS.INITIALIZE_FAILURE });
     }
   }, []);
 
   useEffect(() => {
-    initialize(); // always re-check session on route change
+    initialize();
   }, [location.pathname, initialize]);
 
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "logout") {
+        dispatch({ type: AUTH_ACTIONS.SIGN_OUT });
+        window.location.href = "/sign-in";
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const signIn = async (username: string, password: string) => {
-    try {
-      await axios.post("/auth/login", { username, password });
-      const user = await fetchUser();
-      dispatch({ type: SIGN_IN, payload: { user } });
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-      throw err;
-    }
+    await axios.post("/auth/login", { username, password });
+    const user = await fetchUser();
+    dispatch({ type: AUTH_ACTIONS.SIGN_IN, payload: { user } });
   };
 
   const signOut = async () => {
-    try {
-      await axios.get("/auth/logout");
-      dispatch({ type: SIGN_OUT });
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-      throw err;
-    }
+    await axios.get("/auth/logout");
+    localStorage.setItem("logout", Date.now().toString()); // Broadcast logout
+    dispatch({ type: AUTH_ACTIONS.SIGN_OUT });
   };
 
   return (
@@ -115,8 +109,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         method: "session",
         signIn,
         signOut,
-      }}
-    >
+      }}>
       {children}
     </AuthContext.Provider>
   );

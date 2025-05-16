@@ -33,7 +33,8 @@ function PageLoader() {
         justifyContent: "center",
         alignItems: "center",
         zIndex: 1300,
-      }}>
+      }}
+    >
       <Box
         sx={{
           width: 300,
@@ -42,7 +43,8 @@ function PageLoader() {
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
-        }}>
+        }}
+      >
         <Box
           component={motion.div}
           variants={animation}
@@ -55,7 +57,7 @@ function PageLoader() {
             top: 0,
             background: `linear-gradient(90deg, ${color}, ${alpha(
               color,
-              0.5
+              0.5,
             )})`,
             filter: "blur(1px)",
             borderRadius: 3,
