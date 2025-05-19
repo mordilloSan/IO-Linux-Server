@@ -132,12 +132,20 @@ build-backend: setup
 	echo "📦 Size: $$(du -h server | cut -f1)" && \
 	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
 
-dev: setup check-env
+dev-prep:
+	@mkdir -p go-backend/frontend/assets
+	@mkdir -p go-backend/frontend/.vite
+	@touch go-backend/frontend/.vite/manifest.json
+	@touch go-backend/frontend/manifest.json
+	@touch go-backend/frontend/favicon-1.png
+	@touch go-backend/frontend/assets/index-mock.js
+
+dev: setup check-env dev-prep
 	@echo ""
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 	@bash -c '\
 	cd go-backend && \
-	GO_ENV=development | echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
+	echo "$(SUDO_PASSWORD)" | sudo -E -S env GO_ENV=development PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
 	' &
 	@sleep 1
 	@bash -c '\
@@ -177,4 +185,4 @@ help:
 	@echo "  make clean            Remove build artifacts"
 	@echo ""
 
-.PHONY: all ensure-node ensure-go setup test dev prod run build-vite-dev build-vite-prod build-backend clean help lint tsc check-env
+.PHONY: all ensure-node ensure-go setup test dev dev-prep prod run build-vite-dev build-vite-prod build-backend clean help lint tsc check-env
