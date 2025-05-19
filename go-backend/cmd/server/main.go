@@ -3,7 +3,9 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	embed "go-backend"
 	"go-backend/internal/auth"
+	"go-backend/internal/benchmark"
 	"go-backend/internal/config"
 	"go-backend/internal/docker"
 	"go-backend/internal/logger"
@@ -73,47 +75,26 @@ func main() {
 	config.RegisterThemeRoutes(router)
 	wireguard.RegisterWireguardRoutes(router)
 	power.RegisterPowerRoutes(router)
+	// API Benchmark route
+	if env != "production" {
+		benchmark.RegisterDebugRoutes(router, env)
+	}
 
 	session.StartSessionGC()
 
-	// Debug route
-	if env != "production" {
-		router.GET("/debug/benchmark", func(c *gin.Context) {
-			cookie, err := c.Cookie("session_id")
-			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-				return
-			}
-			results := utils.RunBenchmark("http://localhost:8080", "session_id="+cookie, router, 8)
-			var output []gin.H
-			for _, r := range results {
-				if r.Error != nil {
-					output = append(output, gin.H{"endpoint": r.Endpoint, "error": r.Error.Error()})
-				} else {
-					output = append(output, gin.H{
-						"endpoint": r.Endpoint,
-						"status":   r.Status,
-						"latency":  fmt.Sprintf("%.2fms", float64(r.Latency.Microseconds())/1000),
-					})
-				}
-			}
-			c.JSON(http.StatusOK, output)
-		})
-	}
-
 	// Static files (only needed in production if files exist on disk)
+
 	if env == "production" {
-		router.Static("/assets", "../../frontend/assets")
-		router.StaticFile("/manifest.json", "../../frontend/manifest.json")
-		router.StaticFile("/favicon.ico", "../../frontend/favicon-6.png")
-		for i := 1; i <= 6; i++ {
-			router.StaticFile(fmt.Sprintf("/favicon-%d.png", i), fmt.Sprintf("../../frontend/favicon-%d.png", i))
-		}
+		templates.RegisterStaticRoutes(router, embed.StaticFS, embed.PWAManifest)
 	}
 
 	// ✅ Serve frontend on "/" and fallback routes
-	router.GET("/", ServeIndex)
-	router.NoRoute(ServeIndex)
+	router.GET("/", func(c *gin.Context) {
+		templates.ServeIndex(c, env, embed.ViteManifest)
+	})
+	router.NoRoute(func(c *gin.Context) {
+		templates.ServeIndex(c, env, embed.ViteManifest)
+	})
 
 	// Port config
 	port := os.Getenv("SERVER_PORT")
@@ -146,60 +127,4 @@ func main() {
 		logger.Error.Fatal(router.Run(addr))
 	}
 
-}
-
-func ServeIndex(c *gin.Context) {
-	logger.Info.Println("📄 ServeIndex called for:", c.Request.URL.Path)
-
-	var js, css string
-
-	if env == "development" {
-		// Use Vite dev server directly
-		vitePort := os.Getenv("VITE_DEV_PORT")
-		if vitePort == "" {
-			vitePort = "5173"
-		}
-		js = fmt.Sprintf("http://localhost:%s/src/main.tsx", vitePort)
-		css = "" // Vite injects CSS in dev mode
-	} else {
-		// Load from manifest (production build)
-		var err error
-		js, css, err = utils.ParseViteManifest("../../frontend/.vite/manifest.json")
-		if err != nil {
-			c.String(http.StatusInternalServerError, "Failed to load bundle info")
-			return
-		}
-	}
-
-	theme, err := config.LoadTheme()
-	if err != nil {
-		logger.Warning.Println("⚠️ Failed to load theme, using defaults:", err)
-		theme = config.ThemeSettings{
-			Theme:           "DARK",
-			PrimaryColor:    "#1976d2",
-			SidebarColapsed: false,
-		}
-	}
-
-	background := "#ffffff"
-	shimmer := "#eeeeee"
-	if theme.Theme == "DARK" {
-		background = "#1B2635"
-		shimmer = "#233044"
-	}
-
-	data := map[string]string{
-		"JSBundle":          js,
-		"CSSBundle":         css,
-		"PrimaryColor":      theme.PrimaryColor,
-		"ThemeColor":        theme.PrimaryColor,
-		"Background":        background,
-		"ShimmerBackground": shimmer,
-	}
-
-	c.Status(http.StatusOK)
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := templates.IndexTemplate.Execute(c.Writer, data); err != nil {
-		logger.Error.Printf("❌ Failed to execute index template: %v", err)
-	}
 }

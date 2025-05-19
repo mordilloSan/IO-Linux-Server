@@ -18,3 +18,8 @@ type ManifestEntry struct {
 	File string   `json:"file"`
 	CSS  []string `json:"css"`
 }
+
+type ViteManifest map[string]struct {
+	File string   `json:"file"`
+	Css  []string `json:"css"`
+}

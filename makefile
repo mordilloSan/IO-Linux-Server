@@ -113,7 +113,7 @@ build-vite-prod: test
 		echo "✅ Frontend built successfully!" \
 	'
 
-build-backend: setup build-vite-prod
+build-backend: setup
 	@echo ""
 	@echo "📦 Building backend..."
 	@cd go-backend/cmd/server && \
@@ -148,7 +148,7 @@ dev: setup check-env
 prod: check-env build-vite-prod
 	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
-run: build-backend
+run: build-vite-prod build-backend
 	@cd go-backend/cmd/server && \
 	SERVER_PORT=$(SERVER_PORT) ./server
 
