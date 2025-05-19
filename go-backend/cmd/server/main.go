@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"go-backend/internal/auth"
 	"go-backend/internal/config"
@@ -122,9 +123,28 @@ func main() {
 	}
 
 	// Start the server
-	logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
-	fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
-	logger.Error.Fatal(router.Run(":" + port))
+	addr := ":" + port
+
+	if env == "production" {
+		cert, err := utils.GenerateSelfSignedCert()
+		if err != nil {
+			logger.Error.Fatalf("❌ Failed to generate self-signed certificate: %v", err)
+		}
+
+		srv := &http.Server{
+			Addr:      addr,
+			Handler:   router,
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
+		}
+
+		logger.Info.Printf("🚀 Server running at https://localhost:%s", port)
+		fmt.Printf("🚀 Server running at https://localhost:%s\n", port)
+		logger.Error.Fatal(srv.ListenAndServeTLS("", "")) // Empty filenames = use TLSConfig.Certificates
+	} else {
+		logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
+		fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
+		logger.Error.Fatal(router.Run(addr))
+	}
 
 }
 

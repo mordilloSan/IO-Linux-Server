@@ -109,7 +109,8 @@ function AuthProvider({ children }: AuthProviderProps) {
         method: "session",
         signIn,
         signOut,
-      }}>
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
