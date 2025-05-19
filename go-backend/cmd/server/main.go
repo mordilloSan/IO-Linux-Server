@@ -22,7 +22,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var env = "development"
+var env = "production"
 
 func main() {
 	_ = godotenv.Load("../.env")

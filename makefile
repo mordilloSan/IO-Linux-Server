@@ -137,7 +137,7 @@ dev: setup check-env
 	@echo "🚀 Starting dev mode (frontend + backend)..."
 	@bash -c '\
 	cd go-backend && \
-	echo "$(SUDO_PASSWORD)" | 	echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
+	GO_ENV=development | echo "$(SUDO_PASSWORD)" | sudo -E -S PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
 	' &
 	@sleep 1
 	@bash -c '\
@@ -146,11 +146,11 @@ dev: setup check-env
 	'
 
 prod: check-env build-vite-prod
-	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | GO_ENV=production SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
+	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
 run: build-backend
 	@cd go-backend/cmd/server && \
-	GO_ENV=production SERVER_PORT=$(SERVER_PORT) ./server
+	SERVER_PORT=$(SERVER_PORT) ./server
 
 clean:
 	@rm -f go-backend/cmd/server/server || true
