@@ -152,7 +152,7 @@ dev: setup check-env dev-prep build-bridge
 	@scripts/run-bridge.sh
 	@bash -c '\
 	cd go-backend && \
-	echo "$(SUDO_PASSWORD)" | sudo -E -S env GO_ENV=development PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
+	GO_ENV=development PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
 	' &
 	@sleep 1
 	@bash -c '\
@@ -162,7 +162,7 @@ dev: setup check-env dev-prep build-bridge
 
 prod: check-env build-vite-prod build-bridge
 	@scripts/run-bridge.sh
-	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
+	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
 run: build-vite-prod build-backend build-bridge
 	@scripts/run-bridge.sh
