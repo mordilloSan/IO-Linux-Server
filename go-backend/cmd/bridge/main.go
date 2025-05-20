@@ -38,7 +38,6 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init(env, verbose)
 	_ = os.RemoveAll(socketPath)
-	logger.Init(env, verbose)
 	listener, err := net.Listen("unix", socketPath)
 	// Only root can read/write
 	_ = os.Chmod(socketPath, 0600)
