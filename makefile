@@ -132,6 +132,12 @@ build-backend: setup
 	echo "📦 Size: $$(du -h server | cut -f1)" && \
 	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
 
+build-bridge:
+	@echo ""
+	@echo "📦 Building backend bridge..."
+	@cd go-backend/cmd/bridge && \
+	go build -o $(HOME)/linuxio-bridge .
+
 dev-prep:
 	@mkdir -p go-backend/frontend/assets
 	@mkdir -p go-backend/frontend/.vite
@@ -140,9 +146,10 @@ dev-prep:
 	@touch go-backend/frontend/favicon-1.png
 	@touch go-backend/frontend/assets/index-mock.js
 
-dev: setup check-env dev-prep
+dev: setup check-env dev-prep build-bridge
 	@echo ""
 	@echo "🚀 Starting dev mode (frontend + backend)..."
+	@scripts/run-bridge.sh
 	@bash -c '\
 	cd go-backend && \
 	echo "$(SUDO_PASSWORD)" | sudo -E -S env GO_ENV=development PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
@@ -153,14 +160,17 @@ dev: setup check-env dev-prep
 	cd react && VITE_API_URL=http://localhost:$(SERVER_PORT) npx vite --port $(VITE_DEV_PORT) \
 	'
 
-prod: check-env build-vite-prod
+prod: check-env build-vite-prod build-bridge
+	@scripts/run-bridge.sh
 	@cd go-backend/cmd/server && echo "$(SUDO_PASSWORD)" | SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
-run: build-vite-prod build-backend
-	@cd go-backend/cmd/server && \
-	SERVER_PORT=$(SERVER_PORT) ./server
+run: build-vite-prod build-backend build-bridge
+	@scripts/run-bridge.sh
+	@sleep 1
+	@echo "🚦 Starting backend server..."
+	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) ./server
 
-clean:
+clean: stop-bridge
 	@rm -f go-backend/cmd/server/server || true
 	@rm -f go-backend/cmd/server/theme.json || true
 	@rm -f go-backend/theme.json || true
@@ -169,20 +179,37 @@ clean:
 	@find go-backend/frontend -mindepth 1 -exec rm -rf {} + 2>/dev/null || true
 	@echo "🧹 Cleaned workspace."
 
+stop-bridge:
+	@echo "🛑 Stopping linuxio-bridge..."
+	@pid_list=$$(ps -eo pid,user,comm,args | awk '/linuxio-bridge/ && $$2=="root" {print $$1}'); \
+	if [ -n "$$pid_list" ]; then \
+	  echo "$(SUDO_PASSWORD)" | sudo -S kill $$pid_list; \
+	  echo "✅ linuxio-bridge stopped (PID(s): $$pid_list)."; \
+	else \
+	  echo "No running linuxio-bridge found."; \
+	fi
+
 help:
 	@echo ""
 	@echo "🛠️  Available commands:"
 	@echo ""
-	@echo "  make check-env        Verify .env and required environment variables"
-	@echo "  make setup            Install Node.js, Go and frontend dependencies"
-	@echo "  make test             Run Vite linter + TypeScript type checks"
-	@echo "  make dev              Start frontend (Vite) and backend (Go) in dev mode"
-	@echo "  make prod             Build Vite production files and Start backend (Go) in production mode"
-	@echo "  make run              Build Go binary and runs full production mode"
-	@echo "  make build-vite-dev   Build frontend static files (Vite) for Go in development mode"
-	@echo "  make build-vite-prod  Build frontend static files (Vite) for Go in production mode"
-	@echo "  make build-backend    Build Go binary and runs it"
-	@echo "  make clean            Remove build artifacts"
+	@echo "  make check-env           Verify .env and required environment variables"
+	@echo "  make setup               Install Node.js, Go and frontend dependencies"
+	@echo "  make lint                Run ESLint linter on frontend"
+	@echo "  make tsc                 Run TypeScript type checks on frontend"
+	@echo "  make test                Run ESLint + TypeScript type checks"
+	@echo ""
+	@echo "  make dev                 Start frontend (Vite) and backend (Go) in dev mode (hot reload, API on SERVER_PORT)"
+	@echo "  make prod                Build production frontend, start backend (Go) in production mode"
+	@echo "  make run                 Full production build (backend, frontend, bridge), run everything (prod mode)"
+	@echo ""
+	@echo "  make build-backend       Build Go backend binary"
+	@echo "  make build-bridge        Build privileged helper bridge binary"
+	@echo "  make build-vite-dev      Build frontend static files (Vite) for development"
+	@echo "  make build-vite-prod     Build frontend static files (Vite) for production"
+	@echo ""
+	@echo "  make clean               Remove build artifacts and node_modules"
+	@echo "  make stop-bridge         Kill the bridge process (if running)"
 	@echo ""
 
-.PHONY: all ensure-node ensure-go setup test dev dev-prep prod run build-vite-dev build-vite-prod build-backend clean help lint tsc check-env
+.PHONY: all ensure-node ensure-go setup test dev dev-prep prod run build-vite-dev build-vite-prod build-backend build-bridge clean help lint tsc check-env stop-bridge

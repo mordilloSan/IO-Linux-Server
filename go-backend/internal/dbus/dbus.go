@@ -7,26 +7,23 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+// Login1Manager abstracts the org.freedesktop.login1.Manager interface.
 type Login1Manager struct {
 	conn *dbus.Conn
 	obj  dbus.BusObject
 }
 
-// Connects to system D-Bus and prepares the org.freedesktop.login1.Manager interface.
+// NewLogin1Manager connects to system D-Bus and prepares the login1 interface.
 func NewLogin1Manager(ctx context.Context) (*Login1Manager, error) {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to system bus: %w", err)
 	}
-
 	obj := conn.Object("org.freedesktop.login1", "/org/freedesktop/login1")
-	return &Login1Manager{
-		conn: conn,
-		obj:  obj,
-	}, nil
+	return &Login1Manager{conn: conn, obj: obj}, nil
 }
 
-// Internal generic call handler for login1 methods.
+// call runs a generic login1 method.
 func (m *Login1Manager) call(ctx context.Context, method string) error {
 	call := m.obj.CallWithContext(ctx, "org.freedesktop.login1.Manager."+method, 0, false)
 	if call.Err != nil {
@@ -43,4 +40,21 @@ func (m *Login1Manager) Reboot(ctx context.Context) error {
 // PowerOff calls the D-Bus method to power off the system.
 func (m *Login1Manager) PowerOff(ctx context.Context) error {
 	return m.call(ctx, "PowerOff")
+}
+
+// Helper for privileged bridge (no context needed for simple calls).
+func RebootSystem() error {
+	manager, err := NewLogin1Manager(context.Background())
+	if err != nil {
+		return err
+	}
+	return manager.Reboot(context.Background())
+}
+
+func PowerOffSystem() error {
+	manager, err := NewLogin1Manager(context.Background())
+	if err != nil {
+		return err
+	}
+	return manager.PowerOff(context.Background())
 }
