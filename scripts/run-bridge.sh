@@ -11,13 +11,6 @@ if [[ -f "$ROOT_DIR/secret.env" ]]; then
     set +a
 fi
 
-if [[ -z "$SUDO_PASSWORD" ]]; then
-    echo "❌ SUDO_PASSWORD is not set!"
-    exit 1
-else
-    echo "✅ SUDO_PASSWORD is set: ${SUDO_PASSWORD//?/*}"
-fi
-
 # Prefer $HOME/linuxio-bridge if it exists, else use built location
 if [[ -x "$HOME/linuxio-bridge" ]]; then
     BRIDGE_BIN="$HOME/linuxio-bridge"
