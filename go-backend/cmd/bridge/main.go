@@ -7,8 +7,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
-
-	"github.com/joho/godotenv"
+	"os/signal"
+	"syscall"
 )
 
 const socketPath = "/run/linuxio-bridge.sock"
@@ -25,27 +25,29 @@ type Response struct {
 	Error  string `json:"error,omitempty"`
 }
 
-var env = "production"
-
 func main() {
+	// Clean up socket file on exit
+	defer func() {
+		_ = os.Remove(socketPath)
+		logger.Info.Println("🔐 linuxio-bridge shut down.")
+	}()
 
-	_ = godotenv.Load("../.env")
-
-	if goEnv := os.Getenv("GO_ENV"); goEnv != "" {
-		env = goEnv
-	}
-
-	verbose := os.Getenv("VERBOSE") == "true"
-	logger.Init(env, verbose)
 	_ = os.RemoveAll(socketPath)
+
+	// Trap SIGINT/SIGTERM for graceful exit
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		os.Exit(0)
+	}()
+
 	listener, err := net.Listen("unix", socketPath)
-	// Only root can read/write
-	_ = os.Chmod(socketPath, 0600)
 	if err != nil {
 		logger.Error.Fatalf("❌ Failed to listen on socket: %v", err)
 	}
 	defer listener.Close()
-	_ = os.Chmod(socketPath, 0660)
+	_ = os.Chmod(socketPath, 0600) // Only root
 	logger.Info.Println("🔐 linuxio-bridge listening:", socketPath)
 
 	for {

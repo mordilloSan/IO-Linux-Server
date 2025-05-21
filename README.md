@@ -49,13 +49,13 @@ Instead of replacing the Linux experience, **Linux i/O visualizes it.**
 ```bash
 
 sudo apt update
-sudo apt install -y make curl git lm-sensors libpam0g-dev policykit-1 smartmontools
+sudo apt install -y make curl git lm-sensors libpam0g-dev policykit-1 smartmontools python3-gi python3-dbus
 ```
 
 **For Fedora / RHEL / CentOS:**
 
 ```bash
-sudo dnf install -y make curl git lm_sensors pam-devel dnf-plugins-core smartmontools
+sudo dnf install -y make curl git lm_sensors pam-devel dnf-plugins-core smartmontools python3-gi python3-dbus
 ```
 
 ### Clone the repo

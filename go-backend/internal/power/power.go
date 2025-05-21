@@ -4,32 +4,15 @@ import (
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Middleware to ensure user is authenticated and admin
-func requireAdmin() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		user, ok := c.Get("user")
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return
-		}
-		if u, ok := user.(utils.User); !ok || !u.IsAdmin {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "admin required"})
-			return
-		}
-		c.Next()
-	}
-}
-
 // RegisterPowerRoutes sets up reboot and poweroff endpoints
 func RegisterPowerRoutes(r *gin.Engine) {
 	group := r.Group("/power")
-	group.Use(auth.AuthMiddleware(), requireAdmin())
+	group.Use(auth.AuthMiddleware())
 
 	group.POST("/reboot", func(c *gin.Context) {
 		if err := bridge.RebootSystem(); err != nil {

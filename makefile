@@ -6,6 +6,7 @@ GO_INSTALL_DIR := $(HOME)/.go
 NVM_SETUP = export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"
 GO_BIN := $(shell which go)
 AIR_BIN := $(shell which air)
+BRIDGE_BIN := /usr/local/lib/linuxio/linuxio-bridge
 
 default: help
 
@@ -135,8 +136,12 @@ build-backend: setup
 build-bridge:
 	@echo ""
 	@echo "📦 Building backend bridge..."
-	@cd go-backend/cmd/bridge && \
-	go build -o $(HOME)/linuxio-bridge .
+	@echo "$(SUDO_PASSWORD)" | sudo -E env PATH="$(PATH)" sh -c '\
+		mkdir -p $(dir $(BRIDGE_BIN)); \
+		cd go-backend/cmd/bridge && go build -o $(BRIDGE_BIN) .; \
+		chmod 755 $(BRIDGE_BIN) \
+	'
+	@echo "✅ Bridge built at $(BRIDGE_BIN)"
 
 dev-prep:
 	@mkdir -p go-backend/frontend/assets
@@ -146,10 +151,9 @@ dev-prep:
 	@touch go-backend/frontend/favicon-1.png
 	@touch go-backend/frontend/assets/index-mock.js
 
-dev: setup check-env dev-prep build-bridge
+dev: setup check-env dev-prep
 	@echo ""
 	@echo "🚀 Starting dev mode (frontend + backend)..."
-	@scripts/run-bridge.sh
 	@bash -c '\
 	cd go-backend && \
 	GO_ENV=development PATH="/usr/sbin:$(PATH)" $(AIR_BIN) \
@@ -161,11 +165,9 @@ dev: setup check-env dev-prep build-bridge
 	'
 
 prod: check-env build-vite-prod build-bridge
-	@scripts/run-bridge.sh
 	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) $(GO_BIN) run .
 
 run: build-vite-prod build-backend build-bridge
-	@scripts/run-bridge.sh
 	@sleep 1
 	@echo "🚦 Starting backend server..."
 	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) ./server

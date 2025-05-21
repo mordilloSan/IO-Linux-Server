@@ -45,32 +45,17 @@ func loginHandler(c *gin.Context) {
 		return
 	}
 
+	// 1. Authenticate with PAM
 	if err := pamAuth(req.Username, req.Password); err != nil {
 		logger.Warning.Printf("❌ Authentication failed for user: %s", req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
 		return
 	}
-	isAdmin, err := utils.IsUserInGroup(req.Username, "sudo")
-	if err != nil {
-		logger.Warning.Printf("⚠️ Could not check group for user %s: %v", req.Username, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
-		return
-	}
 
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{"error": "user not authorized for admin actions"})
-		return
-	}
-
+	// 3. Create session
 	sessionID := uuid.New().String()
-	sess := session.Session{
-		User:      utils.User{ID: req.Username, Name: req.Username, IsAdmin: isAdmin},
-		ExpiresAt: time.Now().Add(sessionDuration),
-	}
-
-	session.SessionMux <- func() {
-		session.Sessions[sessionID] = sess
-	}
+	user := utils.User{ID: req.Username, Name: req.Username}
+	session.CreateSession(sessionID, user, sessionDuration)
 
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	logger.Info.Printf("✅ User %s logged in, session ID: %s", req.Username, sessionID)
@@ -85,9 +70,7 @@ func meHandler(c *gin.Context) {
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
 	if err == nil {
-		session.SessionMux <- func() {
-			delete(session.Sessions, sessionID)
-		}
+		session.DeleteSession(sessionID) // <--- this also kills the bridge!
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
 		logger.Info.Printf("👋 Logged out session: %s", sessionID)
 	}
