@@ -5,17 +5,13 @@ import (
 	"go-backend/internal/logger"
 	"go-backend/internal/utils"
 	"net/http"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
-	"syscall"
 	"time"
 )
 
 type Session struct {
-	User      utils.User
-	ExpiresAt time.Time
+	User       utils.User
+	ExpiresAt  time.Time
+	Privileged bool
 }
 
 var (
@@ -31,6 +27,7 @@ func init() {
 	}()
 }
 
+// Starts a goroutine that periodically checks for expired sessions
 func StartSessionGC() {
 	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
@@ -53,10 +50,11 @@ func StartSessionGC() {
 }
 
 // Creates a new session
-func CreateSession(id string, user utils.User, duration time.Duration) {
+func CreateSession(id string, user utils.User, duration time.Duration, privileged bool) {
 	sess := Session{
-		User:      user,
-		ExpiresAt: time.Now().Add(duration),
+		User:       user,
+		ExpiresAt:  time.Now().Add(duration),
+		Privileged: privileged,
 	}
 	SessionMux <- func() {
 		Sessions[id] = sess
@@ -64,7 +62,7 @@ func CreateSession(id string, user utils.User, duration time.Duration) {
 	logger.Info.Printf("[session] Created session for user '%s'", user.ID)
 }
 
-// Use this to delete a session and stop its bridge process
+// Deletes a session
 func DeleteSession(id string) {
 	SessionMux <- func() {
 		sess, exists := Sessions[id]
@@ -75,11 +73,24 @@ func DeleteSession(id string) {
 	}
 }
 
+// Checks if a session is privileged
+func IsPrivileged(sessionID string) bool {
+	done := make(chan bool)
+	var privileged bool
+	SessionMux <- func() {
+		sess, exists := Sessions[sessionID]
+		privileged = exists && sess.Privileged
+		done <- true
+	}
+	<-done
+	return privileged
+}
+
 // Utility to validate session cookie and return user/ID/status
-func ValidateFromRequest(r *http.Request) (utils.User, string, bool) {
+func ValidateFromRequest(r *http.Request) (utils.User, string, bool, bool) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie.Value == "" {
-		return utils.User{}, "", false
+		return utils.User{}, "", false, false
 	}
 
 	var session Session
@@ -94,15 +105,15 @@ func ValidateFromRequest(r *http.Request) (utils.User, string, bool) {
 
 	if !exists {
 		logger.Warning.Printf("[session] Access attempt with unknown session_id: %s", cookie.Value)
-		return utils.User{}, "", false
+		return utils.User{}, "", false, false
 	}
 
 	if session.ExpiresAt.Before(time.Now()) {
 		logger.Warning.Printf("[session] Expired session access attempt by user '%s'", session.User.ID)
-		return utils.User{}, "", false
+		return utils.User{}, "", false, false
 	}
 
-	return session.User, cookie.Value, true
+	return session.User, cookie.Value, true, session.Privileged
 }
 
 // Checks if a session is valid
@@ -118,45 +129,13 @@ func IsValid(id string) bool {
 	return valid
 }
 
-// --- Bridge process handling --- //
-func stopBridge(pid int) {
-	if pid <= 0 {
-		return
-	}
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		logger.Warning.Printf("[session] Could not find bridge process (PID %d): %v", pid, err)
-		return
-	}
-	_ = proc.Signal(syscall.SIGTERM)
-	// Wait a short time, then force kill if needed
-	for i := 0; i < 10; i++ {
-		if !processExists(pid) {
-			return
+// Changes the privileged status of a session
+func SetPrivileged(sessionID string, privileged bool) {
+	SessionMux <- func() {
+		sess, exists := Sessions[sessionID]
+		if exists {
+			sess.Privileged = privileged
+			Sessions[sessionID] = sess
 		}
-		time.Sleep(200 * time.Millisecond)
-	}
-	_ = proc.Kill()
-	logger.Info.Printf("[session] Forced kill bridge process (PID %d)", pid)
-}
-
-func processExists(pid int) bool {
-	if pid <= 0 {
-		return false
-	}
-	// signal 0 is used to check for existence
-	err := syscall.Kill(pid, 0)
-	return err == nil
-}
-
-// Optionally, add a helper to clean up bridges at startup
-func CleanupLeftoverBridges() {
-	out, _ := exec.Command("pgrep", "-x", "linuxio-bridge").Output()
-	for _, line := range strings.Split(string(out), "\n") {
-		if line == "" {
-			continue
-		}
-		pid, _ := strconv.Atoi(strings.TrimSpace(line))
-		stopBridge(pid)
 	}
 }

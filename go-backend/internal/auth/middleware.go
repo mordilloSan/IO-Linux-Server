@@ -38,7 +38,7 @@ func CorsMiddleware() gin.HandlerFunc {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, sessionID, valid := session.ValidateFromRequest(c.Request)
+		user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
 		if !valid {
 			logger.Warning.Println("⚠️  Unauthorized request or expired session")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -46,6 +46,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 		c.Set("user", user)
 		c.Set("session_id", sessionID)
+		c.Set("privileged", privileged)
 		c.Next()
 	}
 }

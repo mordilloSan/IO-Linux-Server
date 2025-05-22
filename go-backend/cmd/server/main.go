@@ -2,10 +2,10 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	embed "go-backend"
 	"go-backend/internal/auth"
 	"go-backend/internal/benchmark"
+	"go-backend/internal/bridge"
 	"go-backend/internal/config"
 	"go-backend/internal/docker"
 	"go-backend/internal/logger"
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	verbose := os.Getenv("VERBOSE") == "true"
-	logger.Init(env, verbose)
+	logger.Init("env", verbose)
 
 	logger.Info.Println("📦 Loading configuration...")
 	if err := config.LoadConfig(); err != nil {
@@ -52,8 +52,11 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Clean up old bridge processes
+	bridge.CleanupOrphanBridges()
+	// Start the session garbage collector
+	session.StartSessionGC()
 	// Initialize cache functions
-
 	system.InitGPUInfo()
 
 	router := gin.New()
@@ -80,10 +83,7 @@ func main() {
 		benchmark.RegisterDebugRoutes(router, env)
 	}
 
-	session.StartSessionGC()
-
 	// Static files (only needed in production if files exist on disk)
-
 	if env == "production" {
 		templates.RegisterStaticRoutes(router, embed.StaticFS, embed.PWAManifest)
 	}
@@ -102,6 +102,7 @@ func main() {
 		port = "8080"
 		logger.Warning.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
 	}
+	os.Setenv("SERVER_PORT", port)
 
 	// Start the server
 	addr := ":" + port
@@ -117,13 +118,12 @@ func main() {
 			Handler:   router,
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
 		}
-
+		os.Setenv("LINUXIO_BACKEND_URL", "https://localhost:"+port)
 		logger.Info.Printf("🚀 Server running at https://localhost:%s", port)
-		fmt.Printf("🚀 Server running at https://localhost:%s\n", port)
 		logger.Error.Fatal(srv.ListenAndServeTLS("", "")) // Empty filenames = use TLSConfig.Certificates
 	} else {
+		os.Setenv("LINUXIO_BACKEND_URL", "http://localhost:"+port)
 		logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
-		fmt.Printf("🚀 Server running at http://localhost:%s\n", port)
 		logger.Error.Fatal(router.Run(addr))
 	}
 

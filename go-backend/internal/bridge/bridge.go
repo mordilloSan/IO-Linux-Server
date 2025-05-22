@@ -5,16 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"go-backend/internal/logger"
+	"io"
 	"net"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 )
 
-// Path to your bridge binary
-var bridgeBinary = os.ExpandEnv(" /usr/local/lib/linuxio/linuxio-bridge")
+var bridgeBinary = os.ExpandEnv("/usr/lib/linuxio/linuxio-bridge")
 
 type BridgeProcess struct {
 	Cmd       *exec.Cmd
@@ -22,14 +24,13 @@ type BridgeProcess struct {
 	StartedAt time.Time
 }
 
-// Manages bridge processes per session (sessionID → *BridgeProcess)
 var (
 	processes   = make(map[string]*BridgeProcess)
 	processesMu sync.Mutex
 )
 
-// Start a new privileged bridge for the session (returns error if already running)
-func StartBridge(sessionID string) error {
+// StartBridge starts the bridge process for a given session ID and username.
+func StartBridge(sessionID, username string, privileged bool, sudoPassword string) error {
 	processesMu.Lock()
 	defer processesMu.Unlock()
 
@@ -37,26 +38,63 @@ func StartBridge(sessionID string) error {
 		return errors.New("bridge already running for this session")
 	}
 
-	cmd := exec.Command("pkexec", bridgeBinary)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	var cmd *exec.Cmd
+	if privileged {
+		cmd = exec.Command("sudo", "-S", "env",
+			"LINUXIO_SESSION_ID="+sessionID,
+			"LINUXIO_SESSION_USER="+username,
+			"LINUXIO_BACKEND_URL="+os.Getenv("LINUXIO_BACKEND_URL"),
+			"GO_ENV="+os.Getenv("GO_ENV"),
+			"VERBOSE="+os.Getenv("VERBOSE"),
+			bridgeBinary,
+		)
+	} else {
+		cmd = exec.Command(bridgeBinary)
+		cmd.Env = append(os.Environ(),
+			"LINUXIO_SESSION_ID="+sessionID,
+			"LINUXIO_SESSION_USER="+username,
+			"LINUXIO_BACKEND_URL="+os.Getenv("LINUXIO_BACKEND_URL"),
+			"GO_ENV="+os.Getenv("GO_ENV"),
+			"VERBOSE="+os.Getenv("VERBOSE"),
+		)
+	}
 
-	// Optional: direct stdout/stderr to files or /dev/null
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	// Only send the password for privileged launches
+	if privileged && sudoPassword != "" {
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			logger.Error.Printf("[bridge] Failed to get stdin pipe: %v", err)
+			return err
+		}
+		go func() {
+			defer stdin.Close()
+			io.WriteString(stdin, sudoPassword+"\n")
+		}()
+	}
 
 	if err := cmd.Start(); err != nil {
 		logger.Error.Printf("[bridge] Failed to start bridge for session %s: %v", sessionID, err)
 		return err
 	}
 
-	logger.Info.Printf("[bridge] Started bridge for session %s (pid=%d)", sessionID, cmd.Process.Pid)
+	logger.Info.Printf("[bridge] Started %sbridge for session %s (pid=%d)",
+		func() string {
+			if privileged {
+				return "privileged "
+			}
+			return ""
+		}(), sessionID, cmd.Process.Pid)
+
 	processes[sessionID] = &BridgeProcess{
 		Cmd:       cmd,
 		SessionID: sessionID,
 		StartedAt: time.Now(),
 	}
 
-	// Start goroutine to wait and clean up on exit
 	go func(sessionID string, cmd *exec.Cmd) {
 		err := cmd.Wait()
 		processesMu.Lock()
@@ -78,11 +116,7 @@ func StopBridge(sessionID string) {
 	proc, exists := processes[sessionID]
 	processesMu.Unlock()
 
-	if !exists {
-		return
-	}
-
-	if proc.Cmd.Process == nil {
+	if !exists || proc.Cmd.Process == nil {
 		return
 	}
 
@@ -107,35 +141,104 @@ func StopBridge(sessionID string) {
 	processesMu.Unlock()
 }
 
-// Optional: Clean up all orphans at startup
-func CleanupOrphanBridges() {
-	// Implement if needed: scan for old bridges and kill
+// Finds all running bridge processes and their PIDs
+func FindAllBridgeProcesses() ([]int, error) {
+	cmd := exec.Command("pgrep", "-f", "linuxio-bridge")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, nil // If no matches, return empty (not an error)
+	}
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	var pids []int
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l == "" {
+			continue
+		}
+		pid, err := strconv.Atoi(l)
+		if err == nil {
+			pids = append(pids, pid)
+		}
+	}
+	return pids, nil
 }
 
-// Optional: Stop all bridges (e.g., on backend shutdown)
-func StopAllBridges() {
+// Kills any real bridge process not tracked by our backend (session).
+func CleanupOrphanBridges() {
+	pids, err := FindAllBridgeProcesses()
+	if err != nil {
+		logger.Warning.Printf("[bridge] CleanupOrphanBridges: failed to find bridge processes: %v", err)
+		return
+	}
+
 	processesMu.Lock()
-	sessions := make([]string, 0, len(processes))
+	validSessionIDs := make(map[string]bool)
 	for sid := range processes {
-		sessions = append(sessions, sid)
+		validSessionIDs[sid] = true
 	}
 	processesMu.Unlock()
 
-	for _, sid := range sessions {
-		StopBridge(sid)
+	for _, pid := range pids {
+		// Read env to get session id
+		envPath := fmt.Sprintf("/proc/%d/environ", pid)
+		data, err := os.ReadFile(envPath)
+		if err != nil {
+			logger.Warning.Printf("[bridge] Could not read env for PID %d: %v", pid, err)
+			continue
+		}
+		envVars := strings.Split(string(data), "\x00")
+		var sessionID string
+		for _, v := range envVars {
+			if strings.HasPrefix(v, "LINUXIO_SESSION_ID=") {
+				sessionID = strings.TrimPrefix(v, "LINUXIO_SESSION_ID=")
+				break
+			}
+		}
+		if sessionID == "" {
+			continue // Not our process or legacy, skip
+		}
+		if validSessionIDs[sessionID] {
+			continue // Active in backend
+		}
+		// Not valid, kill
+		logger.Info.Printf("[bridge] Killing orphan bridge process (PID %d, session '%s')", pid, sessionID)
+		_ = syscall.Kill(pid, syscall.SIGTERM)
 	}
 }
 
-const bridgeSocketPath = "/run/linuxio-bridge.sock"
+// Generic bridge call
+func Call(reqType, command string, args []string) (string, error) {
+	req := map[string]interface{}{
+		"type":    reqType,
+		"command": command,
+	}
+	if args != nil {
+		req["args"] = args
+	}
+	resp, err := sendBridgeRequest(req)
+	if err != nil {
+		return "", err
+	}
+	if resp["status"] != "ok" {
+		// output may be present in error cases too
+		output := ""
+		if o, ok := resp["output"].(string); ok {
+			output = o
+		}
+		return output, fmt.Errorf("bridge error: %v", resp["error"])
+	}
+	output, _ := resp["output"].(string)
+	return output, nil
+}
 
-// Sends a request to the bridge and returns the response struct.
-func sendBridgeRequest(req map[string]any) (map[string]any, error) {
-	conn, err := net.DialTimeout("unix", bridgeSocketPath, 2*time.Second)
+// sendBridgeRequest sends a request to the bridge and returns the response
+func sendBridgeRequest(req map[string]interface{}) (map[string]interface{}, error) {
+	conn, err := net.DialTimeout("unix", "/run/linuxio-bridge.sock", 2*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to bridge: %w", err)
 	}
 	defer conn.Close()
-
+	logger.Debug.Printf("[bridge] Sending request: %+v", req)
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
 
@@ -143,38 +246,12 @@ func sendBridgeRequest(req map[string]any) (map[string]any, error) {
 		return nil, fmt.Errorf("failed to send request to bridge: %w", err)
 	}
 
-	var resp map[string]any
+	var resp map[string]interface{}
+
 	if err := dec.Decode(&resp); err != nil {
+		logger.Error.Printf("[bridge] Failed to decode response: %v", err)
 		return nil, fmt.Errorf("failed to decode response from bridge: %w", err)
 	}
-
+	logger.Debug.Printf("[bridge] Got response: %+v", resp)
 	return resp, nil
-}
-
-func RebootSystem() error {
-	resp, err := sendBridgeRequest(map[string]any{
-		"type":    "dbus",
-		"command": "reboot",
-	})
-	if err != nil {
-		return err
-	}
-	if status, _ := resp["status"].(string); status != "ok" {
-		return fmt.Errorf("bridge error: %v, detail: %v", resp["error"], resp["output"])
-	}
-	return nil
-}
-
-func PowerOffSystem() error {
-	resp, err := sendBridgeRequest(map[string]any{
-		"type":    "dbus",
-		"command": "poweroff",
-	})
-	if err != nil {
-		return err
-	}
-	if status, _ := resp["status"].(string); status != "ok" {
-		return fmt.Errorf("bridge error: %v, detail: %v", resp["error"], resp["output"])
-	}
-	return nil
 }

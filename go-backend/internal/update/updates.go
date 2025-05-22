@@ -2,11 +2,11 @@ package update
 
 import (
 	"net/http"
-	"os/exec"
 	"regexp"
 	"strings"
 
 	"go-backend/internal/auth"
+	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
@@ -29,21 +29,22 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 func getUpdatesHandler(c *gin.Context) {
 	logger.Info.Println("🔍 Checking for system updates...")
 
-	cmd := exec.Command("pkcon", "get-updates")
-	output, err := cmd.CombinedOutput()
+	output, err := bridge.Call("command", "pkcon", []string{"get-updates"})
+
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
+		if strings.Contains(strings.ToLower(output), "no updates") ||
+			strings.Contains(err.Error(), "exit status 5") {
 			logger.Info.Println("✅ No updates available.")
 			c.JSON(http.StatusOK, gin.H{"updates": []any{}})
 			return
 		}
-		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, string(output))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get updates", "details": err.Error()})
+		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, output)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get updates", "details": err.Error(), "output": output})
 		return
 	}
 
-	lines := strings.Split(string(output), "\n")
-	logger.Debug.Printf("📦 Raw pkcon output:\n%s", string(output))
+	lines := strings.Split(output, "\n")
+	logger.Debug.Printf("📦 Raw pkcon output:\n%s", output)
 
 	type UpdateItem struct {
 		Name     string `json:"name"`
@@ -148,23 +149,22 @@ func updatePackageHandler(c *gin.Context) {
 
 	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageName)
 
-	cmd := exec.Command("pkexec", "pkcon", "update", "--noninteractive", req.PackageName)
-	output, err := cmd.CombinedOutput()
+	output, err := bridge.Call("command", "pkcon", []string{"update", "--noninteractive", req.PackageName})
 
 	if err != nil {
-		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageName, err, string(output))
+		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageName, err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
 			"details": err.Error(),
-			"output":  string(output),
+			"output":  output,
 		})
 		return
 	}
 
-	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageName, string(output))
+	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageName, output)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Package update triggered",
-		"output":  string(output),
+		"output":  output,
 	})
 }
 

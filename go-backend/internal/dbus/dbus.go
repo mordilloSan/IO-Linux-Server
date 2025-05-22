@@ -23,6 +23,15 @@ func NewLogin1Manager(ctx context.Context) (*Login1Manager, error) {
 	return &Login1Manager{conn: conn, obj: obj}, nil
 }
 
+// CallLogin1Action is a helper function to call a login1 action.
+func CallLogin1Action(action string) error {
+	manager, err := NewLogin1Manager(context.Background())
+	if err != nil {
+		return err
+	}
+	return manager.call(context.Background(), action)
+}
+
 // call runs a generic login1 method.
 func (m *Login1Manager) call(ctx context.Context, method string) error {
 	call := m.obj.CallWithContext(ctx, "org.freedesktop.login1.Manager."+method, 0, false)
@@ -40,21 +49,4 @@ func (m *Login1Manager) Reboot(ctx context.Context) error {
 // PowerOff calls the D-Bus method to power off the system.
 func (m *Login1Manager) PowerOff(ctx context.Context) error {
 	return m.call(ctx, "PowerOff")
-}
-
-// Helper for privileged bridge (no context needed for simple calls).
-func RebootSystem() error {
-	manager, err := NewLogin1Manager(context.Background())
-	if err != nil {
-		return err
-	}
-	return manager.Reboot(context.Background())
-}
-
-func PowerOffSystem() error {
-	manager, err := NewLogin1Manager(context.Background())
-	if err != nil {
-		return err
-	}
-	return manager.PowerOff(context.Background())
 }
