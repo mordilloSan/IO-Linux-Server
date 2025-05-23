@@ -21,7 +21,6 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 		system.GET("/updates", getUpdatesHandler)
 		system.POST("/update", updatePackageHandler)
 		system.GET("/updates/update-history", getUpdateHistoryHandler)
-		system.GET("/updates/changelog", getChangelogHandler)
 		system.GET("/updates/settings", getUpdateSettings)
 		system.POST("/updates/settings", postUpdateSettings)
 	}
@@ -43,12 +42,12 @@ func getUpdatesHandler(c *gin.Context) {
 	}
 
 	// Output is JSON from the bridge, unmarshal it
-	var updates []map[string]interface{}
+	var updates []Update
 
 	// Defensive: If output is empty, treat as empty array
 	trimmed := strings.TrimSpace(output)
 	if trimmed == "" {
-		updates = []map[string]interface{}{}
+		updates = []Update{}
 	} else if err := json.Unmarshal([]byte(trimmed), &updates); err != nil {
 		logger.Error.Printf("❌ Failed to decode updates JSON: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -64,27 +63,28 @@ func getUpdatesHandler(c *gin.Context) {
 
 func updatePackageHandler(c *gin.Context) {
 	var req struct {
-		PackageName string `json:"package"`
+		PackageID string `json:"package"` // Now this must be the *full* PackageKit ID
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageName) == "" {
-		logger.Warning.Println("⚠️ Missing or invalid package name in update request.")
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageID) == "" {
+		logger.Warning.Println("⚠️ Missing or invalid package id in update request.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. 'package' field is required."})
 		return
 	}
 
-	if !validPackageName.MatchString(req.PackageName) {
-		logger.Warning.Printf("⚠️ Invalid package name submitted: %s", req.PackageName)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package name"})
+	// Defensive: Optionally check if this looks like a PackageKit package_id (e.g., contains semicolons)
+	if !strings.Contains(req.PackageID, ";") {
+		logger.Warning.Printf("⚠️ Invalid package_id submitted: %s", req.PackageID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package_id"})
 		return
 	}
 
-	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageName)
+	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageID)
 
-	output, err := bridge.Call("command", "pkcon", []string{"update", "--noninteractive", req.PackageName})
+	output, err := bridge.Call("dbus", "InstallPackage", []string{req.PackageID})
 
 	if err != nil {
-		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageName, err, output)
+		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageID, err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
 			"details": err.Error(),
@@ -93,7 +93,7 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
-	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageName, output)
+	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageID, output)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Package update triggered",
 		"output":  output,

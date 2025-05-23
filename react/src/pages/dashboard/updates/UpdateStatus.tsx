@@ -11,8 +11,6 @@ import { Update } from "@/types/update";
 import axios from "@/utils/axios";
 
 const UpdateStatus: React.FC = () => {
-  const queryClient = useQueryClient();
-
   const {
     data,
     isLoading,
@@ -29,30 +27,10 @@ const UpdateStatus: React.FC = () => {
   const { updateOne, updateAll, updatingPackage, progress } =
     usePackageUpdater(refetchUpdates);
 
-  // Prefetch changelogs
-  useEffect(() => {
-    if (updates.length > 0) {
-      updates.forEach((update) => {
-        if (update.name) {
-          queryClient.prefetchQuery({
-            queryKey: ["changelog", update.name],
-            queryFn: () =>
-              axios
-                .get("/system/updates/changelog", {
-                  params: { package: update.name },
-                })
-                .then((res) => res.data),
-            staleTime: 5 * 60 * 1000,
-          });
-        }
-      });
-    }
-  }, [updates, queryClient]);
-
   return (
     <Box>
       <UpdateActions
-        onUpdateAll={() => updateAll(updates.map((u) => u.name))}
+        onUpdateAll={() => updateAll(updates.map((u) => u.package_id))}
         isUpdating={!!updatingPackage}
         currentPackage={updatingPackage}
         progress={progress}
@@ -61,7 +39,7 @@ const UpdateStatus: React.FC = () => {
       <UpdateList
         updates={updates}
         onUpdateClick={updateOne}
-        isUpdating={!!updatingPackage}
+        isUpdating={!!updatingPackage || isLoading}
         currentPackage={updatingPackage}
         onComplete={refetchUpdates}
         isLoading={isLoading}

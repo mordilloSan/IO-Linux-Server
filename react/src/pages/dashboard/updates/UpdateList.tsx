@@ -9,9 +9,8 @@ import {
 } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 
-import ChangelogPanel from "./ChangelogPanel";
-
 import FrostedCard from "@/components/cards/RootCard";
+import ComponentLoader from "@/components/loaders/ComponentLoader";
 import { Update } from "@/types/update";
 
 interface Props {
@@ -58,6 +57,10 @@ const UpdateList: React.FC<Props> = ({
     );
   }
 
+  if (isUpdating) {
+    return <ComponentLoader />;
+  }
+
   return (
     <Grid container spacing={2} sx={{ px: 2, pb: 2 }} ref={containerRef}>
       {updates.map((update, idx) => (
@@ -70,40 +73,42 @@ const UpdateList: React.FC<Props> = ({
                 transform: "translateY(-4px)",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
               },
-            }}
-          >
+            }}>
             <CardContent>
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
-                  mb: 1,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  title={update.name}
-                  sx={{
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    maxWidth: "75%",
-                  }}
-                >
-                  {update.name}
-                </Typography>
-                <Chip
-                  label={update.severity}
-                  size="small"
-                  sx={{ backgroundColor: "transparent" }}
-                />
+                  mb: 3,
+                }}>
+                <Typography variant="h6">{update.summary}</Typography>
               </Box>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                gutterBottom
+                sx={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: "90%", // or a specific px/em width
+                }}>
+                Package: {update.package_id}
+              </Typography>
 
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Version: {update.version}
               </Typography>
 
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  mt: 4,
+                  mb: -2,
+                }}>
                 <Chip
                   label="View Changelog"
                   size="small"
@@ -113,7 +118,7 @@ const UpdateList: React.FC<Props> = ({
                 />
                 <Chip
                   label={
-                    currentPackage === update.name ? (
+                    currentPackage === update.package_id ? (
                       <CircularProgress size={16} />
                     ) : (
                       "Update"
@@ -123,7 +128,7 @@ const UpdateList: React.FC<Props> = ({
                   variant="outlined"
                   disabled={!!isUpdating}
                   onClick={async () => {
-                    await onUpdateClick(update.name);
+                    await onUpdateClick(update.package_id);
                     onComplete();
                   }}
                   sx={{ cursor: "pointer" }}
@@ -131,8 +136,10 @@ const UpdateList: React.FC<Props> = ({
               </Box>
 
               <Collapse in={expandedIdx === idx} timeout="auto" unmountOnExit>
-                <Box sx={{ mt: 2 }}>
-                  <ChangelogPanel packageName={update.name} />
+                <Box sx={{ whiteSpace: "pre-wrap", fontSize: 14, mt: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {update.changelog}
+                  </Typography>
                 </Box>
               </Collapse>
             </CardContent>

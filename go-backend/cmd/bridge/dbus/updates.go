@@ -12,19 +12,14 @@ import (
 )
 
 type UpdateDetail struct {
-	PackageID    string
-	Updates      []string
-	Obsoletes    []string
-	VendorURLs   []string
-	BugzillaURLs []string
-	CVEURLs      []string
-	Restart      uint32
-	UpdateText   string
-	Changelog    string
-	State        uint32
-	Issued       string
-	Updated      string
-	Summary      string
+	PackageID string   `json:"package_id"`
+	Summary   string   `json:"summary"`
+	Version   string   `json:"version"`
+	Issued    string   `json:"issued"`
+	Changelog string   `json:"changelog"`
+	CVEs      []string `json:"cve"`
+	Restart   uint32   `json:"restart"`
+	State     uint32   `json:"state"`
 }
 
 // --- Helpers ---
@@ -59,45 +54,18 @@ func extractNameVersion(packageID string) (name, version string) {
 	return packageID, ""
 }
 
-// --- Clean Output ---
-
-func cleanUpdateDetail(detail map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
-	// Remove all empty fields and convert nil slices to omission
-	for k, v := range detail {
-		switch vv := v.(type) {
-		case string:
-			if vv != "" {
-				out[k] = vv
-			}
-		case []string:
-			if len(vv) > 0 {
-				out[k] = vv
-			}
-		case []interface{}:
-			if len(vv) > 0 {
-				out[k] = vv
-			}
-		default:
-			if v != nil {
-				out[k] = v
-			}
+func toStringSlice(iface any) []string {
+	arr, ok := iface.([]interface{})
+	if !ok {
+		return []string{}
+	}
+	strs := make([]string, 0, len(arr))
+	for _, v := range arr {
+		if s, ok := v.(string); ok {
+			strs = append(strs, s)
 		}
 	}
-	// Add name/version if not present
-	if pid, ok := out["package_id"].(string); ok {
-		name, version := extractNameVersion(pid)
-		out["name"] = name
-		out["version"] = version
-	}
-	// Optionally extract issued date from changelog
-	if changelog, ok := out["changelog"].(string); ok {
-		issued := extractIssued(changelog)
-		if issued != "" {
-			out["issued"] = issued
-		}
-	}
-	return out
+	return strs
 }
 
 // --- D-Bus Core ---
@@ -107,19 +75,14 @@ func GetUpdatesWithDetails() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Clean up all updates before returning
-	cleaned := make([]map[string]interface{}, 0, len(details))
-	for _, d := range details {
-		cleaned = append(cleaned, cleanUpdateDetail(d))
-	}
-	jsonBytes, err := json.MarshalIndent(cleaned, "", "  ")
+	jsonBytes, err := json.MarshalIndent(details, "", "  ")
 	if err != nil {
 		return "", err
 	}
 	return string(jsonBytes), nil
 }
 
-func getUpdatesWithDetails() ([]map[string]interface{}, error) {
+func getUpdatesWithDetails() ([]UpdateDetail, error) {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to system bus: %w", err)
@@ -200,7 +163,7 @@ collectPackages:
 		return nil, fmt.Errorf("GetUpdateDetail failed: %w", detailCall.Err)
 	}
 
-	var details []map[string]interface{}
+	var details []UpdateDetail
 	ctx2, cancel2 := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel2()
 
@@ -219,26 +182,26 @@ collectDetails:
 				break collectDetails
 			}
 			if sig.Name == transactionIfc+".UpdateDetail" {
-				detail := UpdateDetail{
-					PackageID:  sig.Body[0].(string),
-					CVEURLs:    toStringSlice(sig.Body[5]),
-					Restart:    sig.Body[6].(uint32),
-					UpdateText: sig.Body[7].(string),
-					Changelog:  sig.Body[8].(string),
-					State:      sig.Body[9].(uint32),
-					Issued:     sig.Body[10].(string),
-					Summary:    summaryByPkg[sig.Body[0].(string)],
+				pkgID := sig.Body[0].(string)
+				summary := summaryByPkg[pkgID]
+				version := sig.Body[11].(string)
+				if version == "" {
+					_, version = extractNameVersion(pkgID)
 				}
 
-				// Combine CVEs from detail.CVEURLs and parsed from changelog/update_text
+				issued := sig.Body[10].(string)
+				changelogRaw := sig.Body[8].(string)
+				changelog := formatTextForHTML(changelogRaw)
+				cves := toStringSlice(sig.Body[5])
+				restart := sig.Body[6].(uint32)
+				state := sig.Body[9].(uint32)
+
+				// Merge CVEs
 				cveSet := make(map[string]struct{})
-				for _, cve := range detail.CVEURLs {
+				for _, cve := range cves {
 					cveSet[cve] = struct{}{}
 				}
-				for _, cve := range extractCVEs(detail.Changelog) {
-					cveSet[cve] = struct{}{}
-				}
-				for _, cve := range extractCVEs(detail.UpdateText) {
+				for _, cve := range extractCVEs(changelogRaw) {
 					cveSet[cve] = struct{}{}
 				}
 				combinedCVEs := make([]string, 0, len(cveSet))
@@ -246,20 +209,22 @@ collectDetails:
 					combinedCVEs = append(combinedCVEs, cve)
 				}
 
-				// Only keep needed fields for JSON output
-				detailMap := map[string]interface{}{
-					"package_id": detail.PackageID,
-					"summary":    detail.Summary,
-					"restart":    detail.Restart,
-					"state":      detail.State,
-					"changelog":  formatTextForHTML(detail.Changelog),
-					"cve_urls":   combinedCVEs,
+				// Fix issued if needed
+				if issued == "" {
+					issued = extractIssued(changelogRaw)
 				}
-				// Optional: add issued if extracted
-				if issued := extractIssued(detail.Changelog); issued != "" {
-					detailMap["issued"] = issued
+
+				detail := UpdateDetail{
+					PackageID: pkgID,
+					Summary:   summary,
+					Version:   version,
+					Issued:    issued,
+					Changelog: changelog,
+					CVEs:      combinedCVEs,
+					Restart:   restart,
+					State:     state,
 				}
-				details = append(details, detailMap)
+				details = append(details, detail)
 			} else if sig.Name == transactionIfc+".Finished" {
 				break collectDetails
 			}
@@ -271,16 +236,67 @@ collectDetails:
 	return details, nil
 }
 
-func toStringSlice(iface any) []string {
-	arr, ok := iface.([]interface{})
-	if !ok {
-		return []string{}
+// Update (install) a specific package using PackageKit
+func InstallPackage(packageID string) error {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("failed to connect to system bus: %w", err)
 	}
-	strs := make([]string, 0, len(arr))
-	for _, v := range arr {
-		if s, ok := v.(string); ok {
-			strs = append(strs, s)
+	defer conn.Close()
+
+	const (
+		pkBusName      = "org.freedesktop.PackageKit"
+		pkObjPath      = "/org/freedesktop/PackageKit"
+		transactionIfc = "org.freedesktop.PackageKit.Transaction"
+	)
+
+	// 1. Create Transaction
+	obj := conn.Object(pkBusName, dbus.ObjectPath(pkObjPath))
+	var transPath dbus.ObjectPath
+	if err := obj.Call("org.freedesktop.PackageKit.CreateTransaction", 0).Store(&transPath); err != nil {
+		return fmt.Errorf("CreateTransaction failed: %w", err)
+	}
+	trans := conn.Object(pkBusName, transPath)
+
+	// Listen for signals
+	sigCh := make(chan *dbus.Signal, 20)
+	conn.Signal(sigCh)
+	conn.AddMatchSignal(dbus.WithMatchObjectPath(transPath))
+
+	// 2. Call InstallPackages
+	/*
+	   Flags: uint32 (0 for default)
+	   TransactionID: "" (not used)
+	   PackageIDs: []string
+	*/
+
+	call := trans.Call(transactionIfc+".InstallPackages", 0, uint64(0), []string{packageID})
+
+	if call.Err != nil {
+		return fmt.Errorf("InstallPackages failed: %w", call.Err)
+	}
+
+	// 3. Wait for Finished/ErrorCode signal
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	for {
+		select {
+		case sig := <-sigCh:
+			if sig == nil {
+				return fmt.Errorf("nil signal from D-Bus")
+			}
+			switch sig.Name {
+			case transactionIfc + ".ErrorCode":
+				code, _ := sig.Body[0].(uint32)
+				msg, _ := sig.Body[1].(string)
+				return fmt.Errorf("PackageKit error code %d: %s", code, msg)
+			case transactionIfc + ".Finished":
+				// Success!
+				return nil
+			}
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for PackageKit to finish install")
 		}
 	}
-	return strs
 }

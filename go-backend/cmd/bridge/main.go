@@ -160,8 +160,25 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
 		_ = enc.Encode(Response{
 			Status: "ok",
-			Output: jsonOut, // <-- include the JSON output here
+			Output: jsonOut,
 		})
+		return
+
+	case "InstallPackage":
+		if len(req.Args) == 0 {
+			logger.Error.Println("❌ D-Bus InstallPackage missing package ID")
+			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
+			return
+		}
+		packageID := req.Args[0]
+		err := dbus.InstallPackage(packageID)
+		if err != nil {
+			logger.Error.Printf("❌ D-Bus InstallPackage failed: %v", err)
+			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+			return
+		}
+		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
+		_ = enc.Encode(Response{Status: "ok"})
 		return
 
 	// ...add other methods as needed
@@ -183,15 +200,6 @@ func handleShellCommand(req Request, enc *json.Encoder) {
 	}
 	cmd := exec.Command(req.Command, req.Args...)
 	out, err := cmd.CombinedOutput()
-
-	// Detect "pkcon get-updates" exit 5 (no updates)
-	if req.Command == "pkcon" && len(req.Args) > 0 && req.Args[0] == "get-updates" {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
-			logger.Info.Printf("✅ pkcon get-updates: no updates available (exit 5)")
-			_ = enc.Encode(Response{Status: "ok", Output: string(out)})
-			return
-		}
-	}
 
 	if err != nil {
 		logger.Error.Printf("❌ Command failed: %s %v - %v", req.Command, req.Args, err)

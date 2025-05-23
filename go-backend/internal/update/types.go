@@ -16,3 +16,14 @@ type UpdateHistoryEntry struct {
 	Date     string        `json:"date"`
 	Upgrades []UpgradeItem `json:"upgrades"`
 }
+
+type Update struct {
+	PackageID string   `json:"package_id"`
+	Summary   string   `json:"summary"`
+	Version   string   `json:"version"`
+	Issued    string   `json:"issued"`
+	Changelog string   `json:"changelog"`
+	CVEs      []string `json:"cve"`
+	Restart   uint32   `json:"restart"`
+	State     uint32   `json:"state"`
+}

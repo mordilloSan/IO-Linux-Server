@@ -1,6 +1,10 @@
 export type Update = {
-  name: string;
+  package_id: string;
+  summary: string;
   version: string;
-  severity: string;
-  changelog?: string;
+  issued: string;
+  changelog: string;
+  cve: string[];
+  restart: number;
+  state: number;
 };
