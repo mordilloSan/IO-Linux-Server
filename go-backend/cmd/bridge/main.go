@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"go-backend/internal/dbus"
+	"go-backend/cmd/bridge/dbus"
 	"go-backend/internal/logger"
 	"net"
 	"net/http"
@@ -141,19 +141,37 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 	switch req.Command {
 	case "Reboot", "PowerOff":
 		err = dbus.CallLogin1Action(req.Command)
-	// ...add other  methods as needed
+		if err != nil {
+			logger.Error.Printf("❌ D-Bus %s failed: %v\n", req.Command, err)
+			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+			return
+		}
+		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
+		_ = enc.Encode(Response{Status: "ok"})
+		return
+
+	case "GetUpdates":
+		jsonOut, err := dbus.GetUpdatesWithDetails()
+		if err != nil {
+			logger.Error.Printf("❌ D-Bus GetUpdates failed: %v", err)
+			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+			return
+		}
+		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
+		_ = enc.Encode(Response{
+			Status: "ok",
+			Output: jsonOut, // <-- include the JSON output here
+		})
+		return
+
+	// ...add other methods as needed
+
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
-	}
-
-	if err != nil {
 		logger.Error.Printf("❌ D-Bus %s failed: %v\n", req.Command, err)
 		_ = enc.Encode(Response{Status: "error", Error: err.Error()})
 		return
 	}
-
-	logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-
 }
 
 func handleShellCommand(req Request, enc *json.Encoder) {
