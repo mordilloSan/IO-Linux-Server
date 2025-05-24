@@ -5,7 +5,6 @@ import (
 	embed "go-backend"
 	"go-backend/internal/auth"
 	"go-backend/internal/benchmark"
-	"go-backend/internal/bridge"
 	"go-backend/internal/config"
 	"go-backend/internal/docker"
 	"go-backend/internal/logger"
@@ -52,8 +51,6 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Clean up old bridge processes
-	bridge.CleanupOrphanBridges()
 	// Start the session garbage collector
 	session.StartSessionGC()
 	// Initialize cache functions

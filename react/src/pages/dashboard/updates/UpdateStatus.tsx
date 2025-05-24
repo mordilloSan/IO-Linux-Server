@@ -1,7 +1,7 @@
 // components/system/UpdateStatus.tsx
 import { Box } from "@mui/material";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import React, { useMemo } from "react";
 
 import UpdateActions from "./UpdateActions";
 import UpdateList from "./UpdateList";

@@ -6,21 +6,17 @@ import (
 	"go-backend/cmd/bridge/dbus"
 	"go-backend/internal/logger"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"os/user"
 	"strconv"
 	"syscall"
-	"time"
 )
 
-const socketPath = "/run/linuxio-bridge.sock"
-
 type Request struct {
-	Type    string   `json:"type"`    // "dbus" or "command"
-	Command string   `json:"command"` // e.g., "reboot", "poweroff", "pkcon"
+	Type    string   `json:"type"`    // "dbus", "command", or "control"
+	Command string   `json:"command"` // e.g., "reboot", "poweroff", "pkcon", "shutdown"
 	Args    []string `json:"args,omitempty"`
 }
 
@@ -31,7 +27,6 @@ type Response struct {
 }
 
 func main() {
-	// Setup logging: auto stdout (dev) or journal (prod)
 	env := os.Getenv("GO_ENV")
 	if env == "" {
 		env = "development"
@@ -39,25 +34,31 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init(env, verbose)
 
+	sessionID := os.Getenv("LINUXIO_SESSION_ID")
+	username := os.Getenv("LINUXIO_SESSION_USER")
+	backendURL := os.Getenv("LINUXIO_BACKEND_URL")
+
+	if sessionID == "" || username == "" {
+		logger.Error.Fatalf("❌ LINUXIO_SESSION_ID and LINUXIO_SESSION_USER env vars required")
+	}
+
+	u, err := user.Lookup(username)
+	if err != nil {
+		logger.Error.Fatalf("❌ Failed to lookup user %s: %v", username, err)
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+	socketPath := fmt.Sprintf("/run/user/%d/linuxio-bridge-%s.sock", uid, sessionID)
+
+	// Remove old socket if present
+	_ = os.Remove(socketPath)
 	defer func() {
 		logger.Info.Println("🔐 linuxio-bridge shut down.")
 		_ = os.Remove(socketPath)
 	}()
 
-	logger.Info.Println("linuxio-bridge: starting up")
-	_ = os.RemoveAll(socketPath)
-
-	sessionID := os.Getenv("LINUXIO_SESSION_ID")
-	username := os.Getenv("LINUXIO_SESSION_USER")
-	backendURL := os.Getenv("LINUXIO_BACKEND_URL")
-
+	logger.Info.Printf("linuxio-bridge: starting up for session %s user %s", sessionID, username)
 	logger.Info.Printf("sessionID=%s username=%s backendURL=%s", sessionID, username, backendURL)
-
-	// Start session watcher
-	if sessionID != "" && backendURL != "" {
-		logger.Info.Println("Starting sessionWatcher goroutine")
-		go sessionWatcher(backendURL, sessionID)
-	}
 
 	// Trap SIGINT/SIGTERM for graceful exit
 	sig := make(chan os.Signal, 1)
@@ -78,23 +79,11 @@ func main() {
 	logger.Info.Println("Listening succeeded.")
 
 	// Set permissions and ownership
-	_ = os.Chmod(socketPath, 0660) // rw for user/group
-
-	// Try to chown to user
-	if username != "" {
-		logger.Info.Printf("Chowning socket to user: %s", username)
-		u, err := user.Lookup(username)
-		if err != nil {
-			logger.Error.Printf("❌ Failed to lookup user %s: %v", username, err)
-		} else {
-			uid, _ := strconv.Atoi(u.Uid)
-			gid, _ := strconv.Atoi(u.Gid)
-			if err := os.Chown(socketPath, uid, gid); err != nil {
-				logger.Error.Printf("❌ Failed to chown socket to %s: %v", username, err)
-			} else {
-				logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-			}
-		}
+	_ = os.Chmod(socketPath, 0600) // rw for user
+	if err := os.Chown(socketPath, uid, gid); err != nil {
+		logger.Error.Printf("❌ Failed to chown socket to %s: %v", username, err)
+	} else {
+		logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
 	}
 
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
@@ -119,6 +108,13 @@ func handleConnection(conn net.Conn) {
 		logger.Warning.Printf("❌ Invalid JSON from client: %v", err)
 		_ = encoder.Encode(Response{Status: "error", Error: "invalid JSON"})
 		return
+	}
+
+	// Shutdown control (kills the bridge)
+	if req.Type == "control" && req.Command == "shutdown" {
+		logger.Info.Println("Received shutdown command, exiting bridge")
+		_ = encoder.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
+		os.Exit(0)
 	}
 
 	logger.Info.Printf("➡️ Received request: type=%s, command=%s, args=%v", req.Type, req.Command, req.Args)
@@ -208,25 +204,4 @@ func handleShellCommand(req Request, enc *json.Encoder) {
 	}
 	logger.Info.Printf("✅ Command succeeded: %s %v", req.Command, req.Args)
 	_ = enc.Encode(Response{Status: "ok", Output: string(out)})
-}
-
-func sessionWatcher(backendURL, sessionID string) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	url := backendURL + "/auth/me"
-	for {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			logger.Error.Printf("Session watcher: failed to create request: %v", err)
-			os.Exit(0)
-		}
-		req.AddCookie(&http.Cookie{Name: "session_id", Value: sessionID})
-
-		resp, err := client.Do(req)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			logger.Warning.Printf("Session watcher: session invalid or backend unreachable (status %v, err %v)", resp.StatusCode, err)
-			os.Exit(0)
-		}
-		resp.Body.Close()
-		time.Sleep(30 * time.Second) // Check every 30 seconds
-	}
 }

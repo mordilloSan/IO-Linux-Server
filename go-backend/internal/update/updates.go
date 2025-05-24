@@ -9,6 +9,7 @@ import (
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
+	"go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,7 +30,14 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 func getUpdatesHandler(c *gin.Context) {
 	logger.Info.Println("🔍 Checking for system updates (D-Bus)...")
 
-	output, err := bridge.Call("dbus", "GetUpdates", nil)
+	// Extract session info
+	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetUpdates", nil)
 
 	if err != nil {
 		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, output)
@@ -81,7 +89,14 @@ func updatePackageHandler(c *gin.Context) {
 
 	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageID)
 
-	output, err := bridge.Call("dbus", "InstallPackage", []string{req.PackageID})
+	// Extract session info
+	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "InstallPackage", []string{req.PackageID})
 
 	if err != nil {
 		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageID, err, output)

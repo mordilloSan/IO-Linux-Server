@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
+	"go-backend/internal/session"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,10 +15,21 @@ func RegisterPowerRoutes(r *gin.Engine) {
 	group.Use(auth.AuthMiddleware())
 
 	group.POST("/reboot", func(c *gin.Context) {
-		output, err := bridge.Call("dbus", "Reboot", nil) // D-Bus
+		// Extract session info
+		user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+			return
+		}
+
+		output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "Reboot", nil) // D-Bus
 		if err != nil {
 			fmt.Printf("[power] Reboot failed: %+v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "reboot failed", "detail": err.Error(), "output": output})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":  "reboot failed",
+				"detail": err.Error(),
+				"output": output,
+			})
 			return
 		}
 		fmt.Println("[power] Reboot triggered successfully")
@@ -25,10 +37,21 @@ func RegisterPowerRoutes(r *gin.Engine) {
 	})
 
 	group.POST("/shutdown", func(c *gin.Context) {
-		output, err := bridge.Call("dbus", "PowerOff", nil) // D-Bus
+		// Extract session info
+		user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+			return
+		}
+
+		output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "PowerOff", nil) // D-Bus
 		if err != nil {
 			fmt.Printf("[power] Shutdown failed: %+v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "shutdown failed", "detail": err.Error(), "output": output})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":  "shutdown failed",
+				"detail": err.Error(),
+				"output": output,
+			})
 			return
 		}
 		fmt.Println("[power] Shutdown triggered successfully")
