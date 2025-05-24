@@ -50,7 +50,6 @@ func main() {
 	gid, _ := strconv.Atoi(u.Gid)
 	socketPath := fmt.Sprintf("/run/user/%d/linuxio-bridge-%s.sock", uid, sessionID)
 
-	// Remove old socket if present
 	_ = os.Remove(socketPath)
 	defer func() {
 		logger.Info.Println("🔐 linuxio-bridge shut down.")
@@ -60,7 +59,6 @@ func main() {
 	logger.Info.Printf("linuxio-bridge: starting up for session %s user %s", sessionID, username)
 	logger.Info.Printf("sessionID=%s username=%s backendURL=%s", sessionID, username, backendURL)
 
-	// Trap SIGINT/SIGTERM for graceful exit
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -78,8 +76,7 @@ func main() {
 	defer listener.Close()
 	logger.Info.Println("Listening succeeded.")
 
-	// Set permissions and ownership
-	_ = os.Chmod(socketPath, 0600) // rw for user
+	_ = os.Chmod(socketPath, 0600)
 	if err := os.Chown(socketPath, uid, gid); err != nil {
 		logger.Error.Printf("❌ Failed to chown socket to %s: %v", username, err)
 	} else {
@@ -87,7 +84,6 @@ func main() {
 	}
 
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
-
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -110,7 +106,6 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	// Shutdown control (kills the bridge)
 	if req.Type == "control" && req.Command == "shutdown" {
 		logger.Info.Println("Received shutdown command, exiting bridge")
 		_ = encoder.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
@@ -137,60 +132,36 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 	switch req.Command {
 	case "Reboot", "PowerOff":
 		err = dbus.CallLogin1Action(req.Command)
-		if err != nil {
-			logger.Error.Printf("❌ D-Bus %s failed: %v\n", req.Command, err)
-			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
-			return
-		}
-		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-		_ = enc.Encode(Response{Status: "ok"})
-		return
-
 	case "GetUpdates":
-		jsonOut, err := dbus.GetUpdatesWithDetails()
-		if err != nil {
-			logger.Error.Printf("❌ D-Bus GetUpdates failed: %v", err)
-			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+		var jsonOut string
+		jsonOut, err = dbus.GetUpdatesWithDetails()
+		if err == nil {
+			_ = enc.Encode(Response{Status: "ok", Output: jsonOut})
 			return
 		}
-		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-		_ = enc.Encode(Response{
-			Status: "ok",
-			Output: jsonOut,
-		})
-		return
-
 	case "InstallPackage":
 		if len(req.Args) == 0 {
-			logger.Error.Println("❌ D-Bus InstallPackage missing package ID")
 			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
 			return
 		}
-		packageID := req.Args[0]
-		err := dbus.InstallPackage(packageID)
-		if err != nil {
-			logger.Error.Printf("❌ D-Bus InstallPackage failed: %v", err)
-			_ = enc.Encode(Response{Status: "error", Error: err.Error()})
-			return
-		}
-		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-		_ = enc.Encode(Response{Status: "ok"})
-		return
-
-	// ...add other methods as needed
-
+		err = dbus.InstallPackage(req.Args[0])
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
-		logger.Error.Printf("❌ D-Bus %s failed: %v\n", req.Command, err)
+	}
+
+	if err != nil {
+		logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)
 		_ = enc.Encode(Response{Status: "error", Error: err.Error()})
 		return
 	}
+
+	logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
+	_ = enc.Encode(Response{Status: "ok"})
 }
 
 func handleShellCommand(req Request, enc *json.Encoder) {
 	logger.Info.Printf("🔧 Handling shell command: %s %v", req.Command, req.Args)
 	if req.Command == "" {
-		logger.Error.Println("❌ Missing shell command")
 		_ = enc.Encode(Response{Status: "error", Error: "missing command"})
 		return
 	}
@@ -198,10 +169,8 @@ func handleShellCommand(req Request, enc *json.Encoder) {
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		logger.Error.Printf("❌ Command failed: %s %v - %v", req.Command, req.Args, err)
 		_ = enc.Encode(Response{Status: "error", Output: string(out), Error: err.Error()})
-		return
+	} else {
+		_ = enc.Encode(Response{Status: "ok", Output: string(out)})
 	}
-	logger.Info.Printf("✅ Command succeeded: %s %v", req.Command, req.Args)
-	_ = enc.Encode(Response{Status: "ok", Output: string(out)})
 }

@@ -106,6 +106,8 @@ func loginHandler(c *gin.Context) {
 		return
 	}
 
+	// 5. Set session cookie
+	// Note: In production, consider using secure cookies and HTTPS
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	logger.Info.Printf("✅ User %s logged in, session ID: %s, privileged: %v", req.Username, sessionID, privileged)
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})

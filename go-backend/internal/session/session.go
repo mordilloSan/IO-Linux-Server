@@ -139,3 +139,21 @@ func SetPrivileged(sessionID string, privileged bool) {
 		}
 	}
 }
+
+// Returns a list of all currently valid (non-expired) session IDs
+func GetActiveSessionIDs() []string {
+	done := make(chan []string)
+
+	SessionMux <- func() {
+		now := time.Now()
+		var active []string
+		for id, s := range Sessions {
+			if s.ExpiresAt.After(now) {
+				active = append(active, id)
+			}
+		}
+		done <- active
+	}
+
+	return <-done
+}
