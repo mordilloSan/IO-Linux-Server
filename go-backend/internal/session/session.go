@@ -157,3 +157,19 @@ func GetActiveSessionIDs() []string {
 
 	return <-done
 }
+
+// Get returns a pointer to the Session struct for the given sessionID, or nil if not found.
+// WARNING: The returned pointer is to a *copy*; do not modify fields directly!
+func Get(id string) *Session {
+	done := make(chan *Session)
+	SessionMux <- func() {
+		sess, exists := Sessions[id]
+		if exists {
+			s := sess // copy to new var to avoid data race
+			done <- &s
+		} else {
+			done <- nil
+		}
+	}
+	return <-done
+}

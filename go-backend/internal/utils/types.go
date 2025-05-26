@@ -23,3 +23,10 @@ type ViteManifest map[string]struct {
 	File string   `json:"file"`
 	Css  []string `json:"css"`
 }
+
+type BridgeProcInfo struct {
+	PID       int
+	SessionID string // optional (may be blank)
+	Username  string // from owner
+	Cmdline   string
+}

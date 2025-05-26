@@ -11,7 +11,9 @@ import (
 	"os/signal"
 	"os/user"
 	"strconv"
+	"strings"
 	"syscall"
+	"time"
 )
 
 type Request struct {
@@ -24,6 +26,15 @@ type Response struct {
 	Status string `json:"status"`           // "ok" or "error"
 	Output string `json:"output,omitempty"` // stdout/stderr
 	Error  string `json:"error,omitempty"`
+}
+
+type BridgeHealthRequest struct {
+	Type    string `json:"type"`    // e.g., "healthcheck" or "validate"
+	Session string `json:"session"` // sessionID
+}
+type BridgeHealthResponse struct {
+	Status  string `json:"status"` // "ok" or "invalid"
+	Message string `json:"message,omitempty"`
 }
 
 func main() {
@@ -84,14 +95,32 @@ func main() {
 	}
 
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
+
+	go func() {
+		logger.Info.Printf("[bridge] Starting periodic health check (session: %s)", sessionID)
+		for {
+			logger.Debug.Printf("[bridge] Healthcheck: pinging main process for session %s", sessionID)
+			ok := checkMainProcessHealth(uid, sessionID)
+			if !ok {
+				logger.Warning.Printf("❌ Main process unreachable or session invalid, bridge exiting...")
+				cleanupBridgeSocket(socketPath)
+				os.Exit(1)
+			}
+			time.Sleep(time.Minute)
+		}
+	}()
+
+	killLingeringBridgeStartupProcesses()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			logger.Warning.Printf("⚠️ Accept failed: %v", err)
 			continue
 		}
+		logger.Info.Printf("[bridge] Accepted new connection on bridge socket for session %s", sessionID)
 		go handleConnection(conn)
 	}
+
 }
 
 func handleConnection(conn net.Conn) {
@@ -173,4 +202,111 @@ func handleShellCommand(req Request, enc *json.Encoder) {
 	} else {
 		_ = enc.Encode(Response{Status: "ok", Output: string(out)})
 	}
+}
+
+// killLingeringBridgeStartupProcesses checks for lingering bridge startup processes
+func killLingeringBridgeStartupProcesses() {
+	procEntries, err := os.ReadDir("/proc")
+	if err != nil {
+		logger.Error.Printf("❌ Failed to read /proc: %v", err)
+		return
+	}
+
+	for _, entry := range procEntries {
+		if !entry.IsDir() || !IsNumeric(entry.Name()) {
+			continue
+		}
+
+		pid := entry.Name()
+		cmdlineBytes, err := os.ReadFile(fmt.Sprintf("/proc/%s/cmdline", pid))
+		if err != nil || len(cmdlineBytes) == 0 {
+			continue
+		}
+
+		cmdline := strings.ReplaceAll(string(cmdlineBytes), "\x00", " ")
+
+		if strings.Contains(cmdline, "linuxio-bridge") &&
+			strings.Contains(cmdline, "sudo -S env") &&
+			strings.Contains(cmdline, "LINUXIO_SESSION_USER="+os.Getenv("LINUXIO_SESSION_USER")) {
+			pidInt, _ := strconv.Atoi(pid)
+			logger.Warning.Printf("⚠️ Found lingering bridge process (pid=%d): %s", pidInt, cmdline)
+			killParentTree(pidInt)
+		}
+	}
+}
+
+func killParentTree(pid int) {
+	for {
+		stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+		if err != nil {
+			break
+		}
+		fields := strings.Fields(string(stat))
+		if len(fields) < 4 {
+			break
+		}
+
+		ppid, _ := strconv.Atoi(fields[3])
+		if ppid <= 1 || ppid == pid {
+			break
+		}
+
+		commBytes, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", ppid))
+		if err != nil {
+			break
+		}
+
+		comm := strings.TrimSpace(string(commBytes))
+		if comm == "sudo" || comm == "env" {
+			logger.Warning.Printf("🛑 Killing sudo process (pid=%d, ppid=%d)", pid, ppid)
+			_ = syscall.Kill(ppid, syscall.SIGKILL)
+			_ = syscall.Kill(pid, syscall.SIGKILL)
+			break
+		}
+		pid = ppid
+	}
+}
+
+func checkMainProcessHealth(uid int, sessionID string) bool {
+	sock := mainSocketPath(uid, sessionID)
+	conn, err := net.DialTimeout("unix", sock, 2*time.Second)
+	if err != nil {
+		logger.Warning.Printf("⚠️ Could not connect to main socket: %v", err)
+		return false
+	}
+	defer conn.Close()
+
+	req := BridgeHealthRequest{
+		Type:    "validate",
+		Session: sessionID,
+	}
+	if err := json.NewEncoder(conn).Encode(req); err != nil {
+		logger.Warning.Printf("⚠️ Failed to send health request: %v", err)
+		return false
+	}
+
+	var resp BridgeHealthResponse
+	if err := json.NewDecoder(conn).Decode(&resp); err != nil {
+		logger.Warning.Printf("⚠️ Failed to decode health response: %v", err)
+		return false
+	}
+	logger.Debug.Printf("Healthcheck: got %+v", resp)
+	return resp.Status == "ok"
+}
+
+func mainSocketPath(uid int, sessionID string) string {
+	return fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
+}
+
+func cleanupBridgeSocket(socketPath string) {
+	_ = os.Remove(socketPath)
+}
+
+func IsNumeric(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }

@@ -86,6 +86,15 @@ func loginHandler(c *gin.Context) {
 	user := utils.User{ID: req.Username, Name: req.Username}
 	session.CreateSession(sessionID, user, sessionDuration, privileged)
 
+	// **4. Start main socket for this session**
+	err := bridge.StartBridgeSocket(sessionID, req.Username)
+	if err != nil {
+		logger.Error.Printf("[login] Failed to start main socket: %v", err)
+		session.DeleteSession(sessionID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start session socket"})
+		return
+	}
+
 	// 4. Start the bridge process for this session
 	var bridgeErr error
 	if err := bridge.StartBridge(sessionID, req.Username, privileged, req.Password); err != nil {
@@ -100,24 +109,34 @@ func loginHandler(c *gin.Context) {
 	}
 	if bridgeErr != nil {
 		logger.Error.Printf("[login] Failed to start bridge for session %s: %v", sessionID, bridgeErr)
-		// Optionally delete session if bridge start is required
 		session.DeleteSession(sessionID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start backend bridge"})
 		return
 	}
 
 	// 5. Set session cookie
-	// Note: In production, consider using secure cookies and HTTPS
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	logger.Info.Printf("✅ User %s logged in, session ID: %s, privileged: %v", req.Username, sessionID, privileged)
+
+	// 7. Send response
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})
 }
 
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
 	if err == nil {
-		bridge.StopBridge(sessionID)
+		s := session.Get(sessionID) // Safe concurrent read
+		var username string
+		if s == nil {
+			logger.Debug.Printf("[auth] No session found for ID: %s (already expired?)", sessionID)
+		}
+		if s != nil {
+			username = s.User.ID
+		}
 		session.DeleteSession(sessionID)
+		if username != "" {
+			bridge.CleanupBridgeSocket(sessionID, username)
+		}
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
 		logger.Info.Printf("👋 Logged out session: %s", sessionID)
 	}

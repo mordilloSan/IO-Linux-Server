@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"go-backend/internal/logger"
+	"go-backend/internal/session"
 	"io"
 	"net"
 	"os"
 	"os/exec"
 	"os/user"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -21,6 +23,15 @@ type BridgeProcess struct {
 	Cmd       *exec.Cmd
 	SessionID string
 	StartedAt time.Time
+}
+
+type BridgeHealthRequest struct {
+	Type    string `json:"type"`    // e.g., "healthcheck" or "validate"
+	Session string `json:"session"` // sessionID
+}
+type BridgeHealthResponse struct {
+	Status  string `json:"status"` // "ok" or "invalid"
+	Message string `json:"message,omitempty"`
 }
 
 var (
@@ -172,42 +183,106 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	return nil
 }
 
-// StopBridge stops the bridge for a session (SIGTERM, then SIGKILL if needed)
-func StopBridge(sessionID string) {
-	processesMu.Lock()
-	proc, exists := processes[sessionID]
-	processesMu.Unlock()
+var (
+	mainSocketListeners   = make(map[string]net.Listener) // sessionID → Listener
+	mainSocketListenersMu sync.Mutex
+)
 
-	if !exists || proc.Cmd.Process == nil {
+// StartBridgeSocket starts a Unix socket server for the main process.
+// StartBridgeSocket starts a Unix socket server for the main process.
+func StartBridgeSocket(sessionID string, username string) error {
+	u, err := user.Lookup(username)
+	if err != nil {
+		return fmt.Errorf("failed to lookup user %s: %w", username, err)
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	socketPath := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
+	_ = os.Remove(socketPath)
+	ln, err := net.Listen("unix", socketPath)
+	if err != nil {
+		logger.Error.Printf("[bridge] Failed to listen on main socket for session %s: %v", sessionID, err)
+		return err
+	}
+
+	// Set permissions strictly to 0600 (owner read/write only)
+	if err := os.Chmod(socketPath, 0600); err != nil {
+		_ = ln.Close()
+		_ = os.Remove(socketPath)
+		logger.Error.Printf("[bridge] Failed to chmod main socket %s: %v", socketPath, err)
+		return fmt.Errorf("failed to chmod socket: %w", err)
+	}
+
+	// Store the listener so we can close and remove it on logout
+	mainSocketListenersMu.Lock()
+	mainSocketListeners[sessionID] = ln
+	mainSocketListenersMu.Unlock()
+
+	logger.Info.Printf("[bridge] Main socket for session %s is now listening on %s", sessionID, socketPath)
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
+				return // Accept fails after Close()
+			}
+			logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
+			go handleBridgeRequest(conn)
+		}
+	}()
+	return nil
+}
+
+func handleBridgeRequest(conn net.Conn) {
+	defer conn.Close()
+	logger.Info.Printf("[bridge] Main socket accepted a connection")
+	decoder := json.NewDecoder(conn)
+	encoder := json.NewEncoder(conn)
+
+	var req BridgeHealthRequest
+	if err := decoder.Decode(&req); err != nil {
+		logger.Warning.Printf("[bridge] Invalid JSON on main socket: %v", err)
+		_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "invalid json"})
 		return
 	}
 
-	pgid, err := syscall.Getpgid(proc.Cmd.Process.Pid)
-	if err == nil {
-		// Kill the entire process group (including sudo, env, bridge)
-		syscall.Kill(-pgid, syscall.SIGTERM)
-	} else {
-		_ = proc.Cmd.Process.Signal(syscall.SIGTERM)
-	}
-
-	done := make(chan error, 1)
-	go func() {
-		done <- proc.Cmd.Wait()
-	}()
-
-	select {
-	case <-done:
-		logger.Info.Printf("[bridge] Bridge for session %s stopped gracefully", sessionID)
-	case <-time.After(5 * time.Second):
-		logger.Warning.Printf("[bridge] Bridge for session %s did not stop, killing...", sessionID)
-		if err == nil {
-			syscall.Kill(-pgid, syscall.SIGKILL)
+	if req.Type == "validate" {
+		logger.Info.Printf("[bridge] Healthcheck received for session %s", req.Session)
+		if session.IsValid(req.Session) {
+			_ = encoder.Encode(BridgeHealthResponse{Status: "ok"})
 		} else {
-			_ = proc.Cmd.Process.Kill()
+			_ = encoder.Encode(BridgeHealthResponse{Status: "invalid", Message: "session expired"})
 		}
+		return
 	}
+	_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "unknown request type"})
+}
 
-	processesMu.Lock()
-	delete(processes, sessionID)
-	processesMu.Unlock()
+func CleanupBridgeSocket(sessionID string, username string) {
+	mainSocketListenersMu.Lock()
+	ln, ok := mainSocketListeners[sessionID]
+	if ok {
+		err := ln.Close()
+		if err != nil {
+			logger.Warning.Printf("[bridge] Error closing main socket listener for session %s: %v", sessionID, err)
+		} else {
+			logger.Info.Printf("[bridge] Closed main socket listener for session %s", sessionID)
+		}
+		delete(mainSocketListeners, sessionID)
+	}
+	mainSocketListenersMu.Unlock()
+
+	// Remove the socket file (in case Close() didn't)
+	u, err := user.Lookup(username)
+	if err == nil {
+		uid, _ := strconv.Atoi(u.Uid)
+		socketPath := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
+		if err := os.Remove(socketPath); err == nil {
+			logger.Info.Printf("[bridge] Removed socket file %s for session %s", socketPath, sessionID)
+		} else if !os.IsNotExist(err) {
+			logger.Warning.Printf("[bridge] Failed to remove socket file %s: %v", socketPath, err)
+		}
+	} else {
+		logger.Warning.Printf("[bridge] Could not lookup user %s when cleaning up socket for session %s: %v", username, sessionID, err)
+	}
 }
