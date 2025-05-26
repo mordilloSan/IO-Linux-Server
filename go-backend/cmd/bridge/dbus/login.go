@@ -23,13 +23,23 @@ func NewLogin1Manager(ctx context.Context) (*Login1Manager, error) {
 	return &Login1Manager{conn: conn, obj: obj}, nil
 }
 
-// CallLogin1Action is a helper function to call a login1 action.
-func CallLogin1Action(action string) error {
-	manager, err := NewLogin1Manager(context.Background())
-	if err != nil {
-		return err
+// Properly closes D-Bus connection when done
+func (m *Login1Manager) Close() {
+	if m.conn != nil {
+		_ = m.conn.Close()
 	}
-	return manager.call(context.Background(), action)
+}
+
+// CallLogin1Action is a helper function to call a login1 action, retried if D-Bus is closed.
+func CallLogin1Action(action string) error {
+	return RetryOnceIfClosed(nil, func() error {
+		manager, err := NewLogin1Manager(context.Background())
+		if err != nil {
+			return err
+		}
+		defer manager.Close()
+		return manager.call(context.Background(), action)
+	})
 }
 
 // call runs a generic login1 method.

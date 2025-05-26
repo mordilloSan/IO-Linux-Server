@@ -2,35 +2,32 @@ package dbus
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/godbus/dbus/v5"
 )
 
-func GetHostname() {
-	// Connect to the system bus (root NOT required for this call)
-	conn, err := dbus.SystemBus()
-	if err != nil {
-		log.Fatalf("Failed to connect to system bus: %v", err)
-	}
-	defer conn.Close()
+func GetHostname() (string, error) {
+	var result string
+	err := RetryOnceIfClosed(nil, func() error {
+		conn, err := dbus.SystemBus()
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
 
-	// Get object for hostname method
-	obj := conn.Object("org.freedesktop.hostname1", "/org/freedesktop/hostname1")
-
-	// Call the "Hostname" property (not a method, but works the same way)
-	var variant dbus.Variant
-	err = obj.Call("org.freedesktop.DBus.Properties.Get", 0,
-		"org.freedesktop.hostname1", "Hostname").Store(&variant)
-	if err != nil {
-		log.Fatalf("Failed to get hostname: %v", err)
-	}
-
-	// The result comes as a dbus.Variant, extract string value
-	hostname, ok := variant.Value().(string)
-	if ok {
-		fmt.Println("System hostname is:", hostname)
-	} else {
-		fmt.Println("Failed to extract hostname from variant")
-	}
+		obj := conn.Object("org.freedesktop.hostname1", "/org/freedesktop/hostname1")
+		var variant dbus.Variant
+		err = obj.Call("org.freedesktop.DBus.Properties.Get", 0,
+			"org.freedesktop.hostname1", "Hostname").Store(&variant)
+		if err != nil {
+			return err
+		}
+		hostname, ok := variant.Value().(string)
+		if !ok {
+			return fmt.Errorf("hostname value not a string (got %T)", variant.Value())
+		}
+		result = hostname
+		return nil
+	})
+	return result, err
 }

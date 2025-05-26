@@ -177,32 +177,58 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 	switch req.Command {
 	case "Reboot", "PowerOff":
 		err = dbus.CallLogin1Action(req.Command)
+
 	case "GetUpdates":
 		jsonOut, err = dbus.GetUpdatesWithDetails()
+
 	case "InstallPackage":
 		if len(req.Args) == 0 {
 			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
 			return
 		}
 		err = dbus.InstallPackage(req.Args[0])
+
 	case "ListServices":
 		jsonOut, err = dbus.ListServices()
+
+	case "GetServiceInfo":
+		if len(req.Args) == 0 {
+			_ = enc.Encode(Response{Status: "error", Error: "missing service name"})
+			return
+		}
+		jsonOut, err = dbus.GetServiceInfo(req.Args[0])
+
+		// --- Service control commands ---
+	case "StartService":
+		err = dbus.StartService(req.Args[0])
+	case "StopService":
+		err = dbus.StopService(req.Args[0])
+	case "RestartService":
+		err = dbus.RestartService(req.Args[0])
+	case "ReloadService":
+		err = dbus.ReloadService(req.Args[0])
+	case "EnableService":
+		err = dbus.EnableService(req.Args[0])
+	case "DisableService":
+		err = dbus.DisableService(req.Args[0])
+	case "MaskService":
+		err = dbus.MaskService(req.Args[0])
+	case "UnmaskService":
+		err = dbus.UnmaskService(req.Args[0])
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
 	}
 
-	// Success with output
+	// --- Response logic ---
 	if err == nil && jsonOut != "" {
 		_ = enc.Encode(Response{Status: "ok", Output: jsonOut})
 		return
 	}
-	// Success but no output
 	if err == nil {
 		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
 		_ = enc.Encode(Response{Status: "ok"})
 		return
 	}
-	// Error
 	logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)
 	_ = enc.Encode(Response{Status: "error", Error: err.Error()})
 }

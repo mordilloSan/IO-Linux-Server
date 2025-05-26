@@ -17,7 +17,7 @@ const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
 
 const lazyLoad = (
   factory: () => Promise<{ default: React.ComponentType<any> }>,
-  name: string,
+  name: string
 ) => Loadable(lazy(factory), name);
 
 // Lazy-loaded pages
@@ -25,6 +25,7 @@ const SignIn = lazyLoad(() => import("@/pages/auth/SignIn"), "SignIn");
 const Page404 = lazyLoad(() => import("@/pages/auth/Page404"), "Page404");
 const Updates = lazyLoad(() => import("@/pages/dashboard/updates"), "Updates");
 const Docker = lazyLoad(() => import("@/pages/dashboard/docker"), "Docker");
+const Services = lazyLoad(() => import("@/pages/dashboard/services"), "Docker");
 
 const routes = [
   {
@@ -38,6 +39,7 @@ const routes = [
       { path: "", element: <Default /> },
       { path: "updates", element: <Updates /> },
       { path: "docker", element: <Docker /> },
+      { path: "services", element: <Services /> },
     ],
   },
   {

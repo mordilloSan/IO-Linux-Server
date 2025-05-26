@@ -68,19 +68,32 @@ func toStringSlice(iface any) []string {
 	return strs
 }
 
-// --- D-Bus Core ---
+// --- D-Bus Public Wrappers with Retry ---
 
 func GetUpdatesWithDetails() (string, error) {
-	details, err := getUpdatesWithDetails()
-	if err != nil {
-		return "", err
-	}
-	jsonBytes, err := json.MarshalIndent(details, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(jsonBytes), nil
+	var result string
+	err := RetryOnceIfClosed(nil, func() error {
+		details, err := getUpdatesWithDetails()
+		if err != nil {
+			return err
+		}
+		jsonBytes, err := json.MarshalIndent(details, "", "  ")
+		if err != nil {
+			return err
+		}
+		result = string(jsonBytes)
+		return nil
+	})
+	return result, err
 }
+
+func InstallPackage(packageID string) error {
+	return RetryOnceIfClosed(nil, func() error {
+		return installPackage(packageID)
+	})
+}
+
+// --- Private Implementation ---
 
 func getUpdatesWithDetails() ([]UpdateDetail, error) {
 	conn, err := dbus.SystemBus()
@@ -236,8 +249,7 @@ collectDetails:
 	return details, nil
 }
 
-// Update (install) a specific package using PackageKit
-func InstallPackage(packageID string) error {
+func installPackage(packageID string) error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return fmt.Errorf("failed to connect to system bus: %w", err)
@@ -264,14 +276,7 @@ func InstallPackage(packageID string) error {
 	conn.AddMatchSignal(dbus.WithMatchObjectPath(transPath))
 
 	// 2. Call InstallPackages
-	/*
-	   Flags: uint32 (0 for default)
-	   TransactionID: "" (not used)
-	   PackageIDs: []string
-	*/
-
 	call := trans.Call(transactionIfc+".InstallPackages", 0, uint64(0), []string{packageID})
-
 	if call.Err != nil {
 		return fmt.Errorf("InstallPackages failed: %w", call.Err)
 	}
