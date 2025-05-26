@@ -25,7 +25,11 @@ const SignIn = lazyLoad(() => import("@/pages/auth/SignIn"), "SignIn");
 const Page404 = lazyLoad(() => import("@/pages/auth/Page404"), "Page404");
 const Updates = lazyLoad(() => import("@/pages/dashboard/updates"), "Updates");
 const Docker = lazyLoad(() => import("@/pages/dashboard/docker"), "Docker");
-const Services = lazyLoad(() => import("@/pages/dashboard/services"), "Docker");
+const Services = lazyLoad(
+  () => import("@/pages/dashboard/services"),
+  "Services"
+);
+const Network = lazyLoad(() => import("@/pages/dashboard/network"), "Network");
 
 const routes = [
   {
@@ -40,6 +44,7 @@ const routes = [
       { path: "updates", element: <Updates /> },
       { path: "docker", element: <Docker /> },
       { path: "services", element: <Services /> },
+      { path: "network", element: <Network /> },
     ],
   },
   {
