@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-backend/cmd/bridge/dbus"
+	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 	"net"
 	"os"
@@ -103,7 +104,7 @@ func main() {
 			ok := checkMainProcessHealth(uid, sessionID)
 			if !ok {
 				logger.Warning.Printf("❌ Main process unreachable or session invalid, bridge exiting...")
-				cleanupBridgeSocket(socketPath)
+				bridge.CleanupBridgeSocket(sessionID, username)
 				os.Exit(1)
 			}
 			time.Sleep(time.Minute)
@@ -148,9 +149,23 @@ func handleConnection(conn net.Conn) {
 		handleDbusCommand(req, encoder)
 	case "command":
 		handleShellCommand(req, encoder)
+	case "control":
+		handleInternalCommand(req, encoder)
 	default:
 		logger.Warning.Printf("❌ Unknown request type: %s", req.Type)
 		_ = encoder.Encode(Response{Status: "error", Error: "invalid type"})
+	}
+}
+
+func handleInternalCommand(req Request, enc *json.Encoder) {
+	logger.Info.Printf("🔒 Handling internal command: %s\n", req.Command)
+	switch req.Command {
+	case "shutdown":
+		logger.Info.Println("Received shutdown command, exiting bridge")
+		_ = enc.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
+		os.Exit(0)
+	default:
+		_ = enc.Encode(Response{Status: "error", Error: "unknown internal command"})
 	}
 }
 
@@ -204,7 +219,6 @@ func handleShellCommand(req Request, enc *json.Encoder) {
 	}
 }
 
-// killLingeringBridgeStartupProcesses checks for lingering bridge startup processes
 func killLingeringBridgeStartupProcesses() {
 	procEntries, err := os.ReadDir("/proc")
 	if err != nil {
@@ -304,10 +318,6 @@ func checkMainProcessHealth(uid int, sessionID string) bool {
 
 func mainSocketPath(uid int, sessionID string) string {
 	return fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
-}
-
-func cleanupBridgeSocket(socketPath string) {
-	_ = os.Remove(socketPath)
 }
 
 func IsNumeric(s string) bool {

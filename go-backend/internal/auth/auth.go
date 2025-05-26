@@ -135,6 +135,7 @@ func logoutHandler(c *gin.Context) {
 		}
 		session.DeleteSession(sessionID)
 		if username != "" {
+			bridge.CallWithSession(sessionID, username, "control", "shutdown", nil)
 			bridge.CleanupBridgeSocket(sessionID, username)
 		}
 		c.SetCookie("session_id", "", -1, "/", "", false, true)

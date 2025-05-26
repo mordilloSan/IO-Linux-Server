@@ -272,17 +272,25 @@ func CleanupBridgeSocket(sessionID string, username string) {
 	}
 	mainSocketListenersMu.Unlock()
 
-	// Remove the socket file (in case Close() didn't)
+	// Remove the main socket file
 	u, err := user.Lookup(username)
 	if err == nil {
 		uid, _ := strconv.Atoi(u.Uid)
-		socketPath := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
-		if err := os.Remove(socketPath); err == nil {
-			logger.Info.Printf("[bridge] Removed socket file %s for session %s", socketPath, sessionID)
+		mainSock := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
+		if err := os.Remove(mainSock); err == nil {
+			logger.Info.Printf("[bridge] Removed main socket file %s for session %s", mainSock, sessionID)
 		} else if !os.IsNotExist(err) {
-			logger.Warning.Printf("[bridge] Failed to remove socket file %s: %v", socketPath, err)
+			logger.Warning.Printf("[bridge] Failed to remove main socket file %s: %v", mainSock, err)
+		}
+
+		// Also remove the bridge socket file
+		bridgeSock := BridgeSocketPath(sessionID, username)
+		if err := os.Remove(bridgeSock); err == nil {
+			logger.Info.Printf("[bridge] Removed bridge socket file %s for session %s", bridgeSock, sessionID)
+		} else if !os.IsNotExist(err) {
+			logger.Warning.Printf("[bridge] Failed to remove bridge socket file %s: %v", bridgeSock, err)
 		}
 	} else {
-		logger.Warning.Printf("[bridge] Could not lookup user %s when cleaning up socket for session %s: %v", username, sessionID, err)
+		logger.Warning.Printf("[bridge] Could not lookup user %s when cleaning up sockets for session %s: %v", username, sessionID, err)
 	}
 }
