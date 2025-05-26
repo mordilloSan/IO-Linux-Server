@@ -61,7 +61,8 @@ const UpdateHistoryCard: React.FC = () => {
                       border: "none", // remove cell borders
                       padding: "8px 12px", // optional: add cleaner spacing
                       color: "text.secondary",
-                    }}>
+                    }}
+                  >
                     {pkg.package}
                   </TableCell>
                 ))}

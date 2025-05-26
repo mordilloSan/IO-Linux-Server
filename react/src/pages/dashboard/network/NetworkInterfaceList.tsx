@@ -1,4 +1,5 @@
 // NetworkInterfaceList.tsx
+import { Icon } from "@iconify/react";
 import {
   Box,
   Typography,
@@ -9,12 +10,12 @@ import {
   Tooltip,
   Fade,
 } from "@mui/material";
-import { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useState, Suspense } from "react";
+
 import FrostedCard from "@/components/cards/RootCard";
-import axios from "@/utils/axios";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
-import { Icon } from "@iconify/react";
+import axios from "@/utils/axios";
 
 export interface NetworkInterface {
   name: string;
@@ -90,7 +91,7 @@ const NetworkInterfaceList = () => {
           iface.addresses[0] ||
           "No IP",
         state: iface.addresses.some((addr: string) =>
-          /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/.test(addr)
+          /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/.test(addr),
         )
           ? "up"
           : "down",
@@ -127,13 +128,15 @@ const NetworkInterfaceList = () => {
                     transform: "translateY(-4px)",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
                   },
-                }}>
+                }}
+              >
                 <Tooltip
                   title={getStatusTooltip(iface.state)}
                   placement="top"
                   arrow
                   slots={{ transition: Fade }}
-                  slotProps={{ transition: { timeout: 300 } }}>
+                  slotProps={{ transition: { timeout: 300 } }}
+                >
                   <Box
                     sx={{
                       position: "absolute",
@@ -151,7 +154,8 @@ const NetworkInterfaceList = () => {
                 <Box
                   display="flex"
                   alignItems="flex-start"
-                  onClick={() => handleToggle(iface)}>
+                  onClick={() => handleToggle(iface)}
+                >
                   <Box
                     sx={{
                       width: 44,
@@ -160,7 +164,8 @@ const NetworkInterfaceList = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       mr: 1.5,
-                    }}>
+                    }}
+                  >
                     <Icon
                       icon={getInterfaceIcon(iface.type)}
                       width={36}
@@ -190,7 +195,8 @@ const NetworkInterfaceList = () => {
                 <Collapse
                   in={expanded === iface.name}
                   timeout="auto"
-                  unmountOnExit>
+                  unmountOnExit
+                >
                   <Box mt={2}>
                     <TextField
                       fullWidth
@@ -232,7 +238,8 @@ const NetworkInterfaceList = () => {
                       <Button onClick={() => setExpanded(null)}>Cancel</Button>
                       <Button
                         variant="contained"
-                        onClick={() => handleSave(iface)}>
+                        onClick={() => handleSave(iface)}
+                      >
                         Save
                       </Button>
                     </Box>

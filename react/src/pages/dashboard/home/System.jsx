@@ -39,7 +39,7 @@ const SystemHealth = () => {
   const units = services.length;
   const failed = services.filter((svc) => svc.active_state === "failed").length;
   const running = services.filter(
-    (svc) => svc.active_state === "active"
+    (svc) => svc.active_state === "active",
   ).length;
 
   const updates = systemHealth?.updates || [];
@@ -69,7 +69,8 @@ const SystemHealth = () => {
         width: 120,
         height: 120,
         borderRadius: "50%",
-      }}>
+      }}
+    >
       {isLoading ? (
         <ComponentLoader />
       ) : (
@@ -77,7 +78,8 @@ const SystemHealth = () => {
           component={RouterLink}
           to={iconLink}
           underline="hover"
-          color="inherit">
+          color="inherit"
+        >
           <IconComponent sx={{ fontSize: 80, color: statusColor }} />
         </Link>
       )}
@@ -86,7 +88,7 @@ const SystemHealth = () => {
 
   const totalPackages = updates.reduce(
     (sum, u) => sum + (u.packages?.length || 1),
-    0
+    0,
   );
 
   const stats = (
@@ -100,7 +102,8 @@ const SystemHealth = () => {
           component={RouterLink}
           to="/updates"
           underline="hover"
-          color="inherit">
+          color="inherit"
+        >
           {totalPackages > 0 ? `${totalPackages} available` : "None available"}
         </Link>
       </Typography>
@@ -111,7 +114,8 @@ const SystemHealth = () => {
           component={RouterLink}
           to="/services"
           underline="hover"
-          color="inherit">
+          color="inherit"
+        >
           {failed > 0 ? `${failed} failed` : `${running}/${units} running`}
         </Link>
       </Typography>

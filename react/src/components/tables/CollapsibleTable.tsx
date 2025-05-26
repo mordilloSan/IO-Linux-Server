@@ -21,7 +21,8 @@ const CollapsibleTable = <T extends Record<string, any>>({
     <Box sx={{ padding: 2 }}>
       <TableContainer
         component={Paper}
-        sx={{ paddingLeft: "16px", paddingRight: "16px" }}>
+        sx={{ paddingLeft: "16px", paddingRight: "16px" }}
+      >
         <Table aria-label="collapsible table">
           <TableHead>
             <TableRow>
