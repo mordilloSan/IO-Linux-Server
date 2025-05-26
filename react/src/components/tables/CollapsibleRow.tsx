@@ -26,13 +26,22 @@ const CollapsibleRow = <T extends Record<string, any>>({
             width: "50px",
             borderBottom:
               open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
-          }}
-        >
+          }}>
           <IconButton
             aria-label="expand row"
             size="small"
             onClick={() => setOpen(!open)}
-          >
+            disableRipple
+            sx={{
+              backgroundColor: "transparent !important",
+              "&:hover, &:focus": {
+                backgroundColor: "transparent !important",
+                boxShadow: "none",
+              },
+              "&:focus-visible": {
+                outline: "none",
+              },
+            }}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -43,8 +52,7 @@ const CollapsibleRow = <T extends Record<string, any>>({
             sx={{
               borderBottom:
                 open || isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
-            }}
-          >
+            }}>
             {row[column.field]}
           </TableCell>
         ))}
@@ -58,8 +66,7 @@ const CollapsibleRow = <T extends Record<string, any>>({
               paddingTop: 0,
               paddingBottom: 0,
               borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.1)",
-            }}
-          >
+            }}>
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box sx={{ margin: 1, marginTop: 5 }}>
                 {renderCollapseContent(row)}
