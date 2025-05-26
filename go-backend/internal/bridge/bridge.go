@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -39,7 +38,21 @@ var (
 	processesMu sync.Mutex
 )
 
-// Utility: Per-session/per-user socket path
+var (
+	mainSocketListeners   = make(map[string]net.Listener) // sessionID → Listener
+	mainSocketListenersMu sync.Mutex
+)
+
+// Utility: Per-session/per-user main socket path
+func MainSocketPath(sessionID, username string) string {
+	u, err := user.Lookup(username)
+	if err != nil {
+		panic(fmt.Sprintf("could not find user %s: %v", username, err))
+	}
+	return fmt.Sprintf("/run/user/%s/linuxio-main-%s.sock", u.Uid, sessionID)
+}
+
+// Utility: Per-session/per-user bridge socket path
 func BridgeSocketPath(sessionID, username string) string {
 	u, err := user.Lookup(username)
 	if err != nil {
@@ -116,7 +129,6 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 		cmd = exec.Command("sudo", "-S", "env",
 			"LINUXIO_SESSION_ID="+sessionID,
 			"LINUXIO_SESSION_USER="+username,
-			"LINUXIO_BACKEND_URL="+os.Getenv("LINUXIO_BACKEND_URL"),
 			"GO_ENV="+os.Getenv("GO_ENV"),
 			"VERBOSE="+os.Getenv("VERBOSE"),
 			bridgeBinary,
@@ -126,7 +138,6 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 		cmd.Env = append(os.Environ(),
 			"LINUXIO_SESSION_ID="+sessionID,
 			"LINUXIO_SESSION_USER="+username,
-			"LINUXIO_BACKEND_URL="+os.Getenv("LINUXIO_BACKEND_URL"),
 			"GO_ENV="+os.Getenv("GO_ENV"),
 			"VERBOSE="+os.Getenv("VERBOSE"),
 		)
@@ -183,20 +194,9 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	return nil
 }
 
-var (
-	mainSocketListeners   = make(map[string]net.Listener) // sessionID → Listener
-	mainSocketListenersMu sync.Mutex
-)
-
-// StartBridgeSocket starts a Unix socket server for the main process.
 // StartBridgeSocket starts a Unix socket server for the main process.
 func StartBridgeSocket(sessionID string, username string) error {
-	u, err := user.Lookup(username)
-	if err != nil {
-		return fmt.Errorf("failed to lookup user %s: %w", username, err)
-	}
-	uid, _ := strconv.Atoi(u.Uid)
-	socketPath := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
+	socketPath := MainSocketPath(sessionID, username)
 	_ = os.Remove(socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
@@ -271,26 +271,18 @@ func CleanupBridgeSocket(sessionID string, username string) {
 		delete(mainSocketListeners, sessionID)
 	}
 	mainSocketListenersMu.Unlock()
-
-	// Remove the main socket file
-	u, err := user.Lookup(username)
-	if err == nil {
-		uid, _ := strconv.Atoi(u.Uid)
-		mainSock := fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
-		if err := os.Remove(mainSock); err == nil {
-			logger.Info.Printf("[bridge] Removed main socket file %s for session %s", mainSock, sessionID)
-		} else if !os.IsNotExist(err) {
-			logger.Warning.Printf("[bridge] Failed to remove main socket file %s: %v", mainSock, err)
-		}
-
-		// Also remove the bridge socket file
-		bridgeSock := BridgeSocketPath(sessionID, username)
-		if err := os.Remove(bridgeSock); err == nil {
-			logger.Info.Printf("[bridge] Removed bridge socket file %s for session %s", bridgeSock, sessionID)
-		} else if !os.IsNotExist(err) {
-			logger.Warning.Printf("[bridge] Failed to remove bridge socket file %s: %v", bridgeSock, err)
-		}
-	} else {
-		logger.Warning.Printf("[bridge] Could not lookup user %s when cleaning up sockets for session %s: %v", username, sessionID, err)
+	//remove main socket
+	mainSock := MainSocketPath(sessionID, username)
+	if err := os.Remove(mainSock); err == nil {
+		logger.Info.Printf("[bridge] Removed main socket file %s for session %s", mainSock, sessionID)
+	} else if !os.IsNotExist(err) {
+		logger.Warning.Printf("[bridge] Failed to remove main socket file %s: %v", mainSock, err)
+	}
+	//remove bridge socket
+	bridgeSock := BridgeSocketPath(sessionID, username)
+	if err := os.Remove(bridgeSock); err == nil {
+		logger.Info.Printf("[bridge] Removed bridge socket file %s for session %s", bridgeSock, sessionID)
+	} else if !os.IsNotExist(err) {
+		logger.Warning.Printf("[bridge] Failed to remove bridge socket file %s: %v", bridgeSock, err)
 	}
 }

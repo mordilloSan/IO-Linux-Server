@@ -115,11 +115,9 @@ func main() {
 			Handler:   router,
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
 		}
-		os.Setenv("LINUXIO_BACKEND_URL", "https://localhost:"+port)
 		logger.Info.Printf("🚀 Server running at https://localhost:%s", port)
 		logger.Error.Fatal(srv.ListenAndServeTLS("", "")) // Empty filenames = use TLSConfig.Certificates
 	} else {
-		os.Setenv("LINUXIO_BACKEND_URL", "http://localhost:"+port)
 		logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
 		logger.Error.Fatal(router.Run(addr))
 	}

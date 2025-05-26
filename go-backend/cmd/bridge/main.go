@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"os/user"
 	"strconv"
 	"strings"
@@ -48,52 +47,22 @@ func main() {
 
 	sessionID := os.Getenv("LINUXIO_SESSION_ID")
 	username := os.Getenv("LINUXIO_SESSION_USER")
-	backendURL := os.Getenv("LINUXIO_BACKEND_URL")
 
 	if sessionID == "" || username == "" {
 		logger.Error.Fatalf("❌ LINUXIO_SESSION_ID and LINUXIO_SESSION_USER env vars required")
 	}
 
-	u, err := user.Lookup(username)
+	socketPath := bridge.BridgeSocketPath(sessionID, username)
+	listener, uid, gid, err := createAndOwnSocket(socketPath, username)
 	if err != nil {
-		logger.Error.Fatalf("❌ Failed to lookup user %s: %v", username, err)
+		logger.Error.Fatalf("❌ %v", err)
 	}
-	uid, _ := strconv.Atoi(u.Uid)
-	gid, _ := strconv.Atoi(u.Gid)
-	socketPath := fmt.Sprintf("/run/user/%d/linuxio-bridge-%s.sock", uid, sessionID)
-
-	_ = os.Remove(socketPath)
 	defer func() {
 		logger.Info.Println("🔐 linuxio-bridge shut down.")
 		_ = os.Remove(socketPath)
 	}()
-
-	logger.Info.Printf("linuxio-bridge: starting up for session %s user %s", sessionID, username)
-	logger.Info.Printf("sessionID=%s username=%s backendURL=%s", sessionID, username, backendURL)
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sig
-		logger.Info.Println("Received shutdown signal")
-		os.Exit(0)
-	}()
-
-	logger.Info.Printf("Trying to listen on socket: %s", socketPath)
-	listener, err := net.Listen("unix", socketPath)
-	if err != nil {
-		logger.Error.Printf("❌ Failed to listen on socket: %v", err)
-		os.Exit(1)
-	}
-	defer listener.Close()
-	logger.Info.Println("Listening succeeded.")
-
-	_ = os.Chmod(socketPath, 0600)
-	if err := os.Chown(socketPath, uid, gid); err != nil {
-		logger.Error.Printf("❌ Failed to chown socket to %s: %v", username, err)
-	} else {
-		logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-	}
+	logger.Info.Printf("Listening succeeded.")
+	logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
 
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
 
@@ -101,7 +70,7 @@ func main() {
 		logger.Info.Printf("[bridge] Starting periodic health check (session: %s)", sessionID)
 		for {
 			logger.Debug.Printf("[bridge] Healthcheck: pinging main process for session %s", sessionID)
-			ok := checkMainProcessHealth(uid, sessionID)
+			ok := checkMainProcessHealth(sessionID, username)
 			if !ok {
 				logger.Warning.Printf("❌ Main process unreachable or session invalid, bridge exiting...")
 				bridge.CleanupBridgeSocket(sessionID, username)
@@ -122,6 +91,35 @@ func main() {
 		go handleConnection(conn)
 	}
 
+}
+
+func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, error) {
+	// Lookup user
+	u, err := user.Lookup(username)
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("failed to lookup user %s: %w", username, err)
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+
+	_ = os.Remove(socketPath)
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("failed to listen on socket: %w", err)
+	}
+
+	if err := os.Chmod(socketPath, 0600); err != nil {
+		listener.Close()
+		os.Remove(socketPath)
+		return nil, 0, 0, fmt.Errorf("failed to chmod socket: %w", err)
+	}
+	if err := os.Chown(socketPath, uid, gid); err != nil {
+		listener.Close()
+		os.Remove(socketPath)
+		return nil, 0, 0, fmt.Errorf("failed to chown socket: %w", err)
+	}
+
+	return listener, uid, gid, nil
 }
 
 func handleConnection(conn net.Conn) {
@@ -289,8 +287,8 @@ func killParentTree(pid int) {
 	}
 }
 
-func checkMainProcessHealth(uid int, sessionID string) bool {
-	sock := mainSocketPath(uid, sessionID)
+func checkMainProcessHealth(sessionID string, username string) bool {
+	sock := bridge.MainSocketPath(sessionID, username)
 	conn, err := net.DialTimeout("unix", sock, 2*time.Second)
 	if err != nil {
 		logger.Warning.Printf("⚠️ Could not connect to main socket: %v", err)
@@ -314,10 +312,6 @@ func checkMainProcessHealth(uid int, sessionID string) bool {
 	}
 	logger.Debug.Printf("Healthcheck: got %+v", resp)
 	return resp.Status == "ok"
-}
-
-func mainSocketPath(uid int, sessionID string) string {
-	return fmt.Sprintf("/run/user/%d/linuxio-main-%s.sock", uid, sessionID)
 }
 
 func IsNumeric(s string) bool {
