@@ -57,6 +57,7 @@ func main() {
 	if err != nil {
 		logger.Error.Fatalf("❌ %v", err)
 	}
+	defer listener.Close()
 	defer func() {
 		logger.Info.Println("🔐 linuxio-bridge shut down.")
 		_ = os.Remove(socketPath)
@@ -81,6 +82,7 @@ func main() {
 	}()
 
 	killLingeringBridgeStartupProcesses()
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
