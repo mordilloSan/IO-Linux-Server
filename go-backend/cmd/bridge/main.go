@@ -229,7 +229,7 @@ func killLingeringBridgeStartupProcesses() {
 			strings.Contains(cmdline, "sudo -S env") &&
 			strings.Contains(cmdline, "LINUXIO_SESSION_USER="+os.Getenv("LINUXIO_SESSION_USER")) {
 			pidInt, _ := strconv.Atoi(pid)
-			logger.Warning.Printf("⚠️ Found lingering bridge process (pid=%d): %s", pidInt, cmdline)
+			logger.Debug.Printf("⚠️ Found lingering bridge process (pid=%d): %s", pidInt, cmdline)
 			killParentTree(pidInt)
 		}
 	}
@@ -239,26 +239,34 @@ func killParentTree(pid int) {
 	for {
 		stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 		if err != nil {
+			logger.Debug.Printf("killParentTree: could not read stat for pid %d: %v", pid, err)
 			break
 		}
 		fields := strings.Fields(string(stat))
 		if len(fields) < 4 {
+			logger.Debug.Printf("killParentTree: stat fields < 4 for pid %d", pid)
 			break
 		}
 
 		ppid, _ := strconv.Atoi(fields[3])
 		if ppid <= 1 || ppid == pid {
+			logger.Debug.Printf("killParentTree: hit root or self for pid %d (ppid %d)", pid, ppid)
 			break
 		}
 
 		commBytes, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", ppid))
 		if err != nil {
+			logger.Debug.Printf("killParentTree: could not read comm for ppid %d: %v", ppid, err)
 			break
 		}
 
 		comm := strings.TrimSpace(string(commBytes))
+		logger.Debug.Printf("killParentTree: pid=%d, ppid=%d, comm='%s'", pid, ppid, comm)
 		if comm == "sudo" || comm == "env" {
-			logger.Warning.Printf("🛑 Killing sudo process (pid=%d, ppid=%d)", pid, ppid)
+			logger.Debug.Printf("🛑 Killing sudo/env process (pid=%d, ppid=%d, comm=%s)", pid, ppid, comm)
+			_ = syscall.Kill(ppid, syscall.SIGTERM)
+			_ = syscall.Kill(pid, syscall.SIGTERM)
+			time.Sleep(250 * time.Millisecond) // Give time for defer/logs to flush
 			_ = syscall.Kill(ppid, syscall.SIGKILL)
 			_ = syscall.Kill(pid, syscall.SIGKILL)
 			break
