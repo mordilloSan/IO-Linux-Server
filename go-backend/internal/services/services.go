@@ -2,21 +2,14 @@ package services
 
 import (
 	"net/http"
-	"os/exec"
-	"strings"
 
 	"go-backend/internal/auth"
+	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
+	"go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )
-
-type ServiceStatus struct {
-	Name        string `json:"name"`
-	LoadState   string `json:"load_state"`
-	ActiveState string `json:"active_state"`
-	SubState    string `json:"sub_state"`
-}
 
 func RegisterServiceRoutes(router *gin.Engine) {
 	system := router.Group("/system", auth.AuthMiddleware())
@@ -26,43 +19,25 @@ func RegisterServiceRoutes(router *gin.Engine) {
 }
 
 func getServiceStatus(c *gin.Context) {
-	cmd := exec.Command("systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend")
-	out, err := cmd.Output()
+	// Get session and user from context/middleware (example, adjust as needed)
+
+	// Extract session info
+	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	output, err := bridge.CallWithSession(sessionID, user.Name, "dbus", "ListServices", nil)
+
+	// Call the bridge
+
 	if err != nil {
-		logger.Error.Printf("Failed to list services: %v", err)
+		logger.Error.Printf("Failed to list services via bridge: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	lines := strings.Split(string(out), "\n")
-	services := []ServiceStatus{}
-	failedCount := 0
-
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		if len(fields) < 5 {
-			continue
-		}
-
-		svc := ServiceStatus{
-			Name:        fields[0],
-			LoadState:   fields[1],
-			ActiveState: fields[2],
-			SubState:    fields[3],
-		}
-
-		if svc.ActiveState == "failed" {
-			failedCount++
-		}
-
-		services = append(services, svc)
-	}
-
-	logger.Info.Printf("Checked %d services, %d failed", len(services), failedCount)
-
-	c.JSON(http.StatusOK, gin.H{
-		"units":    len(services),
-		"failed":   failedCount,
-		"services": services,
-	})
+	// output is a JSON string, so decode and forward
+	c.Data(http.StatusOK, "application/json", []byte(output))
 }

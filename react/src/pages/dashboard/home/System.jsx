@@ -20,7 +20,7 @@ const SystemHealth = () => {
     refetchInterval: 50000,
   });
 
-  const { data: systemStatus, isLoading: loadingStatus } = useQuery({
+  const { data: servicesRaw, isLoading: loadingStatus } = useQuery({
     queryKey: ["SystemStatus"],
     queryFn: () => axios.get("/system/services/status").then((res) => res.data),
     refetchInterval: 50000,
@@ -34,9 +34,15 @@ const SystemHealth = () => {
 
   const isLoading = loadingHealth || loadingStatus || loadingDistro;
 
+  // === NEW: service stats extraction ===
+  const services = Array.isArray(servicesRaw) ? servicesRaw : [];
+  const units = services.length;
+  const failed = services.filter((svc) => svc.active_state === "failed").length;
+  const running = services.filter(
+    (svc) => svc.active_state === "active"
+  ).length;
+
   const updates = systemHealth?.updates || [];
-  const units = systemStatus?.units || 0;
-  const failed = systemStatus?.failed || 0;
   const distro = distroInfo?.platform || "Unknown";
 
   // Determine icon + color
@@ -63,8 +69,7 @@ const SystemHealth = () => {
         width: 120,
         height: 120,
         borderRadius: "50%",
-      }}
-    >
+      }}>
       {isLoading ? (
         <ComponentLoader />
       ) : (
@@ -72,8 +77,7 @@ const SystemHealth = () => {
           component={RouterLink}
           to={iconLink}
           underline="hover"
-          color="inherit"
-        >
+          color="inherit">
           <IconComponent sx={{ fontSize: 80, color: statusColor }} />
         </Link>
       )}
@@ -82,7 +86,7 @@ const SystemHealth = () => {
 
   const totalPackages = updates.reduce(
     (sum, u) => sum + (u.packages?.length || 1),
-    0,
+    0
   );
 
   const stats = (
@@ -96,8 +100,7 @@ const SystemHealth = () => {
           component={RouterLink}
           to="/updates"
           underline="hover"
-          color="inherit"
-        >
+          color="inherit">
           {totalPackages > 0 ? `${totalPackages} available` : "None available"}
         </Link>
       </Typography>
@@ -108,9 +111,8 @@ const SystemHealth = () => {
           component={RouterLink}
           to="/services"
           underline="hover"
-          color="inherit"
-        >
-          {failed > 0 ? `${failed} failed` : `${units} running`}
+          color="inherit">
+          {failed > 0 ? `${failed} failed` : `${running}/${units} running`}
         </Link>
       </Typography>
     </Box>

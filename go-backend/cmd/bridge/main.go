@@ -172,35 +172,39 @@ func handleInternalCommand(req Request, enc *json.Encoder) {
 func handleDbusCommand(req Request, enc *json.Encoder) {
 	logger.Info.Printf("🔒 Handling D-Bus command: %s\n", req.Command)
 	var err error
+	var jsonOut string
 
 	switch req.Command {
 	case "Reboot", "PowerOff":
 		err = dbus.CallLogin1Action(req.Command)
 	case "GetUpdates":
-		var jsonOut string
 		jsonOut, err = dbus.GetUpdatesWithDetails()
-		if err == nil {
-			_ = enc.Encode(Response{Status: "ok", Output: jsonOut})
-			return
-		}
 	case "InstallPackage":
 		if len(req.Args) == 0 {
 			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
 			return
 		}
 		err = dbus.InstallPackage(req.Args[0])
+	case "ListServices":
+		jsonOut, err = dbus.ListServices()
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
 	}
 
-	if err != nil {
-		logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)
-		_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+	// Success with output
+	if err == nil && jsonOut != "" {
+		_ = enc.Encode(Response{Status: "ok", Output: jsonOut})
 		return
 	}
-
-	logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-	_ = enc.Encode(Response{Status: "ok"})
+	// Success but no output
+	if err == nil {
+		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
+		_ = enc.Encode(Response{Status: "ok"})
+		return
+	}
+	// Error
+	logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)
+	_ = enc.Encode(Response{Status: "error", Error: err.Error()})
 }
 
 func handleShellCommand(req Request, enc *json.Encoder) {
