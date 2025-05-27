@@ -3,19 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
 import NetworkGraph from "./NetworkGraph";
-
 import GeneralCard from "@/components/cards/GeneralCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
 interface InterfaceStats {
   name: string;
+  mac: string;
   mtu: number;
-  hardwareAddr: string;
-  addresses: string[];
-  rxSpeed: number;
-  txSpeed: number;
-  linkSpeed: number;
+  ipv4: string[];
+  ipv6: string[];
+  rx_speed: number;
+  tx_speed: number;
+  speed: string;
 }
 
 const NetworkInterfacesCard: React.FC = () => {
@@ -23,7 +23,17 @@ const NetworkInterfacesCard: React.FC = () => {
     queryKey: ["networkInterfaces"],
     queryFn: async () => {
       const res = await axios.get("/system/network");
-      return res.data;
+      return res.data.map((iface: any) => ({
+        ...iface,
+        ipv4: iface.ipv4 ?? [],
+        ipv6: iface.ipv6 ?? [],
+        state: iface.state === 100 ? "up" : "down",
+        type: iface.name.startsWith("wl")
+          ? "wifi"
+          : iface.name.startsWith("lo")
+            ? "loopback"
+            : "ethernet",
+      }));
     },
     refetchInterval: 1000,
   });
@@ -37,27 +47,32 @@ const NetworkInterfacesCard: React.FC = () => {
     (iface) =>
       !iface.name.startsWith("veth") &&
       !iface.name.startsWith("docker") &&
-      iface.name !== "lo",
+      iface.name !== "lo"
   );
 
   useEffect(() => {
     if (filteredInterfaces.length && !selected) {
       setSelected(filteredInterfaces[0].name);
+    } else if (
+      selected &&
+      !filteredInterfaces.some((iface) => iface.name === selected)
+    ) {
+      setSelected(filteredInterfaces[0]?.name ?? "");
     }
   }, [filteredInterfaces, selected]);
 
   const selectedInterface = filteredInterfaces.find(
-    (iface) => iface.name === selected,
+    (iface) => iface.name === selected
   );
 
   useEffect(() => {
     if (selectedInterface) {
       setHistory((prev) => [
-        ...prev.slice(-29), // keep last 30
+        ...prev.slice(-29),
         {
           time: Date.now(),
-          rx: selectedInterface.rxSpeed / 1e3,
-          tx: selectedInterface.txSpeed / 1e3,
+          rx: selectedInterface.rx_speed / 1024,
+          tx: selectedInterface.tx_speed / 1024,
         },
       ]);
     }
@@ -74,19 +89,16 @@ const NetworkInterfacesCard: React.FC = () => {
     ) : (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography variant="body2">
-          <strong>IP:</strong>{" "}
-          {(() => {
-            const ipv4 = selectedInterface.addresses.find((addr) =>
-              addr.includes("."),
-            );
-            return ipv4 || "None";
-          })()}
+          <strong>IPv4:</strong>{" "}
+          {selectedInterface.ipv4.length > 0
+            ? selectedInterface.ipv4.join(", ")
+            : "None"}
         </Typography>
         <Typography variant="body2">
-          <strong>MAC:</strong> {selectedInterface.hardwareAddr}
+          <strong>MAC:</strong> {selectedInterface.mac}
         </Typography>
         <Typography variant="body2">
-          <strong>Carrier:</strong> {selectedInterface.linkSpeed} MBS/s
+          <strong>Speed:</strong> {selectedInterface.speed}
         </Typography>
       </Box>
     )
@@ -120,7 +132,9 @@ const NetworkInterfacesCard: React.FC = () => {
         setHistory([]);
       }}
       connectionStatus={
-        selectedInterface && selectedInterface.rxSpeed > 0
+        selectedInterface &&
+        Array.isArray(selectedInterface.ipv4) &&
+        selectedInterface.ipv4.length > 0
           ? "online"
           : "offline"
       }

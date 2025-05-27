@@ -170,6 +170,12 @@ func handleInternalCommand(req Request, enc *json.Encoder) {
 }
 
 func handleDbusCommand(req Request, enc *json.Encoder) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error.Printf("🔥 Panic in D-Bus command handler: %v", r)
+			_ = enc.Encode(Response{Status: "error", Error: fmt.Sprintf("panic: %v", r)})
+		}
+	}()
 	logger.Info.Printf("🔒 Handling D-Bus command: %s\n", req.Command)
 	var err error
 	var jsonOut string
@@ -215,6 +221,17 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 		err = dbus.MaskService(req.Args[0])
 	case "UnmaskService":
 		err = dbus.UnmaskService(req.Args[0])
+	case "GetNetworkInterfaces":
+		var data []dbus.NMInterfaceInfo
+		data, err = dbus.GetNetworkInterfaces()
+		if err == nil {
+			bytes, marshalErr := json.MarshalIndent(data, "", "  ")
+			if marshalErr != nil {
+				err = marshalErr
+			} else {
+				jsonOut = string(bytes)
+			}
+		}
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
 	}

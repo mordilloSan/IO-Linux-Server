@@ -1,4 +1,3 @@
-// NetworkInterfaceList.tsx
 import { Icon } from "@iconify/react";
 import {
   Box,
@@ -19,26 +18,28 @@ import axios from "@/utils/axios";
 
 export interface NetworkInterface {
   name: string;
-  addresses: string[];
-  address: string;
-  state: string;
-  type?: string;
-  mac?: string;
+  type: string; // ethernet, wifi, loopback, etc.
+  mac: string;
   mtu: number;
-  speed?: number;
-  rxSpeed?: number;
-  txSpeed?: number;
+  speed: string;
+  duplex: string;
+  state: number;
+  ipv4: string[];
+  ipv6: string[];
+  rx_speed: number;
+  tx_speed: number;
 }
 
-const getStatusColor = (state: string) => {
-  if (state === "up") return "success.main";
-  if (state === "down") return "error.main";
-  return "warning.main";
+const getStatusColor = (state: number) => {
+  if (state === 100) return "success.main"; // activated
+  if (state === 30 || state === 20) return "warning.main"; // connecting/disconnected
+  return "error.main";
 };
 
-const getStatusTooltip = (state: string) => {
-  if (state === "up") return "Up";
-  if (state === "down") return "Down";
+const getStatusTooltip = (state: number) => {
+  if (state === 100) return "Connected";
+  if (state === 30) return "Connecting";
+  if (state === 20) return "Disconnected";
   return "Unknown";
 };
 
@@ -49,8 +50,8 @@ const getInterfaceIcon = (type?: string) => {
   return "mdi:network";
 };
 
-const formatMbps = (bps?: number) =>
-  typeof bps === "number" ? `${((bps * 8) / 1e3).toFixed(1)} kB/s` : "N/A";
+const formatBps = (bps?: number) =>
+  typeof bps === "number" ? `${(bps / 1024).toFixed(1)} kB/s` : "N/A";
 
 const NetworkInterfaceList = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -61,8 +62,8 @@ const NetworkInterfaceList = () => {
       setExpanded(null);
     } else {
       setEditForm({
-        ipv4: iface.addresses.filter((a) => a.includes(".")).join(", "),
-        ipv6: iface.addresses.filter((a) => a.includes(":")).join(", "),
+        ipv4: iface.ipv4.join(", "),
+        ipv6: iface.ipv6.join(", "),
         dns: "",
         gateway: "",
         mtu: iface.mtu.toString(),
@@ -86,26 +87,16 @@ const NetworkInterfaceList = () => {
       const res = await axios.get("/system/network");
       return res.data.map((iface: any) => ({
         ...iface,
-        address:
-          iface.addresses.find((addr: string) => addr.includes(".")) ||
-          iface.addresses[0] ||
-          "No IP",
-        state: iface.addresses.some((addr: string) =>
-          /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/.test(addr),
-        )
-          ? "up"
-          : "down",
         type: iface.name.startsWith("wl")
           ? "wifi"
           : iface.name.startsWith("lo")
             ? "loopback"
             : "ethernet",
-        mac: iface.hardwareAddr,
-        speed: Number(iface.linkSpeed) > 0 ? +iface.linkSpeed : undefined,
-        rx_bytes: iface.bytesRecv,
-        tx_bytes: iface.bytesSent,
+        // optional: convert state from number to string
+        state: iface.state === 100 ? "up" : "down",
       }));
     },
+
     refetchInterval: 1000,
   });
 
@@ -117,7 +108,7 @@ const NetworkInterfaceList = () => {
         </Typography>
         <Grid container spacing={2}>
           {interfaces.map((iface) => (
-            <Grid key={iface.name} size={{ xs: 6, sm: 4, md: 4, lg: 3, xl: 3 }}>
+            <Grid key={iface.name} size={{ xs: 6, sm: 4, md: 4, lg: 3, xl: 2 }}>
               <FrostedCard
                 sx={{
                   p: 2,
@@ -128,15 +119,13 @@ const NetworkInterfaceList = () => {
                     transform: "translateY(-4px)",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
                   },
-                }}
-              >
+                }}>
                 <Tooltip
                   title={getStatusTooltip(iface.state)}
                   placement="top"
                   arrow
                   slots={{ transition: Fade }}
-                  slotProps={{ transition: { timeout: 300 } }}
-                >
+                  slotProps={{ transition: { timeout: 300 } }}>
                   <Box
                     sx={{
                       position: "absolute",
@@ -154,8 +143,7 @@ const NetworkInterfaceList = () => {
                 <Box
                   display="flex"
                   alignItems="flex-start"
-                  onClick={() => handleToggle(iface)}
-                >
+                  onClick={() => handleToggle(iface)}>
                   <Box
                     sx={{
                       width: 44,
@@ -164,8 +152,7 @@ const NetworkInterfaceList = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       mr: 1.5,
-                    }}
-                  >
+                    }}>
                     <Icon
                       icon={getInterfaceIcon(iface.type)}
                       width={36}
@@ -177,17 +164,17 @@ const NetworkInterfaceList = () => {
                       {iface.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      IP: {iface.address}
+                      IPv4: {iface.ipv4.join(", ")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" noWrap>
                       MAC: {iface.mac}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      Link Speed: {iface.speed ? `${iface.speed} kB/s` : "N/A"}
+                      Link Speed: {iface.speed} ({iface.duplex})
                     </Typography>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      RX/s: {formatMbps(iface.rxSpeed)} | TX/s:{" "}
-                      {formatMbps(iface.txSpeed)}
+                      RX/s: {formatBps(iface.rx_speed)} | TX/s:{" "}
+                      {formatBps(iface.tx_speed)}
                     </Typography>
                   </Box>
                 </Box>
@@ -195,8 +182,7 @@ const NetworkInterfaceList = () => {
                 <Collapse
                   in={expanded === iface.name}
                   timeout="auto"
-                  unmountOnExit
-                >
+                  unmountOnExit>
                   <Box mt={2}>
                     <TextField
                       fullWidth
@@ -238,8 +224,7 @@ const NetworkInterfaceList = () => {
                       <Button onClick={() => setExpanded(null)}>Cancel</Button>
                       <Button
                         variant="contained"
-                        onClick={() => handleSave(iface)}
-                      >
+                        onClick={() => handleSave(iface)}>
                         Save
                       </Button>
                     </Box>
