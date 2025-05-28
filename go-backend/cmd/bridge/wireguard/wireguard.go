@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"time"
 
-	"go-backend/internal/auth"
 	"go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +14,14 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-func RegisterWireguardRoutes(router *gin.Engine) {
-	system := router.Group("/wireguard", auth.AuthMiddleware())
-	{
-		system.POST("/setup", SetupInterfaceHandler)
-		system.GET("/interface/:name", GetInterfaceDetails)
+func ListAllInterfacesHandler(c *gin.Context) {
+	ifaces, err := ListInterfaces()
+	if err != nil {
+		logger.Error.Printf("Failed to list WireGuard interfaces: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
+	c.JSON(http.StatusOK, gin.H{"interfaces": ifaces})
 }
 
 func SetupInterfaceHandler(c *gin.Context) {

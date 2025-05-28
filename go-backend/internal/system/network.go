@@ -3,6 +3,7 @@ package system
 import (
 	"encoding/json"
 	"fmt"
+	"go-backend/cmd/bridge/dbus"
 	"go-backend/internal/bridge"
 	"go-backend/internal/session"
 	"net/http"
@@ -10,14 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getNetworkInterfaces(c *gin.Context) {
+func getNetworkInfo(c *gin.Context) {
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
 	if !valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 
-	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetNetworkInterfaces", nil)
+	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetNetworkInfo", nil)
 	if err != nil {
 		fmt.Printf("[network] Failed: %+v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -28,7 +29,7 @@ func getNetworkInterfaces(c *gin.Context) {
 		return
 	}
 
-	var data any
+	var data []dbus.NMInterfaceInfo
 	if err := json.Unmarshal([]byte(output), &data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":  "invalid bridge response",
@@ -37,6 +38,5 @@ func getNetworkInterfaces(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, data)
 }

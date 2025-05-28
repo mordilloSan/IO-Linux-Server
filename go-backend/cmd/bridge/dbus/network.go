@@ -62,7 +62,7 @@ func mapDeviceType(devType uint32) string {
 	}
 }
 
-func GetNetworkInterfaces() ([]NMInterfaceInfo, error) {
+func GetNetworkInfo() ([]NMInterfaceInfo, error) {
 	var results []NMInterfaceInfo
 
 	snapshots, _ := net.IOCounters(true)

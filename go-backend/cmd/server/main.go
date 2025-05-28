@@ -15,7 +15,6 @@ import (
 	"go-backend/internal/templates"
 	"go-backend/internal/update"
 	"go-backend/internal/utils"
-	"go-backend/internal/wireguard"
 	"net/http"
 	"os"
 
@@ -73,7 +72,6 @@ func main() {
 	docker.RegisterDockerRoutes(router)
 	docker.RegisterDockerComposeRoutes(router)
 	config.RegisterThemeRoutes(router)
-	wireguard.RegisterWireguardRoutes(router)
 	power.RegisterPowerRoutes(router)
 	// API Benchmark route
 	if env != "production" {

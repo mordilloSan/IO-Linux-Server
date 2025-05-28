@@ -15,7 +15,7 @@ func RegisterSystemRoutes(router *gin.Engine) {
 		system.GET("/mem", getMemInfo)
 		system.GET("/fs", getFsInfo)
 		system.GET("/disk", getDriveInfo)
-		system.GET("/network", getNetworkInterfaces)
+		system.GET("/network", getNetworkInfo)
 		system.GET("/load", getLoadInfo)
 		system.GET("/uptime", getUptime)
 		system.GET("/processes", getProcesses)
