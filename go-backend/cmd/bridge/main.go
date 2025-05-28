@@ -15,15 +15,16 @@ import (
 )
 
 type Request struct {
-	Type    string   `json:"type"`    // "dbus", "command", or "control"
-	Command string   `json:"command"` // e.g., "reboot", "poweroff", "pkcon", "shutdown"
+	Type    string   `json:"type"`
+	Command string   `json:"command"`
 	Args    []string `json:"args,omitempty"`
 }
 
+// Output is any Go value, not a string!
 type Response struct {
-	Status string `json:"status"`           // "ok" or "error"
-	Output string `json:"output,omitempty"` // stdout/stderr
-	Error  string `json:"error,omitempty"`
+	Status string      `json:"status"`
+	Output interface{} `json:"output,omitempty"`
+	Error  string      `json:"error,omitempty"`
 }
 
 type BridgeHealthRequest struct {
@@ -122,6 +123,18 @@ func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, er
 	return listener, uid, gid, nil
 }
 
+func handleInternalCommand(req Request, enc *json.Encoder) {
+	logger.Info.Printf("🔒 Handling internal command: %s\n", req.Command)
+	switch req.Command {
+	case "shutdown":
+		logger.Info.Println("Received shutdown command, exiting bridge")
+		_ = enc.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
+		os.Exit(0)
+	default:
+		_ = enc.Encode(Response{Status: "error", Error: "unknown internal command"})
+	}
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	decoder := json.NewDecoder(conn)
@@ -153,18 +166,7 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func handleInternalCommand(req Request, enc *json.Encoder) {
-	logger.Info.Printf("🔒 Handling internal command: %s\n", req.Command)
-	switch req.Command {
-	case "shutdown":
-		logger.Info.Println("Received shutdown command, exiting bridge")
-		_ = enc.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
-		os.Exit(0)
-	default:
-		_ = enc.Encode(Response{Status: "error", Error: "unknown internal command"})
-	}
-}
-
+// Only change here: return Go value directly in Output
 func handleDbusCommand(req Request, enc *json.Encoder) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -174,33 +176,33 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 	}()
 	logger.Info.Printf("🔒 Handling D-Bus command: %s\n", req.Command)
 	var err error
-	var jsonOut string
+	var out interface{}
 
 	switch req.Command {
 	case "Reboot", "PowerOff":
 		err = dbus.CallLogin1Action(req.Command)
-
 	case "GetUpdates":
-		jsonOut, err = dbus.GetUpdatesWithDetails()
-
+		var result []dbus.UpdateDetail
+		result, err = dbus.GetUpdatesWithDetails()
+		// Defensive: if result is nil, return empty slice, not null!
+		if result == nil {
+			result = make([]dbus.UpdateDetail, 0)
+		}
+		out = result
 	case "InstallPackage":
 		if len(req.Args) == 0 {
 			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
 			return
 		}
 		err = dbus.InstallPackage(req.Args[0])
-
 	case "ListServices":
-		jsonOut, err = dbus.ListServices()
-
+		out, err = dbus.ListServices()
 	case "GetServiceInfo":
 		if len(req.Args) == 0 {
 			_ = enc.Encode(Response{Status: "error", Error: "missing service name"})
 			return
 		}
-		jsonOut, err = dbus.GetServiceInfo(req.Args[0])
-
-		// --- Service control commands ---
+		out, err = dbus.GetServiceInfo(req.Args[0])
 	case "StartService":
 		err = dbus.StartService(req.Args[0])
 	case "StopService":
@@ -218,28 +220,14 @@ func handleDbusCommand(req Request, enc *json.Encoder) {
 	case "UnmaskService":
 		err = dbus.UnmaskService(req.Args[0])
 	case "GetNetworkInfo":
-		var data []dbus.NMInterfaceInfo
-		data, err = dbus.GetNetworkInfo()
-		if err == nil {
-			bytes, marshalErr := json.MarshalIndent(data, "", "  ")
-			if marshalErr != nil {
-				err = marshalErr
-			} else {
-				jsonOut = string(bytes)
-			}
-		}
+		out, err = dbus.GetNetworkInfo()
 	default:
 		err = fmt.Errorf("unknown dbus command: %s", req.Command)
 	}
 
 	// --- Response logic ---
-	if err == nil && jsonOut != "" {
-		_ = enc.Encode(Response{Status: "ok", Output: jsonOut})
-		return
-	}
 	if err == nil {
-		logger.Info.Printf("✅ D-Bus %s succeeded\n", req.Command)
-		_ = enc.Encode(Response{Status: "ok"})
+		_ = enc.Encode(Response{Status: "ok", Output: out})
 		return
 	}
 	logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)

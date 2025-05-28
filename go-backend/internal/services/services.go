@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
 	"regexp"
 
@@ -65,7 +66,6 @@ func serviceAction(c *gin.Context, action string) {
 }
 
 func getServiceStatus(c *gin.Context) {
-	// Extract session info
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
 	if !valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
@@ -73,17 +73,30 @@ func getServiceStatus(c *gin.Context) {
 	}
 
 	output, err := bridge.CallWithSession(sessionID, user.Name, "dbus", "ListServices", nil)
-
-	// Call the bridge
-
 	if err != nil {
 		logger.Error.Printf("Failed to list services via bridge: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// output is a JSON string, so decode and forward
-	c.Data(http.StatusOK, "application/json", []byte(output))
+	var resp struct {
+		Status string          `json:"status"`
+		Output json.RawMessage `json:"output"`
+		Error  string          `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		logger.Error.Printf("Failed to decode bridge response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decode bridge response"})
+		return
+	}
+
+	if resp.Status != "ok" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": resp.Error})
+		return
+	}
+
+	// Output is already a JSON array/object
+	c.Data(http.StatusOK, "application/json", resp.Output)
 }
 
 func getServiceDetail(c *gin.Context) {
@@ -99,5 +112,19 @@ func getServiceDetail(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Data(http.StatusOK, "application/json", []byte(output))
+	var resp struct {
+		Status string          `json:"status"`
+		Output json.RawMessage `json:"output"`
+		Error  string          `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		logger.Error.Printf("Failed to decode bridge response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decode bridge response"})
+		return
+	}
+	if resp.Status != "ok" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": resp.Error})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp.Output)
 }

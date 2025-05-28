@@ -2,7 +2,6 @@ package system
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-backend/cmd/bridge/dbus"
 	"go-backend/internal/bridge"
 	"go-backend/internal/session"
@@ -18,25 +17,39 @@ func getNetworkInfo(c *gin.Context) {
 		return
 	}
 
-	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetNetworkInfo", nil)
+	rawResp, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetNetworkInfo", nil)
 	if err != nil {
-		fmt.Printf("[network] Failed: %+v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":  "failed to get network interfaces",
+		c.JSON(500, gin.H{
+			"error":  "bridge call failed",
 			"detail": err.Error(),
-			"output": output,
+			"output": rawResp,
 		})
 		return
 	}
-
-	var data []dbus.NMInterfaceInfo
-	if err := json.Unmarshal([]byte(output), &data); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+	var resp bridge.BridgeResponse
+	if err := json.Unmarshal([]byte(rawResp), &resp); err != nil {
+		c.JSON(500, gin.H{
 			"error":  "invalid bridge response",
 			"detail": err.Error(),
-			"output": output,
+			"output": rawResp,
 		})
 		return
 	}
-	c.JSON(http.StatusOK, data)
+	if resp.Status != "ok" {
+		c.JSON(500, gin.H{
+			"error":  resp.Error,
+			"output": string(resp.Output),
+		})
+		return
+	}
+	var data []dbus.NMInterfaceInfo
+	if err := json.Unmarshal(resp.Output, &data); err != nil {
+		c.JSON(500, gin.H{
+			"error":  "invalid output structure",
+			"detail": err.Error(),
+			"output": string(resp.Output),
+		})
+		return
+	}
+	c.JSON(200, data)
 }

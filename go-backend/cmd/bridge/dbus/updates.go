@@ -2,7 +2,6 @@ package dbus
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -70,18 +69,17 @@ func toStringSlice(iface any) []string {
 
 // --- D-Bus Public Wrappers with Retry ---
 
-func GetUpdatesWithDetails() (string, error) {
-	var result string
+func GetUpdatesWithDetails() ([]UpdateDetail, error) {
+	var result []UpdateDetail
 	err := RetryOnceIfClosed(nil, func() error {
 		details, err := getUpdatesWithDetails()
 		if err != nil {
 			return err
 		}
-		jsonBytes, err := json.MarshalIndent(details, "", "  ")
-		if err != nil {
-			return err
+		if details == nil {
+			details = make([]UpdateDetail, 0)
 		}
-		result = string(jsonBytes)
+		result = details
 		return nil
 	})
 	return result, err

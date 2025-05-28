@@ -33,6 +33,13 @@ type BridgeHealthResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+// Response struct to parse bridge response
+type BridgeResponse struct {
+	Status string          `json:"status"`
+	Output json.RawMessage `json:"output"`
+	Error  string          `json:"error"`
+}
+
 var (
 	processes   = make(map[string]*BridgeProcess)
 	processesMu sync.Mutex
@@ -61,13 +68,13 @@ func BridgeSocketPath(sessionID, username string) string {
 	return fmt.Sprintf("/run/user/%s/linuxio-bridge-%s.sock", u.Uid, sessionID)
 }
 
-// Public: Use this everywhere from backend for bridge actions
+// Use everywhere for bridge actions: returns *raw* JSON response string (for HTTP handler to decode output as needed)
 func CallWithSession(sessionID, username, reqType, command string, args []string) (string, error) {
 	socketPath := BridgeSocketPath(sessionID, username)
 	return CallViaSocket(socketPath, reqType, command, args)
 }
 
-// Low-level: Direct call by socket path
+// Now returns the full JSON bridge response as string, not just output!
 func CallViaSocket(socketPath, reqType, command string, args []string) (string, error) {
 	req := map[string]interface{}{
 		"type":    reqType,
@@ -76,43 +83,25 @@ func CallViaSocket(socketPath, reqType, command string, args []string) (string, 
 	if args != nil {
 		req["args"] = args
 	}
-	resp, err := sendBridgeRequest(socketPath, req)
-	if err != nil {
-		return "", err
-	}
-	if resp["status"] != "ok" {
-		output := ""
-		if o, ok := resp["output"].(string); ok {
-			output = o
-		}
-		return output, fmt.Errorf("bridge error: %v", resp["error"])
-	}
-	output, _ := resp["output"].(string)
-	return output, nil
-}
-
-// sendBridgeRequest sends a request to the bridge at socketPath and returns the response.
-func sendBridgeRequest(socketPath string, req map[string]interface{}) (map[string]interface{}, error) {
 	conn, err := net.DialTimeout("unix", socketPath, 2*time.Second)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to bridge: %w", err)
+		return "", fmt.Errorf("failed to connect to bridge: %w", err)
 	}
 	defer conn.Close()
-	logger.Debug.Printf("[bridge] Sending request to %s: %+v", socketPath, req)
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
-
 	if err := enc.Encode(req); err != nil {
-		return nil, fmt.Errorf("failed to send request to bridge: %w", err)
+		return "", fmt.Errorf("failed to send request to bridge: %w", err)
 	}
-
-	var resp map[string]interface{}
+	var resp BridgeResponse
 	if err := dec.Decode(&resp); err != nil {
-		logger.Error.Printf("[bridge] Failed to decode response: %v", err)
-		return nil, fmt.Errorf("failed to decode response from bridge: %w", err)
+		return "", fmt.Errorf("failed to decode response from bridge: %w", err)
 	}
-	logger.Debug.Printf("[bridge] Got response: %+v", resp)
-	return resp, nil
+	b, err := json.Marshal(resp)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal bridge response: %w", err)
+	}
+	return string(b), nil
 }
 
 // StartBridge starts the bridge process for a given session ID and username.

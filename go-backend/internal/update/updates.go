@@ -14,6 +14,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type BridgeResponse struct {
+	Status string          `json:"status"`
+	Output json.RawMessage `json:"output"`
+	Error  string          `json:"error"`
+}
+
 var validPackageName = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 func RegisterUpdateRoutes(router *gin.Engine) {
@@ -30,7 +36,6 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 func getUpdatesHandler(c *gin.Context) {
 	logger.Info.Println("🔍 Checking for system updates (D-Bus)...")
 
-	// Extract session info
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
 	if !valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
@@ -38,7 +43,6 @@ func getUpdatesHandler(c *gin.Context) {
 	}
 
 	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetUpdates", nil)
-
 	if err != nil {
 		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -49,21 +53,34 @@ func getUpdatesHandler(c *gin.Context) {
 		return
 	}
 
-	// Output is JSON from the bridge, unmarshal it
-	var updates []Update
-
-	// Defensive: If output is empty, treat as empty array
-	trimmed := strings.TrimSpace(output)
-	if trimmed == "" {
-		updates = []Update{}
-	} else if err := json.Unmarshal([]byte(trimmed), &updates); err != nil {
-		logger.Error.Printf("❌ Failed to decode updates JSON: %v\nOutput: %s", err, output)
+	// 1. Unmarshal bridge response object
+	var resp struct {
+		Status string          `json:"status"`
+		Output json.RawMessage `json:"output"`
+		Error  string          `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		logger.Error.Printf("❌ Failed to decode bridge response: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to decode updates JSON",
+			"error":   "failed to decode bridge response",
 			"details": err.Error(),
 			"output":  output,
 		})
 		return
+	}
+
+	// 2. Defensive: If output is empty/null, treat as empty array
+	updates := []Update{}
+	if string(resp.Output) != "null" && len(resp.Output) > 0 {
+		if err := json.Unmarshal(resp.Output, &updates); err != nil {
+			logger.Error.Printf("❌ Failed to decode updates JSON: %v\nOutput: %s", err, string(resp.Output))
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "failed to decode updates JSON",
+				"details": err.Error(),
+				"output":  string(resp.Output),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"updates": updates})

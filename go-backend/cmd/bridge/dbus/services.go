@@ -1,7 +1,6 @@
 package dbus
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/godbus/dbus/v5"
@@ -16,8 +15,8 @@ type ServiceStatus struct {
 }
 
 // --- List all services (robust) ---
-func ListServices() (string, error) {
-	var result string
+func ListServices() ([]ServiceStatus, error) {
+	var services []ServiceStatus
 	err := RetryOnceIfClosed(nil, func() error {
 		conn, err := dbus.SystemBus()
 		if err != nil {
@@ -31,7 +30,6 @@ func ListServices() (string, error) {
 			return err
 		}
 
-		var services []ServiceStatus
 		for _, u := range units {
 			name := u[0].(string)
 			if !strings.HasSuffix(name, ".service") {
@@ -46,19 +44,14 @@ func ListServices() (string, error) {
 			}
 			services = append(services, svc)
 		}
-		jsonBytes, err := json.MarshalIndent(services, "", "  ")
-		if err != nil {
-			return err
-		}
-		result = string(jsonBytes)
 		return nil
 	})
-	return result, err
+	return services, err
 }
 
 // --- Get detailed info about a single service (robust) ---
-func GetServiceInfo(serviceName string) (string, error) {
-	var result string
+func GetServiceInfo(serviceName string) (map[string]interface{}, error) {
+	var info map[string]interface{}
 	err := RetryOnceIfClosed(nil, func() error {
 		conn, err := dbus.SystemBus()
 		if err != nil {
@@ -73,7 +66,6 @@ func GetServiceInfo(serviceName string) (string, error) {
 		}
 		unit := conn.Object("org.freedesktop.systemd1", unitPath)
 
-		// Standard Unit properties
 		props := []string{
 			"Id",
 			"Description",
@@ -85,14 +77,13 @@ func GetServiceInfo(serviceName string) (string, error) {
 			"ActiveEnterTimestamp",
 			"InactiveEnterTimestamp",
 		}
-		info := map[string]interface{}{}
+		info = map[string]interface{}{}
 		for _, prop := range props {
 			val, err := unit.GetProperty("org.freedesktop.systemd1.Unit." + prop)
 			if err == nil {
 				info[prop] = val.Value()
 			}
 		}
-		// Service-specific properties
 		val, err := unit.GetProperty("org.freedesktop.systemd1.Service.MainPID")
 		if err == nil {
 			info["MainPID"] = val.Value()
@@ -101,14 +92,9 @@ func GetServiceInfo(serviceName string) (string, error) {
 		if err == nil {
 			info["ExecMainStatus"] = val.Value()
 		}
-		jsonBytes, err := json.MarshalIndent(info, "", "  ")
-		if err != nil {
-			return err
-		}
-		result = string(jsonBytes)
 		return nil
 	})
-	return result, err
+	return info, err
 }
 
 // Start a service
