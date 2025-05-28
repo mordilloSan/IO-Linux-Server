@@ -22,6 +22,8 @@ type NMInterfaceInfo struct {
 	IP6Addresses []string `json:"ipv6"`
 	RxSpeed      float64  `json:"rx_speed"`
 	TxSpeed      float64  `json:"tx_speed"`
+	DNS          []string `json:"dns"`
+	Gateway      string   `json:"gateway"`
 }
 
 var (
@@ -130,7 +132,9 @@ func GetNetworkInterfaces() ([]NMInterfaceInfo, error) {
 				}
 			}
 
-			var ip4s, ip6s []string
+			var ip4s, ip6s, dns []string
+			gateway := ""
+
 			if ip4Path, ok := props["Ip4Config"].Value().(dbus.ObjectPath); ok && ip4Path != "/" {
 				ip4Obj := conn.Object("org.freedesktop.NetworkManager", ip4Path)
 				var ip4Props map[string]dbus.Variant
@@ -141,6 +145,14 @@ func GetNetworkInterfaces() ([]NMInterfaceInfo, error) {
 								byte(addr[0]), byte(addr[0]>>8), byte(addr[0]>>16), byte(addr[0]>>24), addr[1])
 							ip4s = append(ip4s, ip)
 						}
+					}
+					if dnsAddrs, ok := ip4Props["Nameservers"].Value().([]uint32); ok {
+						for _, ip := range dnsAddrs {
+							dns = append(dns, fmt.Sprintf("%d.%d.%d.%d", byte(ip), byte(ip>>8), byte(ip>>16), byte(ip>>24)))
+						}
+					}
+					if gw, ok := ip4Props["Gateway"].Value().(string); ok {
+						gateway = gw
 					}
 				}
 			}
@@ -161,6 +173,20 @@ func GetNetworkInterfaces() ([]NMInterfaceInfo, error) {
 								ip6s = append(ip6s, fmt.Sprintf("%s/%d", strings.Join(parts, ":"), prefix))
 							}
 						}
+					}
+					if dns6, ok := ip6Props["Nameservers"].Value().([][]byte); ok {
+						for _, addr := range dns6 {
+							if len(addr) == 16 {
+								parts := make([]string, 8)
+								for i := 0; i < 8; i++ {
+									parts[i] = fmt.Sprintf("%02x%02x", addr[2*i], addr[2*i+1])
+								}
+								dns = append(dns, strings.Join(parts, ":"))
+							}
+						}
+					}
+					if gw, ok := ip6Props["Gateway"].Value().(string); ok && gateway == "" {
+						gateway = gw
 					}
 				}
 			}
@@ -193,6 +219,8 @@ func GetNetworkInterfaces() ([]NMInterfaceInfo, error) {
 				IP6Addresses: ip6s,
 				RxSpeed:      rxSpeed,
 				TxSpeed:      txSpeed,
+				DNS:          dns,
+				Gateway:      gateway,
 			})
 		}
 		return nil

@@ -16,6 +16,7 @@ import { useTheme } from "@mui/material/styles";
 import FrostedCard from "@/components/cards/RootCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
+import NetworkInterfaceEditor from "./NetworkInterfaceEditor";
 
 export interface NetworkInterface {
   name: string;
@@ -29,6 +30,8 @@ export interface NetworkInterface {
   ipv6: string[];
   rx_speed: number;
   tx_speed: number;
+  dns: string[];
+  gateway: string;
 }
 
 const getStatusColor = (state: number) => {
@@ -98,8 +101,8 @@ const NetworkInterfaceList = () => {
       setEditForm({
         ipv4: Array.isArray(iface.ipv4) ? iface.ipv4.join(", ") : "",
         ipv6: Array.isArray(iface.ipv6) ? iface.ipv6.join(", ") : "",
-        dns: "",
-        gateway: "",
+        dns: iface.dns ? iface.dns : "",
+        gateway: iface.gateway ? iface.gateway : "",
         mtu: iface.mtu.toString(),
       });
       setExpanded(iface.name);
@@ -213,62 +216,14 @@ const NetworkInterfaceList = () => {
                       </Typography>
                     </Box>
                   </Box>
-
-                  <Collapse
-                    in={expanded === iface.name}
-                    timeout="auto"
-                    unmountOnExit>
-                    <Box mt={2}>
-                      <TextField
-                        fullWidth
-                        label="IPv4"
-                        value={editForm.ipv4 || ""}
-                        onChange={(e) => handleChange("ipv4", e.target.value)}
-                        sx={{ mb: 1 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="IPv6"
-                        value={editForm.ipv6 || ""}
-                        onChange={(e) => handleChange("ipv6", e.target.value)}
-                        sx={{ mb: 1 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="DNS"
-                        value={editForm.dns || ""}
-                        onChange={(e) => handleChange("dns", e.target.value)}
-                        sx={{ mb: 1 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Gateway"
-                        value={editForm.gateway || ""}
-                        onChange={(e) =>
-                          handleChange("gateway", e.target.value)
-                        }
-                        sx={{ mb: 1 }}
-                      />
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="MTU"
-                        value={editForm.mtu || ""}
-                        onChange={(e) => handleChange("mtu", e.target.value)}
-                        sx={{ mb: 2 }}
-                      />
-                      <Box display="flex" justifyContent="flex-end" gap={1}>
-                        <Button onClick={() => setExpanded(null)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="contained"
-                          onClick={() => handleSave(iface)}>
-                          Save
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Collapse>
+                  <NetworkInterfaceEditor
+                    iface={iface}
+                    expanded={expanded === iface.name}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    onClose={() => setExpanded(null)}
+                    onSave={handleSave}
+                  />
                 </FrostedCard>
               </Grid>
             )
