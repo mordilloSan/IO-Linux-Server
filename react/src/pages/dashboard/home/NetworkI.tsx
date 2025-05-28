@@ -28,7 +28,6 @@ const NetworkInterfacesCard: React.FC = () => {
         ...iface,
         ipv4: iface.ipv4 ?? [],
         ipv6: iface.ipv6 ?? [],
-        state: iface.state === 100 ? "up" : "down",
         type: iface.name.startsWith("wl")
           ? "wifi"
           : iface.name.startsWith("lo")

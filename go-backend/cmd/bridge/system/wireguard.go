@@ -1,4 +1,4 @@
-package wireguard
+package system
 
 import (
 	"fmt"
@@ -13,6 +13,27 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
+
+type SetupInput struct {
+	Name       string `json:"name"`
+	Endpoint   string `json:"endpoint"`
+	ListenPort int    `json:"listenPort"`
+	NumPeers   int    `json:"numPeers"`
+}
+
+type WGInterface struct {
+	Name       string   `json:"name"`
+	PublicKey  string   `json:"publicKey"`
+	ListenPort int      `json:"listenPort"`
+	Peers      []WGPeer `json:"peers"`
+}
+
+type WGPeer struct {
+	PublicKey     string   `json:"publicKey"`
+	Endpoint      string   `json:"endpoint,omitempty"`
+	AllowedIPs    []string `json:"allowedIPs"`
+	LastHandshake string   `json:"lastHandshake,omitempty"` // Add last handshake
+}
 
 func ListAllInterfacesHandler(c *gin.Context) {
 	ifaces, err := ListInterfaces()

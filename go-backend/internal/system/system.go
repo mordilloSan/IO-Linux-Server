@@ -14,14 +14,13 @@ func RegisterSystemRoutes(router *gin.Engine) {
 		system.GET("/cpu", getCPUInfo)
 		system.GET("/mem", getMemInfo)
 		system.GET("/fs", getFsInfo)
-		system.GET("/disk", getDriveInfo)
 		system.GET("/load", getLoadInfo)
 		system.GET("/uptime", getUptime)
 		system.GET("/processes", getProcesses)
 		system.GET("/baseboard", getBaseboardInfo)
 		system.GET("/gpu", getGPUInfo)
 		system.GET("/sensors", getSensorData)
-		system.GET("/smart/:device", getSmartInfo)
+		system.GET("/disk", getDiskInfo)
 	}
 }
 

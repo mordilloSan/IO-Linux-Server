@@ -34,7 +34,7 @@ interface GeneralCardProps {
   selectedOption?: string;
   selectedOptionLabel?: string;
   onSelect?: (value: string) => void;
-  connectionStatus?: "online" | "offline";
+  connectionStatus?: "online" | "offline" | "warning" | "error";
 }
 
 const GeneralCard: React.FC<GeneralCardProps> = ({
@@ -61,8 +61,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
   const statusDot = connectionStatus && (
     <Tooltip
       title={connectionStatus === "online" ? "Connected" : "Disconnected"}
-      arrow
-    >
+      arrow>
       <Box
         sx={{
           width: 10,
@@ -97,8 +96,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
           color: theme.palette.text.secondary,
           fontSize: 18,
         },
-      }}
-    >
+      }}>
       <Select
         id="card-select"
         name="cardSelect"
@@ -114,8 +112,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
               Select...
             </Typography>
           )
-        }
-      >
+        }>
         {selectOptions.map((option, index) => (
           <MenuItem key={option.id ?? index} value={option.value}>
             {option.label}
@@ -144,8 +141,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
           boxShadow: theme.shadows[10],
           marginBlockEnd: "-1px",
         },
-      }}
-    >
+      }}>
       <CardContent>
         {/* Header */}
         <Box
@@ -154,14 +150,12 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
             justifyContent: "space-between",
             alignItems: "center",
             mb: 1,
-          }}
-        >
+          }}>
           {/* Title and optional extras */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="h5"
-              sx={{ fontWeight: "bold", transform: "translateY(-1px)" }}
-            >
+              sx={{ fontWeight: "bold", transform: "translateY(-1px)" }}>
               {title}
             </Typography>
 
@@ -177,15 +171,13 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
                   lineHeight: 1,
                   ml: -1,
                   mb: 1,
-                }}
-              >
+                }}>
                 <Box
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
                     mr: "-4px",
-                  }}
-                >
+                  }}>
                   <IconComponent
                     {...iconProps}
                     sx={{
@@ -197,8 +189,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
                 </Box>
                 <Typography
                   variant="body2"
-                  sx={{ color: "grey", ml: 0, lineHeight: 1 }}
-                >
+                  sx={{ color: "grey", ml: 0, lineHeight: 1 }}>
                   {icon_text}
                 </Typography>
               </Box>
@@ -221,16 +212,14 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
               mt: 3,
               display: "flex",
               flexDirection: { xs: "column", sm: "row", xl: "row" },
-            }}
-          >
+            }}>
             <Box
               sx={{
                 flex: 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "left",
-              }}
-            >
+              }}>
               {stats}
             </Box>
             <Box
@@ -240,8 +229,7 @@ const GeneralCard: React.FC<GeneralCardProps> = ({
                 height: 120,
                 alignItems: "center",
                 justifyContent: "center",
-              }}
-            >
+              }}>
               {stats2}
             </Box>
           </Box>

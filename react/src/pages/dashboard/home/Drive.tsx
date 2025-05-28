@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Alert, Divider } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
@@ -6,14 +6,42 @@ import GeneralCard from "@/components/cards/GeneralCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
+interface SmartStatus {
+  passed: boolean;
+  [key: string]: any;
+}
+interface SmartInfo {
+  smart_status?: SmartStatus;
+  [key: string]: any;
+}
 interface DriveInfo {
   name: string;
   model: string;
-  serial: string;
   size: string;
   type: string;
-  vendor: string;
-  ro: boolean;
+  vendor?: string;
+  serial?: string;
+  ro?: boolean;
+  smart?: SmartInfo;
+  smartError?: string;
+  power?: any;
+  powerError?: string;
+}
+
+function getConnectionStatus(
+  drive: DriveInfo | undefined
+): "online" | "warning" | "error" {
+  if (!drive) return "warning";
+  if (drive.smartError) return "error";
+  if (
+    !drive.smart ||
+    Object.keys(drive.smart).length === 0 ||
+    !drive.smart.smart_status
+  )
+    return "warning";
+  if (drive.smart.smart_status.passed === true) return "online";
+  if (drive.smart.smart_status.passed === false) return "error";
+  return "warning";
 }
 
 const Drive: React.FC = () => {
@@ -21,10 +49,9 @@ const Drive: React.FC = () => {
     queryKey: ["systemDrives"],
     queryFn: async () => {
       const res = await axios.get("/system/disk");
-      return res.data.drives;
+      return res.data;
     },
   });
-
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
@@ -72,7 +99,9 @@ const Drive: React.FC = () => {
       selectedOption={selected}
       selectedOptionLabel={selected}
       onSelect={(val: string) => setSelected(val)}
-      connectionStatus={isDisconnected ? "offline" : "online"}
+      connectionStatus={
+        isDisconnected ? "offline" : getConnectionStatus(selectedDrive)
+      }
     />
   );
 };

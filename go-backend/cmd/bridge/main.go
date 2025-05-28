@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-backend/cmd/bridge/cleanup"
 	"go-backend/cmd/bridge/dbus"
+	"go-backend/cmd/bridge/system"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 	"net"
@@ -132,11 +133,29 @@ var controlHandlers = map[string]HandlerFunc{
 	// Add more as needed...
 }
 
+var systemHandlers = map[string]HandlerFunc{
+	"get_drive_info": func(args []string) (interface{}, error) {
+		return system.FetchDriveInfo()
+	},
+	"get_smart_info": func(args []string) (interface{}, error) {
+		if len(args) < 1 {
+			return nil, fmt.Errorf("missing device argument")
+		}
+		return system.FetchSmartInfo(args[0])
+	},
+	"get_nvme_power": func(args []string) (interface{}, error) {
+		if len(args) < 1 {
+			return nil, fmt.Errorf("missing device argument")
+		}
+		return system.GetNVMePowerState(args[0])
+	},
+}
+
 // -- Handler groups by type --
 var handlersByType = map[string]map[string]HandlerFunc{
 	"dbus":    dbusHandlers,
 	"control": controlHandlers,
-	// "system": systemHandlers, // for future
+	"system":  systemHandlers,
 }
 
 func main() {

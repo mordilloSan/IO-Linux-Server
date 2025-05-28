@@ -165,7 +165,6 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         sx={{
                           margin: 2,
-                          background: "#fafafa",
                           borderRadius: 2,
                           p: 2,
                         }}>
