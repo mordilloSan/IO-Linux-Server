@@ -1,13 +1,6 @@
 import React from "react";
+import ServicesPage from "./ServicesPage";
 
-const ServicesPage: React.FC = () => {
-  return (
-    <div>
-      <h1>Services</h1>
-      <p>This page will list and manage your services.</p>
-      {/* Future implementation will go here */}
-    </div>
-  );
-};
+const ServicesList: React.FC = () => <ServicesPage />;
 
-export default ServicesPage;
+export default ServicesList;
