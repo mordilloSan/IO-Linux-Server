@@ -73,14 +73,16 @@ const UpdateList: React.FC<Props> = ({
                 transform: "translateY(-4px)",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
               },
-            }}>
+            }}
+          >
             <CardContent>
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
                   mb: 3,
-                }}>
+                }}
+              >
                 <Typography
                   variant="h6"
                   sx={{
@@ -88,7 +90,8 @@ const UpdateList: React.FC<Props> = ({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     maxWidth: "90%", // or a specific px/em width
-                  }}>
+                  }}
+                >
                   {update.summary}
                 </Typography>
               </Box>
@@ -102,7 +105,8 @@ const UpdateList: React.FC<Props> = ({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   maxWidth: "90%", // or a specific px/em width
-                }}>
+                }}
+              >
                 Package: {update.package_id}
               </Typography>
 
@@ -115,7 +119,8 @@ const UpdateList: React.FC<Props> = ({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   maxWidth: "90%", // or a specific px/em width
-                }}>
+                }}
+              >
                 Version: {update.version}
               </Typography>
 
@@ -126,7 +131,8 @@ const UpdateList: React.FC<Props> = ({
                   gap: 3,
                   mt: 4,
                   mb: -2,
-                }}>
+                }}
+              >
                 <Chip
                   label="View Changelog"
                   size="small"

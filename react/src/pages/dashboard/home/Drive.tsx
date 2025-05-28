@@ -1,4 +1,4 @@
-import { Box, Typography, Alert, Divider } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
@@ -29,7 +29,7 @@ interface DriveInfo {
 }
 
 function getConnectionStatus(
-  drive: DriveInfo | undefined
+  drive: DriveInfo | undefined,
 ): "online" | "warning" | "error" {
   if (!drive) return "warning";
   if (drive.smartError) return "error";

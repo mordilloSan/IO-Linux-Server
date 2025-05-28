@@ -1,4 +1,9 @@
-import React, { useState } from "react";
+import {
+  RestartAlt,
+  StopCircle,
+  Terminal,
+  ExpandMore,
+} from "@mui/icons-material";
 import {
   Box,
   Table,
@@ -12,13 +17,8 @@ import {
   Tooltip,
   Collapse,
 } from "@mui/material";
-import {
-  RestartAlt,
-  StopCircle,
-  Terminal,
-  ExpandMore,
-} from "@mui/icons-material";
 import { motion } from "framer-motion";
+import React, { useState } from "react";
 
 export interface Service {
   name: string;
@@ -48,7 +48,7 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
   const filtered = serviceList.filter(
     (s) =>
       s.name.toLowerCase().includes(search.toLowerCase()) ||
-      (s.description?.toLowerCase().includes(search.toLowerCase()) ?? false)
+      (s.description?.toLowerCase().includes(search.toLowerCase()) ?? false),
   );
 
   return (
@@ -108,7 +108,8 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                     <Tooltip title="View logs">
                       <IconButton
                         size="small"
-                        onClick={() => onViewLogs(service)}>
+                        onClick={() => onViewLogs(service)}
+                      >
                         <Terminal fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -117,14 +118,16 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                         <Tooltip title="Restart">
                           <IconButton
                             size="small"
-                            onClick={() => onRestart(service)}>
+                            onClick={() => onRestart(service)}
+                          >
                             <RestartAlt fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Stop">
                           <IconButton
                             size="small"
-                            onClick={() => onStop(service)}>
+                            onClick={() => onStop(service)}
+                          >
                             <StopCircle fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -136,9 +139,10 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                       size="small"
                       onClick={() =>
                         setExpanded(
-                          expanded === service.name ? null : service.name
+                          expanded === service.name ? null : service.name,
                         )
-                      }>
+                      }
+                    >
                       <ExpandMore
                         style={{
                           transform:
@@ -154,11 +158,13 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                 <TableRow>
                   <TableCell
                     style={{ paddingBottom: 0, paddingTop: 0 }}
-                    colSpan={7}>
+                    colSpan={7}
+                  >
                     <Collapse
                       in={expanded === service.name}
                       timeout="auto"
-                      unmountOnExit>
+                      unmountOnExit
+                    >
                       <Box
                         component={motion.div}
                         initial={{ opacity: 0, y: -10 }}
@@ -167,7 +173,8 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
                           margin: 2,
                           borderRadius: 2,
                           p: 2,
-                        }}>
+                        }}
+                      >
                         <b>Name:</b> {service.name}
                         <br />
                         <b>Description:</b> {service.description || "-"}

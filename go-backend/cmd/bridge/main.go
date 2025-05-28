@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"go-backend/cmd/bridge/cleanup"
@@ -8,28 +9,35 @@ import (
 	"go-backend/cmd/bridge/system"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
+	"io"
 	"net"
 	"os"
+	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// Request represents the standard JSON request format sent to both built-in handlers and external helpers.
 type Request struct {
 	Type    string   `json:"type"`
 	Command string   `json:"command"`
 	Args    []string `json:"args,omitempty"`
 }
 
+// Response represents the standard JSON response returned by both built-in handlers and helpers.
 type Response struct {
 	Status string      `json:"status"`
 	Output interface{} `json:"output,omitempty"`
 	Error  string      `json:"error,omitempty"`
 }
 
-// Handler function signature for all commands
+// HandlerFunc is the function signature for all built-in command handlers.
 type HandlerFunc func(args []string) (interface{}, error)
+
+// ---- Built-in Handler Registration ----
 
 // -- D-Bus Handlers --
 var dbusHandlers = map[string]HandlerFunc{
@@ -120,7 +128,7 @@ var dbusHandlers = map[string]HandlerFunc{
 	},
 }
 
-// -- Control Handlers (example, you can extend) --
+// -- Control Handlers --
 var controlHandlers = map[string]HandlerFunc{
 	"shutdown": func(args []string) (interface{}, error) {
 		logger.Info.Println("Received shutdown command, exiting bridge")
@@ -130,9 +138,9 @@ var controlHandlers = map[string]HandlerFunc{
 		}()
 		return "Bridge shutting down", nil
 	},
-	// Add more as needed...
 }
 
+// -- System Handlers --
 var systemHandlers = map[string]HandlerFunc{
 	"get_drive_info": func(args []string) (interface{}, error) {
 		return system.FetchDriveInfo()
@@ -151,11 +159,19 @@ var systemHandlers = map[string]HandlerFunc{
 	},
 }
 
-// -- Handler groups by type --
+// -- Handler groups by type (built-in, for backwards compatibility) --
 var handlersByType = map[string]map[string]HandlerFunc{
 	"dbus":    dbusHandlers,
 	"control": controlHandlers,
 	"system":  systemHandlers,
+}
+
+// modulesDir returns the modules directory, overridable via env for flexibility.
+func modulesDir() string {
+	if val := os.Getenv("LINUXIO_MODULES_DIR"); val != "" {
+		return val
+	}
+	return "/usr/lib/linuxio/modules"
 }
 
 func main() {
@@ -214,6 +230,7 @@ func main() {
 	}
 }
 
+// createAndOwnSocket creates a unix socket at socketPath, ensures only the target user can access it.
 func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, error) {
 	u, err := user.Lookup(username)
 	if err != nil {
@@ -242,6 +259,8 @@ func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, er
 	return listener, uid, gid, nil
 }
 
+// handleConnection processes incoming bridge requests.
+// If the command is not built-in, dispatches to an external helper binary in the modules directory.
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	decoder := json.NewDecoder(conn)
@@ -256,32 +275,103 @@ func handleConnection(conn net.Conn) {
 
 	logger.Info.Printf("➡️ Received request: type=%s, command=%s, args=%v", req.Type, req.Command, req.Args)
 
+	// Try built-in handler
 	group, found := handlersByType[req.Type]
-	if !found {
-		logger.Warning.Printf("❌ Unknown request type: %s", req.Type)
-		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("invalid type: %s", req.Type)})
-		return
-	}
-
-	handler, found := group[req.Command]
-	if !found {
-		logger.Warning.Printf("❌ Unknown command for type %s: %s", req.Type, req.Command)
-		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("unknown command: %s", req.Command)})
-		return
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error.Printf("🔥 Panic in %s command handler: %v", req.Type, r)
-			_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("panic: %v", r)})
+	if found {
+		handler, found := group[req.Command]
+		if found {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error.Printf("🔥 Panic in %s command handler: %v", req.Type, r)
+					_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("panic: %v", r)})
+				}
+			}()
+			out, err := handler(req.Args)
+			if err == nil {
+				_ = encoder.Encode(Response{Status: "ok", Output: out})
+				return
+			}
+			logger.Error.Printf("❌ %s %s failed: %v", req.Type, req.Command, err)
+			_ = encoder.Encode(Response{Status: "error", Error: err.Error()})
+			return
 		}
-	}()
+	}
 
-	out, err := handler(req.Args)
-	if err == nil {
-		_ = encoder.Encode(Response{Status: "ok", Output: out})
+	// Fallback: try running external helper in modulesDir (modular extension point)
+	helperPath := filepath.Join(modulesDir(), fmt.Sprintf("%s_%s", req.Type, req.Command))
+	info, err := os.Stat(helperPath)
+	if err == nil && !info.IsDir() && info.Mode()&0111 != 0 {
+		logger.Info.Printf("🔎 Dispatching to helper: %s", helperPath)
+		runHelper(helperPath, req, encoder)
 		return
 	}
-	logger.Error.Printf("❌ %s %s failed: %v", req.Type, req.Command, err)
-	_ = encoder.Encode(Response{Status: "error", Error: err.Error()})
+
+	logger.Warning.Printf("❌ Unknown command for type %s: %s", req.Type, req.Command)
+	_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("unknown command: %s", req.Command)})
 }
+
+// runHelper executes an external helper script or binary, passing the entire Request as JSON on stdin,
+// and expects a JSON Response on stdout.
+//
+// If the helper fails, its stderr output is included in the error response for diagnostics.
+// Malformed output is logged for troubleshooting.
+func runHelper(path string, req Request, encoder *json.Encoder) {
+	inputBytes, _ := json.Marshal(req)
+
+	cmd := exec.Command(path)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		_ = encoder.Encode(Response{Status: "error", Error: "failed to open stdin for helper"})
+		return
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		_ = encoder.Encode(Response{Status: "error", Error: "failed to open stdout for helper"})
+		return
+	}
+
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf // Capture stderr for debug/error reporting
+
+	if err := cmd.Start(); err != nil {
+		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("failed to start helper: %v", err)})
+		return
+	}
+	_, _ = stdin.Write(inputBytes)
+	_ = stdin.Close()
+
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	select {
+	case <-time.After(10 * time.Second):
+		_ = cmd.Process.Kill()
+		_ = encoder.Encode(Response{Status: "error", Error: "helper timed out"})
+		return
+	case err := <-done:
+		if err != nil {
+			_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("helper exited with error: %s", stderrBuf.String())})
+			return
+		}
+	}
+
+	outBytes, _ := io.ReadAll(stdout)
+	var resp Response
+	if err := json.Unmarshal(outBytes, &resp); err != nil {
+		logger.Error.Printf("Helper output (malformed JSON): %s", string(outBytes))
+		_ = encoder.Encode(Response{Status: "error", Error: "invalid JSON from helper"})
+		return
+	}
+	_ = encoder.Encode(resp)
+}
+
+/*
+Auto-docs & Contributor note:
+
+- To add a new bridge extension, drop an executable into the modules directory (default /usr/lib/linuxio/modules or override with LINUXIO_MODULES_DIR env).
+- Name helpers as <type>_<command> (e.g., system_myfeature), chmod +x.
+- Helper receives full Request JSON on stdin, must return a Response JSON on stdout.
+- Example helper input: {"type":"system","command":"myfeature","args":["foo"]}
+- Example helper output: {"status":"ok", "output":{...}}, or {"status":"error","error":"explanation"}
+- stderr from helpers is logged and returned on error for troubleshooting.
+*/

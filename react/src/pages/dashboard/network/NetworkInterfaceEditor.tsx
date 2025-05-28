@@ -1,5 +1,6 @@
-import React from "react";
 import { Box, Button, Collapse, TextField } from "@mui/material";
+import React from "react";
+
 import { NetworkInterface } from "./NetworkInterfaceList";
 
 interface Props {

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 
 import NetworkGraph from "./NetworkGraph";
+
 import GeneralCard from "@/components/cards/GeneralCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
@@ -47,7 +48,7 @@ const NetworkInterfacesCard: React.FC = () => {
     (iface) =>
       !iface.name.startsWith("veth") &&
       !iface.name.startsWith("docker") &&
-      iface.name !== "lo"
+      iface.name !== "lo",
   );
 
   useEffect(() => {
@@ -62,7 +63,7 @@ const NetworkInterfacesCard: React.FC = () => {
   }, [filteredInterfaces, selected]);
 
   const selectedInterface = filteredInterfaces.find(
-    (iface) => iface.name === selected
+    (iface) => iface.name === selected,
   );
 
   useEffect(() => {
