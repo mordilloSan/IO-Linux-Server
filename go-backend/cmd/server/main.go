@@ -8,6 +8,7 @@ import (
 	"go-backend/internal/config"
 	"go-backend/internal/docker"
 	"go-backend/internal/logger"
+	"go-backend/internal/network"
 	"go-backend/internal/power"
 	"go-backend/internal/services"
 	"go-backend/internal/session"
@@ -69,6 +70,7 @@ func main() {
 	system.RegisterSystemRoutes(router)
 	update.RegisterUpdateRoutes(router)
 	services.RegisterServiceRoutes(router)
+	network.RegisterNetworkRoutes(router)
 	docker.RegisterDockerRoutes(router)
 	docker.RegisterDockerComposeRoutes(router)
 	config.RegisterThemeRoutes(router)

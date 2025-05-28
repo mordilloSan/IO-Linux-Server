@@ -3,6 +3,7 @@ package dbus
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -227,4 +228,76 @@ func GetNetworkInfo() ([]NMInterfaceInfo, error) {
 	})
 
 	return results, err
+}
+
+func SetDNS(iface string, dns []string) error {
+	// Use nmcli for simplicity (you can D-Bus it if you prefer)
+	dnsArg := ""
+	for i, d := range dns {
+		if i > 0 {
+			dnsArg += ","
+		}
+		dnsArg += d
+	}
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.dns", dnsArg)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	// Apply
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetGateway(iface, gateway string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.gateway", gateway)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetIPv4DHCP(iface string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.method", "auto")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetIPv4Static(iface, addressCIDR string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.addresses", addressCIDR, "ipv4.method", "manual")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetIPv6DHCP(iface string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv6.method", "auto")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetIPv6Static(iface, addressCIDR string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv6.addresses", addressCIDR, "ipv6.method", "manual")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
+}
+
+func SetMTU(iface, mtu string) error {
+	cmd := exec.Command("nmcli", "con", "mod", iface, "802-3-ethernet.mtu", mtu)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("nmcli", "con", "up", iface)
+	return cmd.Run()
 }

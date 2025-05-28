@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/user"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -20,20 +21,122 @@ type Request struct {
 	Args    []string `json:"args,omitempty"`
 }
 
-// Output is any Go value, not a string!
 type Response struct {
 	Status string      `json:"status"`
 	Output interface{} `json:"output,omitempty"`
 	Error  string      `json:"error,omitempty"`
 }
 
-type BridgeHealthRequest struct {
-	Type    string `json:"type"`    // e.g., "healthcheck" or "validate"
-	Session string `json:"session"` // sessionID
+// Handler function signature for all commands
+type HandlerFunc func(args []string) (interface{}, error)
+
+// -- D-Bus Handlers --
+var dbusHandlers = map[string]HandlerFunc{
+	"Reboot":   func(args []string) (interface{}, error) { return nil, dbus.CallLogin1Action("Reboot") },
+	"PowerOff": func(args []string) (interface{}, error) { return nil, dbus.CallLogin1Action("PowerOff") },
+	"GetUpdates": func(args []string) (interface{}, error) {
+		result, err := dbus.GetUpdatesWithDetails()
+		if result == nil {
+			result = []dbus.UpdateDetail{}
+		}
+		return result, err
+	},
+	"InstallPackage": func(args []string) (interface{}, error) {
+		if len(args) == 0 {
+			return nil, fmt.Errorf("missing package ID")
+		}
+		return nil, dbus.InstallPackage(args[0])
+	},
+	"ListServices": func(args []string) (interface{}, error) {
+		return dbus.ListServices()
+	},
+	"GetServiceInfo": func(args []string) (interface{}, error) {
+		if len(args) == 0 {
+			return nil, fmt.Errorf("missing service name")
+		}
+		return dbus.GetServiceInfo(args[0])
+	},
+	"StartService":   func(args []string) (interface{}, error) { return nil, dbus.StartService(args[0]) },
+	"StopService":    func(args []string) (interface{}, error) { return nil, dbus.StopService(args[0]) },
+	"RestartService": func(args []string) (interface{}, error) { return nil, dbus.RestartService(args[0]) },
+	"ReloadService":  func(args []string) (interface{}, error) { return nil, dbus.ReloadService(args[0]) },
+	"EnableService":  func(args []string) (interface{}, error) { return nil, dbus.EnableService(args[0]) },
+	"DisableService": func(args []string) (interface{}, error) { return nil, dbus.DisableService(args[0]) },
+	"MaskService":    func(args []string) (interface{}, error) { return nil, dbus.MaskService(args[0]) },
+	"UnmaskService":  func(args []string) (interface{}, error) { return nil, dbus.UnmaskService(args[0]) },
+	"GetNetworkInfo": func(args []string) (interface{}, error) { return dbus.GetNetworkInfo() },
+	"SetDNS": func(args []string) (interface{}, error) {
+		if len(args) < 2 {
+			return nil, fmt.Errorf("SetDNS requires interface and at least one DNS server")
+		}
+		return nil, dbus.SetDNS(args[0], args[1:])
+	},
+	"SetGateway": func(args []string) (interface{}, error) {
+		if len(args) != 2 {
+			return nil, fmt.Errorf("SetGateway requires interface and gateway address")
+		}
+		return nil, dbus.SetGateway(args[0], args[1])
+	},
+	"SetIPv4": func(args []string) (interface{}, error) {
+		if len(args) < 2 {
+			return nil, fmt.Errorf("SetIPv4 requires interface and method (dhcp/static)")
+		}
+		iface, method := args[0], strings.ToLower(args[1])
+		switch method {
+		case "dhcp":
+			return nil, dbus.SetIPv4DHCP(iface)
+		case "static":
+			if len(args) != 3 {
+				return nil, fmt.Errorf("SetIPv4 static requires addressCIDR")
+			}
+			return nil, dbus.SetIPv4Static(iface, args[2])
+		default:
+			return nil, fmt.Errorf("SetIPv4 method must be 'dhcp' or 'static'")
+		}
+	},
+	"SetIPv6": func(args []string) (interface{}, error) {
+		if len(args) < 2 {
+			return nil, fmt.Errorf("SetIPv6 requires interface and method (dhcp/static)")
+		}
+		iface, method := args[0], strings.ToLower(args[1])
+		switch method {
+		case "dhcp":
+			return nil, dbus.SetIPv6DHCP(iface)
+		case "static":
+			if len(args) != 3 {
+				return nil, fmt.Errorf("SetIPv6 static requires addressCIDR")
+			}
+			return nil, dbus.SetIPv6Static(iface, args[2])
+		default:
+			return nil, fmt.Errorf("SetIPv6 method must be 'dhcp' or 'static'")
+		}
+	},
+	"SetMTU": func(args []string) (interface{}, error) {
+		if len(args) != 2 {
+			return nil, fmt.Errorf("SetMTU requires interface and mtu value")
+		}
+		return nil, dbus.SetMTU(args[0], args[1])
+	},
 }
-type BridgeHealthResponse struct {
-	Status  string `json:"status"` // "ok" or "invalid"
-	Message string `json:"message,omitempty"`
+
+// -- Control Handlers (example, you can extend) --
+var controlHandlers = map[string]HandlerFunc{
+	"shutdown": func(args []string) (interface{}, error) {
+		logger.Info.Println("Received shutdown command, exiting bridge")
+		go func() {
+			time.Sleep(200 * time.Millisecond)
+			os.Exit(0)
+		}()
+		return "Bridge shutting down", nil
+	},
+	// Add more as needed...
+}
+
+// -- Handler groups by type --
+var handlersByType = map[string]map[string]HandlerFunc{
+	"dbus":    dbusHandlers,
+	"control": controlHandlers,
+	// "system": systemHandlers, // for future
 }
 
 func main() {
@@ -63,7 +166,6 @@ func main() {
 	}()
 	logger.Info.Printf("Listening succeeded.")
 	logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
 
 	go func() {
@@ -91,11 +193,9 @@ func main() {
 		logger.Info.Printf("[bridge] Accepted new connection on bridge socket for session %s", sessionID)
 		go handleConnection(conn)
 	}
-
 }
 
 func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, error) {
-	// Lookup user
 	u, err := user.Lookup(username)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("failed to lookup user %s: %w", username, err)
@@ -123,18 +223,6 @@ func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, er
 	return listener, uid, gid, nil
 }
 
-func handleInternalCommand(req Request, enc *json.Encoder) {
-	logger.Info.Printf("🔒 Handling internal command: %s\n", req.Command)
-	switch req.Command {
-	case "shutdown":
-		logger.Info.Println("Received shutdown command, exiting bridge")
-		_ = enc.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
-		os.Exit(0)
-	default:
-		_ = enc.Encode(Response{Status: "error", Error: "unknown internal command"})
-	}
-}
-
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	decoder := json.NewDecoder(conn)
@@ -147,89 +235,34 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	if req.Type == "control" && req.Command == "shutdown" {
-		logger.Info.Println("Received shutdown command, exiting bridge")
-		_ = encoder.Encode(Response{Status: "ok", Output: "Bridge shutting down"})
-		os.Exit(0)
-	}
-
 	logger.Info.Printf("➡️ Received request: type=%s, command=%s, args=%v", req.Type, req.Command, req.Args)
 
-	switch req.Type {
-	case "dbus":
-		handleDbusCommand(req, encoder)
-	case "control":
-		handleInternalCommand(req, encoder)
-	default:
+	group, found := handlersByType[req.Type]
+	if !found {
 		logger.Warning.Printf("❌ Unknown request type: %s", req.Type)
-		_ = encoder.Encode(Response{Status: "error", Error: "invalid type"})
-	}
-}
-
-// Only change here: return Go value directly in Output
-func handleDbusCommand(req Request, enc *json.Encoder) {
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error.Printf("🔥 Panic in D-Bus command handler: %v", r)
-			_ = enc.Encode(Response{Status: "error", Error: fmt.Sprintf("panic: %v", r)})
-		}
-	}()
-	logger.Info.Printf("🔒 Handling D-Bus command: %s\n", req.Command)
-	var err error
-	var out interface{}
-
-	switch req.Command {
-	case "Reboot", "PowerOff":
-		err = dbus.CallLogin1Action(req.Command)
-	case "GetUpdates":
-		var result []dbus.UpdateDetail
-		result, err = dbus.GetUpdatesWithDetails()
-		// Defensive: if result is nil, return empty slice, not null!
-		if result == nil {
-			result = make([]dbus.UpdateDetail, 0)
-		}
-		out = result
-	case "InstallPackage":
-		if len(req.Args) == 0 {
-			_ = enc.Encode(Response{Status: "error", Error: "missing package ID"})
-			return
-		}
-		err = dbus.InstallPackage(req.Args[0])
-	case "ListServices":
-		out, err = dbus.ListServices()
-	case "GetServiceInfo":
-		if len(req.Args) == 0 {
-			_ = enc.Encode(Response{Status: "error", Error: "missing service name"})
-			return
-		}
-		out, err = dbus.GetServiceInfo(req.Args[0])
-	case "StartService":
-		err = dbus.StartService(req.Args[0])
-	case "StopService":
-		err = dbus.StopService(req.Args[0])
-	case "RestartService":
-		err = dbus.RestartService(req.Args[0])
-	case "ReloadService":
-		err = dbus.ReloadService(req.Args[0])
-	case "EnableService":
-		err = dbus.EnableService(req.Args[0])
-	case "DisableService":
-		err = dbus.DisableService(req.Args[0])
-	case "MaskService":
-		err = dbus.MaskService(req.Args[0])
-	case "UnmaskService":
-		err = dbus.UnmaskService(req.Args[0])
-	case "GetNetworkInfo":
-		out, err = dbus.GetNetworkInfo()
-	default:
-		err = fmt.Errorf("unknown dbus command: %s", req.Command)
-	}
-
-	// --- Response logic ---
-	if err == nil {
-		_ = enc.Encode(Response{Status: "ok", Output: out})
+		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("invalid type: %s", req.Type)})
 		return
 	}
-	logger.Error.Printf("❌ D-Bus %s failed: %v", req.Command, err)
-	_ = enc.Encode(Response{Status: "error", Error: err.Error()})
+
+	handler, found := group[req.Command]
+	if !found {
+		logger.Warning.Printf("❌ Unknown command for type %s: %s", req.Type, req.Command)
+		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("unknown command: %s", req.Command)})
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error.Printf("🔥 Panic in %s command handler: %v", req.Type, r)
+			_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("panic: %v", r)})
+		}
+	}()
+
+	out, err := handler(req.Args)
+	if err == nil {
+		_ = encoder.Encode(Response{Status: "ok", Output: out})
+		return
+	}
+	logger.Error.Printf("❌ %s %s failed: %v", req.Type, req.Command, err)
+	_ = encoder.Encode(Response{Status: "error", Error: err.Error()})
 }

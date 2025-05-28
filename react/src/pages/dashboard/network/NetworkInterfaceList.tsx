@@ -63,9 +63,9 @@ const NetworkInterfaceList = () => {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
 
   const { data: interfaces = [], isLoading } = useQuery<NetworkInterface[]>({
-    queryKey: ["networkInterfaces"],
+    queryKey: ["networkInterfaceList"],
     queryFn: async () => {
-      const res = await axios.get("/system/network");
+      const res = await axios.get("/network/info");
       return res.data;
     },
     select: (data: NetworkInterface[]) =>
@@ -81,10 +81,6 @@ const NetworkInterfaceList = () => {
         })),
     refetchInterval: 1000,
   });
-
-  if (isLoading) {
-    return <ComponentLoader />;
-  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,6 +115,10 @@ const NetworkInterfaceList = () => {
   };
   const theme = useTheme();
   const primaryColor = theme.palette.primary.main;
+
+  if (isLoading) {
+    return <ComponentLoader />;
+  }
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>

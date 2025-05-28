@@ -1,4 +1,3 @@
-// components/network/NetworkInterfaceEditor.tsx
 import React from "react";
 import { Box, Button, Collapse, TextField } from "@mui/material";
 import { NetworkInterface } from "./NetworkInterfaceList";

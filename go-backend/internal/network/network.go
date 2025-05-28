@@ -1,4 +1,4 @@
-package system
+package network
 
 import (
 	"encoding/json"
@@ -9,6 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func RegisterNetworkRoutes(router *gin.Engine) {
+	system := router.Group("/network")
+	{
+		system.GET("/info", getNetworkInfo)
+
+	}
+}
 
 func getNetworkInfo(c *gin.Context) {
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)

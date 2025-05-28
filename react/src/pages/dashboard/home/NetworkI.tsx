@@ -16,13 +16,14 @@ interface InterfaceStats {
   rx_speed: number;
   tx_speed: number;
   speed: string;
+  state: number;
 }
 
 const NetworkInterfacesCard: React.FC = () => {
   const { data: interfaces = [], isLoading } = useQuery<InterfaceStats[]>({
     queryKey: ["networkInterfaces"],
     queryFn: async () => {
-      const res = await axios.get("/system/network");
+      const res = await axios.get("/network/info");
       return res.data.map((iface: any) => ({
         ...iface,
         ipv4: iface.ipv4 ?? [],
@@ -132,9 +133,7 @@ const NetworkInterfacesCard: React.FC = () => {
         setHistory([]);
       }}
       connectionStatus={
-        selectedInterface &&
-        Array.isArray(selectedInterface.ipv4) &&
-        selectedInterface.ipv4.length > 0
+        selectedInterface && selectedInterface.state === 100
           ? "online"
           : "offline"
       }
