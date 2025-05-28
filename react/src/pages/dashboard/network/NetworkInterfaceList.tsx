@@ -10,15 +10,16 @@ import {
   Fade,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useState, Suspense } from "react";
-
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@mui/material/styles";
 import FrostedCard from "@/components/cards/RootCard";
 import ComponentLoader from "@/components/loaders/ComponentLoader";
 import axios from "@/utils/axios";
 
 export interface NetworkInterface {
   name: string;
-  type: string; // ethernet, wifi, loopback, etc.
+  type: string;
   mac: string;
   mtu: number;
   speed: string;
@@ -31,9 +32,10 @@ export interface NetworkInterface {
 }
 
 const getStatusColor = (state: number) => {
-  if (state === 100) return "success.main"; // activated
-  if (state === 30 || state === 20) return "warning.main"; // connecting/disconnected
-  return "error.main";
+  if (state === 100) return "success.main";
+  if (state === 30) return "warning.main";
+  if (state === 20) return "error.main";
+  return "grey.500";
 };
 
 const getStatusTooltip = (state: number) => {
@@ -57,13 +59,45 @@ const NetworkInterfaceList = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
 
+  const { data: interfaces = [], isLoading } = useQuery<NetworkInterface[]>({
+    queryKey: ["networkInterfaces"],
+    queryFn: async () => {
+      const res = await axios.get("/system/network");
+      return res.data;
+    },
+    select: (data: NetworkInterface[]) =>
+      data
+        .filter((iface) => !iface.name.startsWith("veth"))
+        .map((iface) => ({
+          ...iface,
+          type: iface.name.startsWith("wl")
+            ? "wifi"
+            : iface.name.startsWith("lo")
+              ? "loopback"
+              : "ethernet",
+        })),
+    refetchInterval: 1000,
+  });
+
+  if (isLoading) {
+    return <ComponentLoader />;
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleToggle = (iface: NetworkInterface) => {
     if (expanded === iface.name) {
       setExpanded(null);
     } else {
       setEditForm({
-        ipv4: iface.ipv4.join(", "),
-        ipv6: iface.ipv6.join(", "),
+        ipv4: Array.isArray(iface.ipv4) ? iface.ipv4.join(", ") : "",
+        ipv6: Array.isArray(iface.ipv6) ? iface.ipv6.join(", ") : "",
         dns: "",
         gateway: "",
         mtu: iface.mtu.toString(),
@@ -80,162 +114,168 @@ const NetworkInterfaceList = () => {
     console.log("Save", iface.name, editForm);
     setExpanded(null);
   };
-
-  const { data: interfaces = [] } = useQuery<NetworkInterface[]>({
-    queryKey: ["networkInterfaces"],
-    queryFn: async () => {
-      const res = await axios.get("/system/network");
-      return res.data.map((iface: any) => ({
-        ...iface,
-        type: iface.name.startsWith("wl")
-          ? "wifi"
-          : iface.name.startsWith("lo")
-            ? "loopback"
-            : "ethernet",
-        // optional: convert state from number to string
-        state: iface.state === 100 ? "up" : "down",
-      }));
-    },
-
-    refetchInterval: 1000,
-  });
-
+  const theme = useTheme();
+  const primaryColor = theme.palette.primary.main;
   return (
-    <Suspense fallback={<ComponentLoader />}>
-      <Box>
-        <Typography variant="h4" sx={{ mb: 2 }}>
-          Network Interfaces
-        </Typography>
-        <Grid container spacing={2}>
-          {interfaces.map((iface) => (
-            <Grid key={iface.name} size={{ xs: 6, sm: 4, md: 4, lg: 3, xl: 2 }}>
-              <FrostedCard
-                sx={{
-                  p: 2,
-                  position: "relative",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  cursor: "pointer",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-                  },
-                }}>
-                <Tooltip
-                  title={getStatusTooltip(iface.state)}
-                  placement="top"
-                  arrow
-                  slots={{ transition: Fade }}
-                  slotProps={{ transition: { timeout: 300 } }}>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 16,
-                      right: 8,
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      backgroundColor: getStatusColor(iface.state),
-                      cursor: "default",
-                    }}
-                  />
-                </Tooltip>
+    <Box>
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Network Interfaces
+      </Typography>
+      <Grid container spacing={2}>
+        <AnimatePresence>
+          {interfaces.map((iface) =>
+            expanded && expanded !== iface.name ? null : (
+              <Grid
+                key={iface.name}
+                size={{ xs: 6, sm: 4, md: 4, lg: 3, xl: 2 }}
+                component={motion.div}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}>
+                <FrostedCard
+                  sx={{
+                    p: 2,
+                    position: "relative",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    cursor: "pointer",
+                    ...(expanded !== iface.name && {
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                      },
+                    }),
+                  }}>
+                  <Tooltip
+                    title={getStatusTooltip(iface.state)}
+                    placement="top"
+                    arrow
+                    slots={{ transition: Fade }}
+                    slotProps={{ transition: { timeout: 300 } }}>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 16,
+                        right: 8,
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: getStatusColor(iface.state),
+                      }}
+                    />
+                  </Tooltip>
 
-                <Box
-                  display="flex"
-                  alignItems="flex-start"
-                  onClick={() => handleToggle(iface)}>
                   <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      mr: 1.5,
-                    }}>
-                    <Icon
-                      icon={getInterfaceIcon(iface.type)}
-                      width={36}
-                      height={36}
-                    />
-                  </Box>
-                  <Box flexGrow={1}>
-                    <Typography variant="subtitle1" fontWeight={600} noWrap>
-                      {iface.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      IPv4: {iface.ipv4.join(", ")}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      MAC: {iface.mac}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      Link Speed: {iface.speed} ({iface.duplex})
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      RX/s: {formatBps(iface.rx_speed)} | TX/s:{" "}
-                      {formatBps(iface.tx_speed)}
-                    </Typography>
-                  </Box>
-                </Box>
+                    display="flex"
+                    alignItems="flex-start"
+                    onClick={() => handleToggle(iface)}>
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        mr: 1.5,
+                      }}>
+                      <Icon
+                        icon={getInterfaceIcon(iface.type)}
+                        width={36}
+                        height={36}
+                        color={primaryColor}
+                      />
+                    </Box>
+                    <Box flexGrow={1}>
+                      <Typography variant="subtitle1" fontWeight={600} noWrap>
+                        {iface.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        IPv4:{" "}
+                        {Array.isArray(iface.ipv4)
+                          ? iface.ipv4.join(", ")
+                          : "N/A"}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        MAC: {iface.mac}
+                      </Typography>
 
-                <Collapse
-                  in={expanded === iface.name}
-                  timeout="auto"
-                  unmountOnExit>
-                  <Box mt={2}>
-                    <TextField
-                      fullWidth
-                      label="IPv4"
-                      value={editForm.ipv4 || ""}
-                      onChange={(e) => handleChange("ipv4", e.target.value)}
-                      sx={{ mb: 1 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="IPv6"
-                      value={editForm.ipv6 || ""}
-                      onChange={(e) => handleChange("ipv6", e.target.value)}
-                      sx={{ mb: 1 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="DNS"
-                      value={editForm.dns || ""}
-                      onChange={(e) => handleChange("dns", e.target.value)}
-                      sx={{ mb: 1 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Gateway"
-                      value={editForm.gateway || ""}
-                      onChange={(e) => handleChange("gateway", e.target.value)}
-                      sx={{ mb: 1 }}
-                    />
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="MTU"
-                      value={editForm.mtu || ""}
-                      onChange={(e) => handleChange("mtu", e.target.value)}
-                      sx={{ mb: 2 }}
-                    />
-                    <Box display="flex" justifyContent="flex-end" gap={1}>
-                      <Button onClick={() => setExpanded(null)}>Cancel</Button>
-                      <Button
-                        variant="contained"
-                        onClick={() => handleSave(iface)}>
-                        Save
-                      </Button>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {iface.speed === "unknown" ||
+                        iface.speed.startsWith("-1")
+                          ? "No Carrier"
+                          : `Link Speed: ${iface.speed}${iface.duplex !== "unknown" ? ` (${iface.duplex})` : ""}`}
+                      </Typography>
+
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        RX/s: {formatBps(iface.rx_speed)} | TX/s:{" "}
+                        {formatBps(iface.tx_speed)}
+                      </Typography>
                     </Box>
                   </Box>
-                </Collapse>
-              </FrostedCard>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    </Suspense>
+
+                  <Collapse
+                    in={expanded === iface.name}
+                    timeout="auto"
+                    unmountOnExit>
+                    <Box mt={2}>
+                      <TextField
+                        fullWidth
+                        label="IPv4"
+                        value={editForm.ipv4 || ""}
+                        onChange={(e) => handleChange("ipv4", e.target.value)}
+                        sx={{ mb: 1 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="IPv6"
+                        value={editForm.ipv6 || ""}
+                        onChange={(e) => handleChange("ipv6", e.target.value)}
+                        sx={{ mb: 1 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="DNS"
+                        value={editForm.dns || ""}
+                        onChange={(e) => handleChange("dns", e.target.value)}
+                        sx={{ mb: 1 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Gateway"
+                        value={editForm.gateway || ""}
+                        onChange={(e) =>
+                          handleChange("gateway", e.target.value)
+                        }
+                        sx={{ mb: 1 }}
+                      />
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="MTU"
+                        value={editForm.mtu || ""}
+                        onChange={(e) => handleChange("mtu", e.target.value)}
+                        sx={{ mb: 2 }}
+                      />
+                      <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Button onClick={() => setExpanded(null)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleSave(iface)}>
+                          Save
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Collapse>
+                </FrostedCard>
+              </Grid>
+            )
+          )}
+        </AnimatePresence>
+      </Grid>
+    </Box>
   );
 };
 
