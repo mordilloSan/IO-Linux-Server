@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -133,10 +135,11 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	}
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	// Only send the password for privileged launches
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
+
 	if privileged && sudoPassword != "" {
 		stdin, err := cmd.StdinPipe()
 		if err != nil {
@@ -168,17 +171,30 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 		StartedAt: time.Now(),
 	}
 
-	go func(sessionID string, cmd *exec.Cmd) {
+	go func(sessionID string, cmd *exec.Cmd, stdoutBuf, stderrBuf *bytes.Buffer) {
+		logger.Info.Printf("[bridge] Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessionID, stdoutBuf.Len(), stderrBuf.Len())
+
 		err := cmd.Wait()
 		processesMu.Lock()
 		defer processesMu.Unlock()
 		delete(processes, sessionID)
+
+		stdout := strings.TrimSpace(stdoutBuf.String())
+		stderr := strings.TrimSpace(stderrBuf.String())
+
+		if stdout != "" {
+			logger.Info.Printf("[bridge] STDOUT for session %s:\n%s", sessionID, stdout)
+		}
+		if stderr != "" {
+			logger.Warning.Printf("[bridge] STDERR for session %s:\n%s", sessionID, stderr)
+		}
+
 		if err != nil {
 			logger.Warning.Printf("[bridge] Bridge for session %s exited with error: %v", sessionID, err)
 		} else {
 			logger.Info.Printf("[bridge] Bridge for session %s exited", sessionID)
 		}
-	}(sessionID, cmd)
+	}(sessionID, cmd, &stdoutBuf, &stderrBuf)
 
 	return nil
 }

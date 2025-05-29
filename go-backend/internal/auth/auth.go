@@ -118,7 +118,7 @@ func loginHandler(c *gin.Context) {
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	logger.Info.Printf("✅ User %s logged in, session ID: %s, privileged: %v", req.Username, sessionID, privileged)
 
-	// 7. Send response
+	// 6. Send response
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})
 }
 

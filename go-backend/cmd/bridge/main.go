@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Request represents the standard JSON request format sent to both built-in handlers and external helpers.
@@ -29,16 +31,15 @@ type Request struct {
 
 // Response represents the standard JSON response returned by both built-in handlers and helpers.
 type Response struct {
-	Status string      `json:"status"`
-	Output interface{} `json:"output,omitempty"`
-	Error  string      `json:"error,omitempty"`
+	Status string `json:"status"`
+	Output any    `json:"output,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
 
 // HandlerFunc is the function signature for all built-in command handlers.
 type HandlerFunc func(args []string) (interface{}, error)
 
 // ---- Built-in Handler Registration ----
-
 // -- D-Bus Handlers --
 var dbusHandlers = map[string]HandlerFunc{
 	"Reboot":   func(args []string) (interface{}, error) { return nil, dbus.CallLogin1Action("Reboot") },
@@ -175,6 +176,7 @@ func modulesDir() string {
 }
 
 func main() {
+
 	env := os.Getenv("GO_ENV")
 	if env == "" {
 		env = "development"
@@ -202,6 +204,7 @@ func main() {
 	logger.Info.Printf("Listening succeeded.")
 	logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
 	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
+	runSelfTestIfDev(env)
 
 	go func() {
 		logger.Info.Printf("[bridge] Starting periodic health check (session: %s)", sessionID)
@@ -217,7 +220,12 @@ func main() {
 		}
 	}()
 
-	cleanup.KillLingeringBridgeStartupProcesses()
+	// When in production, clean up any lingering bridge startup processes.
+	// In production we can kill because all logs are sent to the system journal.
+	// In development, we leave them running for debugging purposes.
+	if env == "production" {
+		cleanup.KillLingeringBridgeStartupProcesses()
+	}
 
 	for {
 		conn, err := listener.Accept()
@@ -225,8 +233,9 @@ func main() {
 			logger.Warning.Printf("⚠️ Accept failed: %v", err)
 			continue
 		}
-		logger.Info.Printf("[bridge] Accepted new connection on bridge socket for session %s", sessionID)
-		go handleConnection(conn)
+		id := uuid.NewString()
+		logger.Debug.Printf("MAIN: spawning handler %s", id)
+		go handleConnection(conn, id)
 	}
 }
 
@@ -261,14 +270,20 @@ func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, er
 
 // handleConnection processes incoming bridge requests.
 // If the command is not built-in, dispatches to an external helper binary in the modules directory.
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, id string) {
+	logger.Debug.Printf("HANDLECONNECTION: [%s] called!", id)
+
 	defer conn.Close()
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
 
 	var req Request
 	if err := decoder.Decode(&req); err != nil {
-		logger.Warning.Printf("❌ Invalid JSON from client: %v", err)
+		if err == io.EOF {
+			logger.Debug.Printf("🔁 [%s] connection closed without data (likely healthcheck probe)", id)
+		} else {
+			logger.Warning.Printf("❌ [%s] invalid JSON from client: %v", id, err)
+		}
 		_ = encoder.Encode(Response{Status: "error", Error: "invalid JSON"})
 		return
 	}
@@ -316,53 +331,113 @@ func handleConnection(conn net.Conn) {
 // If the helper fails, its stderr output is included in the error response for diagnostics.
 // Malformed output is logged for troubleshooting.
 func runHelper(path string, req Request, encoder *json.Encoder) {
+	logger.Debug.Printf("RUNHELPER: called for %s", path)
+
 	inputBytes, _ := json.Marshal(req)
 
 	cmd := exec.Command(path)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		logger.Error.Printf("Helper %s: failed to open stdin: %v", path, err)
 		_ = encoder.Encode(Response{Status: "error", Error: "failed to open stdin for helper"})
 		return
 	}
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		logger.Error.Printf("Helper %s: failed to open stdout: %v", path, err)
 		_ = encoder.Encode(Response{Status: "error", Error: "failed to open stdout for helper"})
 		return
 	}
 
 	var stderrBuf bytes.Buffer
-	cmd.Stderr = &stderrBuf // Capture stderr for debug/error reporting
+	cmd.Stderr = &stderrBuf
 
 	if err := cmd.Start(); err != nil {
+		logger.Error.Printf("Helper %s: failed to start: %v", path, err)
 		_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("failed to start helper: %v", err)})
 		return
 	}
-	_, _ = stdin.Write(inputBytes)
-	_ = stdin.Close()
 
+	// Write input
+	go func() {
+		defer stdin.Close()
+		_, _ = stdin.Write(inputBytes)
+	}()
+
+	// Read stdout concurrently
+	var outBytes []byte
+	stdoutDone := make(chan error, 1)
+	go func() {
+		var readErr error
+		outBytes, readErr = io.ReadAll(stdout)
+		stdoutDone <- readErr
+	}()
+
+	// Wait for process and output
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
+
 	select {
 	case <-time.After(10 * time.Second):
 		_ = cmd.Process.Kill()
+		logger.Error.Printf("Helper %s timed out.\n  STDOUT: %s\n  STDERR: %s", path, string(outBytes), stderrBuf.String())
 		_ = encoder.Encode(Response{Status: "error", Error: "helper timed out"})
 		return
+
 	case err := <-done:
+		<-stdoutDone // ensure output is fully read
+		logger.Debug.Printf("Helper %s finished. Exit error: %v\n  STDOUT: %s\n  STDERR: %s",
+			path, err, string(outBytes), stderrBuf.String())
 		if err != nil {
 			_ = encoder.Encode(Response{Status: "error", Error: fmt.Sprintf("helper exited with error: %s", stderrBuf.String())})
 			return
 		}
 	}
 
-	outBytes, _ := io.ReadAll(stdout)
+	// DEBUG: decode response
+	logger.Debug.Printf("DEBUG: About to decode helper output:\n=====\n%s\n=====", string(outBytes))
+
 	var resp Response
 	if err := json.Unmarshal(outBytes, &resp); err != nil {
-		logger.Error.Printf("Helper output (malformed JSON): %s", string(outBytes))
+		logger.Info.Printf("Helper %s output (malformed JSON):\n  STDOUT: %s\n  STDERR: %s", path, string(outBytes), stderrBuf.String())
 		_ = encoder.Encode(Response{Status: "error", Error: "invalid JSON from helper"})
 		return
 	}
+
 	_ = encoder.Encode(resp)
+}
+
+func runSelfTestIfDev(env string) {
+	if env != "development" {
+		return
+	}
+	go func() {
+		logger.Info.Println("🔍 Running bridge self-test for system_teste helper...")
+
+		req := Request{Type: "system", Command: "teste"}
+		var buf bytes.Buffer
+		encoder := json.NewEncoder(&buf)
+
+		runHelper(filepath.Join(modulesDir(), "system_teste"), req, encoder)
+
+		rawJSON := buf.String()
+		logger.Debug.Printf("🧪 Self-test raw JSON output:\n%s", rawJSON)
+
+		var resp Response
+		if err := json.Unmarshal([]byte(rawJSON), &resp); err != nil {
+			logger.Warning.Printf("⚠️  Self-test: failed to decode response from system_teste helper: %v", err)
+			return
+		}
+
+		if resp.Status != "ok" {
+			logger.Warning.Printf("⚠️  Self-test: system_teste returned error: %s", resp.Error)
+		} else {
+			logger.Info.Println("✅ Self-test succeeded. Response:")
+			logger.Info.Println(rawJSON)
+		}
+	}()
 }
 
 /*
