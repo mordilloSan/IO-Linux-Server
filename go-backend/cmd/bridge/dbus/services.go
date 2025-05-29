@@ -1,6 +1,8 @@
 package dbus
 
 import (
+	"fmt"
+	"go-backend/internal/logger"
 	"strings"
 
 	"github.com/godbus/dbus/v5"
@@ -51,6 +53,13 @@ func ListServices() ([]ServiceStatus, error) {
 
 // --- Get detailed info about a single service (robust) ---
 func GetServiceInfo(serviceName string) (map[string]interface{}, error) {
+	serviceName = strings.TrimSpace(serviceName)
+	if serviceName == "" {
+		err := fmt.Errorf("missing service name")
+		logger.Error.Printf("❌ GetServiceInfo failed: %v", err)
+		return nil, err
+	}
+
 	var info map[string]interface{}
 	err := RetryOnceIfClosed(nil, func() error {
 		conn, err := dbus.SystemBus()
@@ -67,29 +76,20 @@ func GetServiceInfo(serviceName string) (map[string]interface{}, error) {
 		unit := conn.Object("org.freedesktop.systemd1", unitPath)
 
 		props := []string{
-			"Id",
-			"Description",
-			"LoadState",
-			"ActiveState",
-			"SubState",
-			"UnitFileState",
-			"FragmentPath",
-			"ActiveEnterTimestamp",
-			"InactiveEnterTimestamp",
+			"Id", "Description", "LoadState", "ActiveState", "SubState",
+			"UnitFileState", "FragmentPath", "ActiveEnterTimestamp", "InactiveEnterTimestamp",
 		}
-		info = map[string]interface{}{}
+		info = make(map[string]interface{})
 		for _, prop := range props {
 			val, err := unit.GetProperty("org.freedesktop.systemd1.Unit." + prop)
 			if err == nil {
 				info[prop] = val.Value()
 			}
 		}
-		val, err := unit.GetProperty("org.freedesktop.systemd1.Service.MainPID")
-		if err == nil {
+		if val, err := unit.GetProperty("org.freedesktop.systemd1.Service.MainPID"); err == nil {
 			info["MainPID"] = val.Value()
 		}
-		val, err = unit.GetProperty("org.freedesktop.systemd1.Service.ExecMainStatus")
-		if err == nil {
+		if val, err := unit.GetProperty("org.freedesktop.systemd1.Service.ExecMainStatus"); err == nil {
 			info["ExecMainStatus"] = val.Value()
 		}
 		return nil

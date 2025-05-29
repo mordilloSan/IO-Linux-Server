@@ -1,22 +1,17 @@
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
-
 import ServiceTable, { Service } from "./ServiceTable";
-
 import axios from "@/utils/axios";
 
-const fetchServices = async (): Promise<Service[]> => {
-  const res = await axios.get("/system/services/status");
-  return res.data;
-};
-
 const ServicesList: React.FC = () => {
-  // 5s refetch for near-realtime, adjust as needed
   const { data, isLoading, isError, error } = useQuery<Service[]>({
     queryKey: ["services"],
-    queryFn: fetchServices,
-    refetchInterval: 5000,
+    queryFn: async () => {
+      const res = await axios.get("/system/services/status");
+      return res.data;
+    },
+    refetchInterval: 2000,
   });
 
   // Handlers - you would implement actual API calls here!

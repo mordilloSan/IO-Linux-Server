@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -231,30 +232,127 @@ func GetNetworkInfo() ([]NMInterfaceInfo, error) {
 }
 
 func SetDNS(iface string, dns []string) error {
-	// Use nmcli for simplicity (you can D-Bus it if you prefer)
-	dnsArg := ""
-	for i, d := range dns {
-		if i > 0 {
-			dnsArg += ","
+	if strings.TrimSpace(iface) == "" || len(dns) == 0 {
+		return fmt.Errorf("SetDNS requires interface and at least one DNS server")
+	}
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("failed to connect to system bus: %w", err)
+	}
+	defer conn.Close()
+
+	nm := conn.Object("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager")
+	var devicePaths []dbus.ObjectPath
+	if err := nm.Call("org.freedesktop.NetworkManager.GetDevices", 0).Store(&devicePaths); err != nil {
+		return fmt.Errorf("GetDevices failed: %w", err)
+	}
+
+	for _, devPath := range devicePaths {
+		dev := conn.Object("org.freedesktop.NetworkManager", devPath)
+		var devIface string
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "Interface").Store(&devIface); err != nil {
+			continue
 		}
-		dnsArg += d
+		if devIface != iface {
+			continue
+		}
+
+		// Get connection associated with device
+		var activeConn dbus.ObjectPath
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "ActiveConnection").Store(&activeConn); err != nil {
+			return fmt.Errorf("failed to get ActiveConnection: %w", err)
+		}
+
+		ac := conn.Object("org.freedesktop.NetworkManager", activeConn)
+		var connPath dbus.ObjectPath
+		if err := ac.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Connection.Active", "Connection").Store(&connPath); err != nil {
+			return fmt.Errorf("failed to get Connection path: %w", err)
+		}
+
+		settingsConn := conn.Object("org.freedesktop.NetworkManager", connPath)
+		var settings map[string]map[string]dbus.Variant
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&settings); err != nil {
+			return fmt.Errorf("failed to get connection settings: %w", err)
+		}
+
+		// Modify DNS
+		ip4Settings := settings["ipv4"]
+		ip4Settings["dns"] = dbus.MakeVariant(dns)
+		ip4Settings["method"] = dbus.MakeVariant("manual")
+		settings["ipv4"] = ip4Settings
+
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.Update", 0, settings).Err; err != nil {
+			return fmt.Errorf("failed to update connection settings: %w", err)
+		}
+
+		return reloadConnection(conn, connPath)
 	}
-	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.dns", dnsArg)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	// Apply
-	cmd = exec.Command("nmcli", "con", "up", iface)
-	return cmd.Run()
+
+	return fmt.Errorf("interface %s not found", iface)
 }
 
 func SetGateway(iface, gateway string) error {
-	cmd := exec.Command("nmcli", "con", "mod", iface, "ipv4.gateway", gateway)
-	if err := cmd.Run(); err != nil {
-		return err
+	if strings.TrimSpace(iface) == "" || strings.TrimSpace(gateway) == "" {
+		return fmt.Errorf("SetGateway requires interface and gateway address")
 	}
-	cmd = exec.Command("nmcli", "con", "up", iface)
-	return cmd.Run()
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("failed to connect to system bus: %w", err)
+	}
+	defer conn.Close()
+
+	nm := conn.Object("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager")
+
+	// Find the device
+	var devicePaths []dbus.ObjectPath
+	if err := nm.Call("org.freedesktop.NetworkManager.GetDevices", 0).Store(&devicePaths); err != nil {
+		return fmt.Errorf("GetDevices failed: %w", err)
+	}
+
+	for _, devPath := range devicePaths {
+		dev := conn.Object("org.freedesktop.NetworkManager", devPath)
+		var devIface string
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "Interface").Store(&devIface); err != nil {
+			continue
+		}
+		if devIface != iface {
+			continue
+		}
+
+		// Get active connection
+		var activeConn dbus.ObjectPath
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "ActiveConnection").Store(&activeConn); err != nil {
+			return fmt.Errorf("failed to get ActiveConnection: %w", err)
+		}
+
+		ac := conn.Object("org.freedesktop.NetworkManager", activeConn)
+		var connPath dbus.ObjectPath
+		if err := ac.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Connection.Active", "Connection").Store(&connPath); err != nil {
+			return fmt.Errorf("failed to get Connection path: %w", err)
+		}
+
+		settingsConn := conn.Object("org.freedesktop.NetworkManager", connPath)
+		var settings map[string]map[string]dbus.Variant
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&settings); err != nil {
+			return fmt.Errorf("failed to get connection settings: %w", err)
+		}
+
+		// Update gateway
+		ip4Settings := settings["ipv4"]
+		ip4Settings["gateway"] = dbus.MakeVariant(gateway)
+		ip4Settings["method"] = dbus.MakeVariant("manual")
+		settings["ipv4"] = ip4Settings
+
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.Update", 0, settings).Err; err != nil {
+			return fmt.Errorf("failed to update connection settings: %w", err)
+		}
+
+		return reloadConnection(conn, connPath)
+	}
+
+	return fmt.Errorf("interface %s not found", iface)
 }
 
 func SetIPv4DHCP(iface string) error {
@@ -294,10 +392,99 @@ func SetIPv6Static(iface, addressCIDR string) error {
 }
 
 func SetMTU(iface, mtu string) error {
-	cmd := exec.Command("nmcli", "con", "mod", iface, "802-3-ethernet.mtu", mtu)
-	if err := cmd.Run(); err != nil {
-		return err
+	if strings.TrimSpace(iface) == "" || strings.TrimSpace(mtu) == "" {
+		return fmt.Errorf("SetMTU requires interface and MTU value")
 	}
-	cmd = exec.Command("nmcli", "con", "up", iface)
-	return cmd.Run()
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("failed to connect to system bus: %w", err)
+	}
+	defer conn.Close()
+
+	nm := conn.Object("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager")
+
+	// Find device
+	var devicePaths []dbus.ObjectPath
+	if err := nm.Call("org.freedesktop.NetworkManager.GetDevices", 0).Store(&devicePaths); err != nil {
+		return fmt.Errorf("GetDevices failed: %w", err)
+	}
+
+	for _, devPath := range devicePaths {
+		dev := conn.Object("org.freedesktop.NetworkManager", devPath)
+		var devIface string
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "Interface").Store(&devIface); err != nil {
+			continue
+		}
+		if devIface != iface {
+			continue
+		}
+
+		// Get active connection
+		var activeConn dbus.ObjectPath
+		if err := dev.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Device", "ActiveConnection").Store(&activeConn); err != nil {
+			return fmt.Errorf("failed to get ActiveConnection: %w", err)
+		}
+
+		ac := conn.Object("org.freedesktop.NetworkManager", activeConn)
+		var connPath dbus.ObjectPath
+		if err := ac.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Connection.Active", "Connection").Store(&connPath); err != nil {
+			return fmt.Errorf("failed to get Connection path: %w", err)
+		}
+
+		settingsConn := conn.Object("org.freedesktop.NetworkManager", connPath)
+		var settings map[string]map[string]dbus.Variant
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&settings); err != nil {
+			return fmt.Errorf("failed to get connection settings: %w", err)
+		}
+
+		// Update MTU under '802-3-ethernet'
+		mtuValue, err := strconv.ParseUint(mtu, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid MTU value: %w", err)
+		}
+
+		ethernetSettings := settings["802-3-ethernet"]
+		ethernetSettings["mtu"] = dbus.MakeVariant(uint32(mtuValue))
+		settings["802-3-ethernet"] = ethernetSettings
+
+		if err := settingsConn.Call("org.freedesktop.NetworkManager.Settings.Connection.Update", 0, settings).Err; err != nil {
+			return fmt.Errorf("failed to update MTU: %w", err)
+		}
+
+		return reloadConnection(conn, connPath)
+	}
+
+	return fmt.Errorf("interface %s not found", iface)
+}
+
+// reloadConnection deactivates and reactivates the specified connection
+// to apply changes made to its settings.
+// It returns an error if the operation fails.
+func reloadConnection(conn *dbus.Conn, connPath dbus.ObjectPath) error {
+	// Deactivate and reactivate the connection
+	nm := conn.Object("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager")
+
+	var activeConns []dbus.ObjectPath
+	if err := nm.Call("org.freedesktop.NetworkManager.GetActiveConnections", 0).Store(&activeConns); err != nil {
+		return fmt.Errorf("failed to get active connections: %w", err)
+	}
+
+	var connToDeactivate dbus.ObjectPath
+	for _, ac := range activeConns {
+		acObj := conn.Object("org.freedesktop.NetworkManager", ac)
+		var c dbus.ObjectPath
+		if err := acObj.Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.NetworkManager.Connection.Active", "Connection").Store(&c); err == nil {
+			if c == connPath {
+				connToDeactivate = ac
+				break
+			}
+		}
+	}
+
+	if connToDeactivate != "" {
+		_ = nm.Call("org.freedesktop.NetworkManager.DeactivateConnection", 0, connToDeactivate)
+	}
+
+	return nil
 }

@@ -37,57 +37,29 @@ type Response struct {
 }
 
 // HandlerFunc is the function signature for all built-in command handlers.
-type HandlerFunc func(args []string) (interface{}, error)
+type HandlerFunc func(args []string) (any, error)
 
 // ---- Built-in Handler Registration ----
 // -- D-Bus Handlers --
 var dbusHandlers = map[string]HandlerFunc{
-	"Reboot":   func(args []string) (interface{}, error) { return nil, dbus.CallLogin1Action("Reboot") },
-	"PowerOff": func(args []string) (interface{}, error) { return nil, dbus.CallLogin1Action("PowerOff") },
-	"GetUpdates": func(args []string) (interface{}, error) {
-		result, err := dbus.GetUpdatesWithDetails()
-		if result == nil {
-			result = []dbus.UpdateDetail{}
-		}
-		return result, err
-	},
-	"InstallPackage": func(args []string) (interface{}, error) {
-		if len(args) == 0 {
-			return nil, fmt.Errorf("missing package ID")
-		}
-		return nil, dbus.InstallPackage(args[0])
-	},
-	"ListServices": func(args []string) (interface{}, error) {
-		return dbus.ListServices()
-	},
-	"GetServiceInfo": func(args []string) (interface{}, error) {
-		if len(args) == 0 {
-			return nil, fmt.Errorf("missing service name")
-		}
-		return dbus.GetServiceInfo(args[0])
-	},
-	"StartService":   func(args []string) (interface{}, error) { return nil, dbus.StartService(args[0]) },
-	"StopService":    func(args []string) (interface{}, error) { return nil, dbus.StopService(args[0]) },
-	"RestartService": func(args []string) (interface{}, error) { return nil, dbus.RestartService(args[0]) },
-	"ReloadService":  func(args []string) (interface{}, error) { return nil, dbus.ReloadService(args[0]) },
-	"EnableService":  func(args []string) (interface{}, error) { return nil, dbus.EnableService(args[0]) },
-	"DisableService": func(args []string) (interface{}, error) { return nil, dbus.DisableService(args[0]) },
-	"MaskService":    func(args []string) (interface{}, error) { return nil, dbus.MaskService(args[0]) },
-	"UnmaskService":  func(args []string) (interface{}, error) { return nil, dbus.UnmaskService(args[0]) },
-	"GetNetworkInfo": func(args []string) (interface{}, error) { return dbus.GetNetworkInfo() },
-	"SetDNS": func(args []string) (interface{}, error) {
-		if len(args) < 2 {
-			return nil, fmt.Errorf("SetDNS requires interface and at least one DNS server")
-		}
-		return nil, dbus.SetDNS(args[0], args[1:])
-	},
-	"SetGateway": func(args []string) (interface{}, error) {
-		if len(args) != 2 {
-			return nil, fmt.Errorf("SetGateway requires interface and gateway address")
-		}
-		return nil, dbus.SetGateway(args[0], args[1])
-	},
-	"SetIPv4": func(args []string) (interface{}, error) {
+	"Reboot":         func(args []string) (any, error) { return nil, dbus.CallLogin1Action("Reboot") },
+	"PowerOff":       func(args []string) (any, error) { return nil, dbus.CallLogin1Action("PowerOff") },
+	"GetUpdates":     func(args []string) (any, error) { return dbus.GetUpdatesWithDetails() },
+	"InstallPackage": func(args []string) (any, error) { return nil, dbus.InstallPackage(args[0]) },
+	"ListServices":   func(args []string) (any, error) { return dbus.ListServices() },
+	"GetServiceInfo": func(args []string) (any, error) { return dbus.GetServiceInfo(args[0]) },
+	"StartService":   func(args []string) (any, error) { return nil, dbus.StartService(args[0]) },
+	"StopService":    func(args []string) (any, error) { return nil, dbus.StopService(args[0]) },
+	"RestartService": func(args []string) (any, error) { return nil, dbus.RestartService(args[0]) },
+	"ReloadService":  func(args []string) (any, error) { return nil, dbus.ReloadService(args[0]) },
+	"EnableService":  func(args []string) (any, error) { return nil, dbus.EnableService(args[0]) },
+	"DisableService": func(args []string) (any, error) { return nil, dbus.DisableService(args[0]) },
+	"MaskService":    func(args []string) (any, error) { return nil, dbus.MaskService(args[0]) },
+	"UnmaskService":  func(args []string) (any, error) { return nil, dbus.UnmaskService(args[0]) },
+	"GetNetworkInfo": func(args []string) (any, error) { return dbus.GetNetworkInfo() },
+	"SetDNS":         func(args []string) (any, error) { return nil, dbus.SetDNS(args[0], args[1:]) },
+	"SetGateway":     func(args []string) (any, error) { return nil, dbus.SetGateway(args[0], args[1]) },
+	"SetIPv4": func(args []string) (any, error) {
 		if len(args) < 2 {
 			return nil, fmt.Errorf("SetIPv4 requires interface and method (dhcp/static)")
 		}
@@ -104,7 +76,7 @@ var dbusHandlers = map[string]HandlerFunc{
 			return nil, fmt.Errorf("SetIPv4 method must be 'dhcp' or 'static'")
 		}
 	},
-	"SetIPv6": func(args []string) (interface{}, error) {
+	"SetIPv6": func(args []string) (any, error) {
 		if len(args) < 2 {
 			return nil, fmt.Errorf("SetIPv6 requires interface and method (dhcp/static)")
 		}
@@ -121,17 +93,12 @@ var dbusHandlers = map[string]HandlerFunc{
 			return nil, fmt.Errorf("SetIPv6 method must be 'dhcp' or 'static'")
 		}
 	},
-	"SetMTU": func(args []string) (interface{}, error) {
-		if len(args) != 2 {
-			return nil, fmt.Errorf("SetMTU requires interface and mtu value")
-		}
-		return nil, dbus.SetMTU(args[0], args[1])
-	},
+	"SetMTU": func(args []string) (any, error) { return nil, dbus.SetMTU(args[0], args[1]) },
 }
 
 // -- Control Handlers --
 var controlHandlers = map[string]HandlerFunc{
-	"shutdown": func(args []string) (interface{}, error) {
+	"shutdown": func(args []string) (any, error) {
 		logger.Info.Println("Received shutdown command, exiting bridge")
 		go func() {
 			time.Sleep(200 * time.Millisecond)
@@ -143,16 +110,16 @@ var controlHandlers = map[string]HandlerFunc{
 
 // -- System Handlers --
 var systemHandlers = map[string]HandlerFunc{
-	"get_drive_info": func(args []string) (interface{}, error) {
+	"get_drive_info": func(args []string) (any, error) {
 		return system.FetchDriveInfo()
 	},
-	"get_smart_info": func(args []string) (interface{}, error) {
+	"get_smart_info": func(args []string) (any, error) {
 		if len(args) < 1 {
 			return nil, fmt.Errorf("missing device argument")
 		}
 		return system.FetchSmartInfo(args[0])
 	},
-	"get_nvme_power": func(args []string) (interface{}, error) {
+	"get_nvme_power": func(args []string) (any, error) {
 		if len(args) < 1 {
 			return nil, fmt.Errorf("missing device argument")
 		}
@@ -165,6 +132,7 @@ var handlersByType = map[string]map[string]HandlerFunc{
 	"dbus":    dbusHandlers,
 	"control": controlHandlers,
 	"system":  systemHandlers,
+	"modules": {}, // Placeholder for external helpers
 }
 
 // modulesDir returns the modules directory, overridable via env for flexibility.
@@ -202,8 +170,8 @@ func main() {
 		_ = os.Remove(socketPath)
 	}()
 	logger.Info.Printf("Listening succeeded.")
-	logger.Info.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
+	logger.Debug.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
+	logger.Debug.Printf("🔐 linuxio-bridge listening: %s", socketPath)
 	runSelfTestIfDev(env)
 
 	go func() {
