@@ -21,6 +21,7 @@ func RegisterSystemRoutes(router *gin.Engine) {
 		system.GET("/gpu", getGPUInfo)
 		system.GET("/sensors", getSensorData)
 		system.GET("/disk", getDiskInfo)
+
 	}
 }
 

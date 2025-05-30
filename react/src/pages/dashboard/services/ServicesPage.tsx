@@ -1,7 +1,9 @@
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
+
 import ServiceTable, { Service } from "./ServiceTable";
+
 import axios from "@/utils/axios";
 
 const ServicesList: React.FC = () => {

@@ -98,13 +98,13 @@ This project uses **PAM authentication** to log in directly to your Linux system
 ## 👨‍💼 Development & Deployment Workflow
 
 🔑 Secret File
-For development and production (unless running the binary), edit the file called secret.env:
+When developing, if you need to recompile the bridge you will need to use sudo, which means pentering a user assword.
+To strimline, edit the file called secret.env and type the password.
+If no changes to the bridge are necessary there is no need for the password.
 
 ```env
 SUDO_PASSWORD=your_password_here
 ```
-
-This password is used for executing privileged operations via sudo.
 
 ### 🛠️ Development Mode
 

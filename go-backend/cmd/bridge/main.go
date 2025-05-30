@@ -147,7 +147,7 @@ func main() {
 
 	env := os.Getenv("GO_ENV")
 	if env == "" {
-		env = "development"
+		env = "production"
 	}
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init(env, verbose)

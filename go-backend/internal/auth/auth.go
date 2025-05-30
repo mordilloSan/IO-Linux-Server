@@ -86,7 +86,7 @@ func loginHandler(c *gin.Context) {
 	user := utils.User{ID: req.Username, Name: req.Username}
 	session.CreateSession(sessionID, user, sessionDuration, privileged)
 
-	// **4. Start main socket for this session**
+	// 4. Start main socket for this session
 	err := bridge.StartBridgeSocket(sessionID, req.Username)
 	if err != nil {
 		logger.Error.Printf("[login] Failed to start main socket: %v", err)
@@ -95,7 +95,7 @@ func loginHandler(c *gin.Context) {
 		return
 	}
 
-	// 4. Start the bridge process for this session
+	// 5. Start the bridge process for this session
 	var bridgeErr error
 	if err := bridge.StartBridge(sessionID, req.Username, privileged, req.Password); err != nil {
 		// If privileged failed, try normal (only fallback if you want)
@@ -114,11 +114,11 @@ func loginHandler(c *gin.Context) {
 		return
 	}
 
-	// 5. Set session cookie
+	// 6. Set session cookie
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
 	logger.Info.Printf("✅ User %s logged in, session ID: %s, privileged: %v", req.Username, sessionID, privileged)
 
-	// 6. Send response
+	// 7. Send response
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})
 }
 
