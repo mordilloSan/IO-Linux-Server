@@ -1,4 +1,3 @@
-// session/session.go
 package session
 
 import (
@@ -22,7 +21,14 @@ var (
 func init() {
 	go func() {
 		for f := range SessionMux {
-			f()
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error.Printf("[session] Panic in session actor: %v", r)
+					}
+				}()
+				f()
+			}()
 		}
 	}()
 }
@@ -42,7 +48,7 @@ func StartSessionGC() {
 					}
 				}
 				if count > 0 {
-					logger.Info.Printf("[session] Garbage collected %d expired sessions (and stopped bridges)", count)
+					logger.Info.Printf("[session] Garbage collected %d expired sessions", count)
 				}
 			}
 		}

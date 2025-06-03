@@ -8,6 +8,7 @@ import (
 	"go-backend/internal/utils"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -65,6 +66,7 @@ func trySudo(password string) bool {
 }
 
 func loginHandler(c *gin.Context) {
+
 	var req LoginRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -115,8 +117,11 @@ func loginHandler(c *gin.Context) {
 	}
 
 	// 6. Set session cookie
-	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", false, true)
-	logger.Info.Printf("✅ User %s logged in, session ID: %s, privileged: %v", req.Username, sessionID, privileged)
+	env := os.Getenv("GO_ENV")
+	isHTTPS := c.Request.TLS != nil
+	secureCookie := env == "production" && isHTTPS
+
+	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", secureCookie, true)
 
 	// 7. Send response
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})

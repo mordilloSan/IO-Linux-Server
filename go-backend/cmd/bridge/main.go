@@ -13,10 +13,12 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -144,7 +146,6 @@ func modulesDir() string {
 }
 
 func main() {
-
 	env := os.Getenv("GO_ENV")
 	if env == "" {
 		env = "production"
@@ -164,14 +165,24 @@ func main() {
 	if err != nil {
 		logger.Error.Fatalf("❌ %v", err)
 	}
+	// Trap SIGTERM and SIGINT for clean shutdown
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+		sig := <-sigChan
+		logger.Info.Printf("🛑 Caught signal: %s — shutting down bridge", sig)
+		listener.Close()
+		_ = os.Remove(socketPath)
+		os.Exit(0)
+	}()
+
 	defer listener.Close()
 	defer func() {
 		logger.Info.Println("🔐 linuxio-bridge shut down.")
 		_ = os.Remove(socketPath)
 	}()
-	logger.Info.Printf("Listening succeeded.")
 	logger.Debug.Printf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-	logger.Debug.Printf("🔐 linuxio-bridge listening: %s", socketPath)
+	logger.Info.Printf("🔐 linuxio-bridge listening: %s", socketPath)
 	runSelfTestIfDev(env)
 
 	go func() {
@@ -189,8 +200,6 @@ func main() {
 	}()
 
 	// When in production, clean up any lingering bridge startup processes.
-	// In production we can kill because all logs are sent to the system journal.
-	// In development, we leave them running for debugging purposes.
 	if env == "production" {
 		cleanup.KillLingeringBridgeStartupProcesses()
 	}
@@ -240,8 +249,8 @@ func createAndOwnSocket(socketPath, username string) (net.Listener, int, int, er
 // If the command is not built-in, dispatches to an external helper binary in the modules directory.
 func handleConnection(conn net.Conn, id string) {
 	logger.Debug.Printf("HANDLECONNECTION: [%s] called!", id)
-
 	defer conn.Close()
+
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
 
@@ -256,13 +265,19 @@ func handleConnection(conn net.Conn, id string) {
 		return
 	}
 
+	// (1) DEFENSE-IN-DEPTH: Validate handler name for fallback
+	if strings.ContainsAny(req.Type, "./\\") || strings.ContainsAny(req.Command, "./\\") {
+		logger.Warning.Printf("❌ [%s] Invalid characters in type/command: type=%q, command=%q", id, req.Type, req.Command)
+		_ = encoder.Encode(Response{Status: "error", Error: "invalid characters in command/type"})
+		return
+	}
+
 	logger.Info.Printf("➡️ Received request: type=%s, command=%s, args=%v", req.Type, req.Command, req.Args)
 
-	// Try built-in handler
+	// (2) Avoid nil map panic and clarify intent
 	group, found := handlersByType[req.Type]
-	if found {
-		handler, found := group[req.Command]
-		if found {
+	if found && group != nil {
+		if handler, ok := group[req.Command]; ok {
 			defer func() {
 				if r := recover(); r != nil {
 					logger.Error.Printf("🔥 Panic in %s command handler: %v", req.Type, r)
@@ -295,7 +310,6 @@ func handleConnection(conn net.Conn, id string) {
 
 // runHelper executes an external helper script or binary, passing the entire Request as JSON on stdin,
 // and expects a JSON Response on stdout.
-//
 // If the helper fails, its stderr output is included in the error response for diagnostics.
 // Malformed output is logged for troubleshooting.
 func runHelper(path string, req Request, encoder *json.Encoder) {
@@ -321,6 +335,14 @@ func runHelper(path string, req Request, encoder *json.Encoder) {
 
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
+
+	// (3) Helper timeout: configurable
+	timeout := 10 * time.Second
+	if val := os.Getenv("BRIDGE_HELPER_TIMEOUT"); val != "" {
+		if parsed, err := time.ParseDuration(val); err == nil {
+			timeout = parsed
+		}
+	}
 
 	if err := cmd.Start(); err != nil {
 		logger.Error.Printf("Helper %s: failed to start: %v", path, err)
@@ -348,7 +370,7 @@ func runHelper(path string, req Request, encoder *json.Encoder) {
 	go func() { done <- cmd.Wait() }()
 
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(timeout): // <--- use timeout variable
 		_ = cmd.Process.Kill()
 		logger.Error.Printf("Helper %s timed out.\n  STDOUT: %s\n  STDERR: %s", path, string(outBytes), stderrBuf.String())
 		_ = encoder.Encode(Response{Status: "error", Error: "helper timed out"})
@@ -402,8 +424,15 @@ func runSelfTestIfDev(env string) {
 		if resp.Status != "ok" {
 			logger.Warning.Printf("⚠️  Self-test: system_teste returned error: %s", resp.Error)
 		} else {
-			logger.Info.Println("✅ Self-test succeeded. Response:")
-			logger.Info.Println(rawJSON)
+			// (4) Pretty-print Output
+			pretty, err := json.MarshalIndent(resp.Output, "", "  ")
+			if err != nil {
+				logger.Info.Println("✅ Self-test succeeded, but failed to pretty-print output:")
+				logger.Info.Println(resp.Output)
+			} else {
+				logger.Info.Println("✅ Self-test succeeded. Output:")
+				logger.Info.Println(string(pretty))
+			}
 		}
 	}()
 }

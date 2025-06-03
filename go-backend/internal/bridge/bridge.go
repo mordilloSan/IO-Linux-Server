@@ -52,7 +52,7 @@ var (
 	mainSocketListenersMu sync.Mutex
 )
 
-// Utility: Per-session/per-user main socket path
+// MainSocketPath returns the per-session main (healthcheck) socket path for the user.
 func MainSocketPath(sessionID, username string) string {
 	u, err := user.Lookup(username)
 	if err != nil {
@@ -61,7 +61,7 @@ func MainSocketPath(sessionID, username string) string {
 	return fmt.Sprintf("/run/user/%s/linuxio-main-%s.sock", u.Uid, sessionID)
 }
 
-// Utility: Per-session/per-user bridge socket path
+// BridgeSocketPath returns the per-session bridge command socket path for the user.
 func BridgeSocketPath(sessionID, username string) string {
 	u, err := user.Lookup(username)
 	if err != nil {
@@ -171,7 +171,13 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 		StartedAt: time.Now(),
 	}
 
+	// Panic guard for process cleanup goroutine
 	go func(sessionID string, cmd *exec.Cmd, stdoutBuf, stderrBuf *bytes.Buffer) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error.Printf("[bridge] Panic in process cleanup goroutine for session %s: %v", sessionID, r)
+			}
+		}()
 		logger.Info.Printf("[bridge] Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessionID, stdoutBuf.Len(), stderrBuf.Len())
 
 		err := cmd.Wait()
@@ -226,13 +232,20 @@ func StartBridgeSocket(sessionID string, username string) error {
 
 	go func() {
 		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
-				return // Accept fails after Close()
-			}
-			logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
-			go handleBridgeRequest(conn)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error.Printf("[bridge] Panic in main socket handler: %v", r)
+					}
+				}()
+				conn, err := ln.Accept()
+				if err != nil {
+					logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
+					return // Accept fails after Close()
+				}
+				logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
+				go handleBridgeRequest(conn)
+			}()
 		}
 	}()
 	return nil
@@ -260,6 +273,7 @@ func handleBridgeRequest(conn net.Conn) {
 		}
 		return
 	}
+	logger.Warning.Printf("[bridge] Unknown healthcheck request type: %s (session %s)", req.Type, req.Session)
 	_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "unknown request type"})
 }
 
