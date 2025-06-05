@@ -232,22 +232,24 @@ func StartBridgeSocket(sessionID string, username string) error {
 
 	go func() {
 		for {
-			func() {
+			conn, err := ln.Accept()
+			if err != nil {
+				logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
+				// Exit the goroutine if the listener is closed
+				break
+			}
+			logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
+			go func() {
 				defer func() {
 					if r := recover(); r != nil {
 						logger.Error.Printf("[bridge] Panic in main socket handler: %v", r)
 					}
 				}()
-				conn, err := ln.Accept()
-				if err != nil {
-					logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
-					return // Accept fails after Close()
-				}
-				logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
-				go handleBridgeRequest(conn)
+				handleBridgeRequest(conn)
 			}()
 		}
 	}()
+
 	return nil
 }
 

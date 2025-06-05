@@ -16,6 +16,7 @@ import (
 	"go-backend/internal/templates"
 	"go-backend/internal/update"
 	"go-backend/internal/utils"
+	"go-backend/internal/websocket"
 	"net/http"
 	"os"
 
@@ -84,6 +85,9 @@ func main() {
 	if env == "production" {
 		templates.RegisterStaticRoutes(router, embed.StaticFS, embed.PWAManifest)
 	}
+
+	// WebSocket route
+	router.GET("/ws", websocket.WebSocketHandler)
 
 	// ✅ Serve frontend on "/" and fallback routes
 	router.GET("/", func(c *gin.Context) {

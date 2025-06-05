@@ -1,46 +1,32 @@
-// React
 import React, { lazy } from "react";
 
 // Guards & Layouts
+import { WebSocketProvider } from "./contexts/WebSocketContext";
+
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { GuestGuard } from "@/components/guards/GuestGuard";
 import AuthLayout from "@/layouts/Auth";
 import MainLayout from "@/layouts/Main";
 import Default from "@/pages/dashboard/home";
 
-// Helper: Loadable wrapper
-const Loadable = (Component: React.LazyExoticComponent<any>, name: string) => {
-  const Wrapped = (props: any) => <Component {...props} />;
-  Wrapped.displayName = `Loadable(${name})`;
-  return Wrapped;
-};
-
-const lazyLoad = (
-  factory: () => Promise<{ default: React.ComponentType<any> }>,
-  name: string,
-) => Loadable(lazy(factory), name);
-
 // Lazy-loaded pages
-const SignIn = lazyLoad(() => import("@/pages/auth/SignIn"), "SignIn");
-const Page404 = lazyLoad(() => import("@/pages/auth/Page404"), "Page404");
-const Updates = lazyLoad(() => import("@/pages/dashboard/updates"), "Updates");
-const Docker = lazyLoad(() => import("@/pages/dashboard/docker"), "Docker");
-const Services = lazyLoad(
-  () => import("@/pages/dashboard/services"),
-  "Services",
-);
-const Network = lazyLoad(() => import("@/pages/dashboard/network"), "Network");
-const Hardware = lazyLoad(
-  () => import("@/pages/dashboard/hardware"),
-  "Hardware",
-);
+const SignIn = lazy(() => import("@/pages/auth/SignIn"));
+const Page404 = lazy(() => import("@/pages/auth/Page404"));
+const Updates = lazy(() => import("@/pages/dashboard/updates"));
+const Docker = lazy(() => import("@/pages/dashboard/docker"));
+const Services = lazy(() => import("@/pages/dashboard/services"));
+const Network = lazy(() => import("@/pages/dashboard/network"));
+const Hardware = lazy(() => import("@/pages/dashboard/hardware"));
 
+// Route config
 const routes = [
   {
     path: "/",
     element: (
       <AuthGuard>
-        <MainLayout />
+        <WebSocketProvider>
+          <MainLayout />
+        </WebSocketProvider>
       </AuthGuard>
     ),
     children: [

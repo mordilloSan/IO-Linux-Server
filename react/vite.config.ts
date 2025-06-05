@@ -11,7 +11,7 @@ function removeIndexHtmlPlugin() {
     closeBundle() {
       const indexPath = path.resolve(
         __dirname,
-        "../go-backend/frontend/index.html",
+        "../go-backend/frontend/index.html"
       );
       if (fs.existsSync(indexPath)) {
         fs.unlinkSync(indexPath);
@@ -30,15 +30,6 @@ export default defineConfig(({ mode }) => ({
     tsconfigPaths(),
     ...(mode === "production" ? [removeIndexHtmlPlugin()] : []),
   ],
-  server: {
-    proxy: {
-      "/ws": {
-        target: "http://localhost:8080", // your Go backend
-        ws: true, // very important!
-        changeOrigin: true,
-      },
-    },
-  },
   build: {
     target: "es2017",
     chunkSizeWarningLimit: 2000,

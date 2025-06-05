@@ -1,3 +1,4 @@
+import { Suspense } from "react"; // Add this import!
 import { Box, CssBaseline } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import React, { useEffect } from "react";
@@ -10,6 +11,7 @@ import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";
 import useAppTheme from "@/hooks/useAppTheme";
 import useSidebar from "@/hooks/useSidebar";
+import PageLoader from "@/components/loaders/PageLoader";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
@@ -28,11 +30,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
       <CssBaseline />
-
-      {/* Sidebar */}
       <Sidebar items={dashboardItems} />
-
-      {/* Main content */}
       <Box
         sx={{
           flex: 1,
@@ -43,11 +41,8 @@ const Dashboard: React.FC = () => {
             duration: theme.transitions.duration.leavingScreen,
           }),
           ml: { md: `${sidebarWidth}px` },
-        }}
-      >
+        }}>
         <Navbar onDrawerToggle={toggleMobileOpen} />
-
-        {/* Scrollable Content Area */}
         <Box
           className="custom-scrollbar"
           sx={{
@@ -55,10 +50,11 @@ const Dashboard: React.FC = () => {
             overflow: "auto",
             background: theme.palette.background.default,
             p: { xs: 5, lg: 7 },
-          }}
-        >
+          }}>
           <ErrorBoundary>
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </Box>
         <Footer />
