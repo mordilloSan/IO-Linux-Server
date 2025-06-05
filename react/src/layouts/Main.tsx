@@ -1,17 +1,17 @@
-import { Suspense } from "react"; // Add this import!
 import { Box, CssBaseline } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { Suspense } from "react"; // Add this import!
 import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import ErrorBoundary from "@/components/errors/ErrorBoundary";
 import Footer from "@/components/footer/Footer";
+import PageLoader from "@/components/loaders/PageLoader";
 import Navbar from "@/components/navbar/Navbar";
 import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";
 import useAppTheme from "@/hooks/useAppTheme";
 import useSidebar from "@/hooks/useSidebar";
-import PageLoader from "@/components/loaders/PageLoader";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
@@ -41,7 +41,8 @@ const Dashboard: React.FC = () => {
             duration: theme.transitions.duration.leavingScreen,
           }),
           ml: { md: `${sidebarWidth}px` },
-        }}>
+        }}
+      >
         <Navbar onDrawerToggle={toggleMobileOpen} />
         <Box
           className="custom-scrollbar"
@@ -50,7 +51,8 @@ const Dashboard: React.FC = () => {
             overflow: "auto",
             background: theme.palette.background.default,
             p: { xs: 5, lg: 7 },
-          }}>
+          }}
+        >
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <Outlet />

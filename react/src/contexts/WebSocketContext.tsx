@@ -57,17 +57,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("WebSocket opened!");
     };
 
+    socket.onclose = () => {
+      console.log("WebSocket closed!");
+    };
+
     return () => {
       socket.close();
     };
   }, [isAuthenticated, isInitialized]);
-
-  useEffect(() => {
-    console.log("WebSocketProvider mounted");
-    return () => {
-      console.log("WebSocketProvider unmounted");
-    };
-  }, []);
 
   const send = (msg: any) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {

@@ -3,8 +3,8 @@ import React, {
   useEffect,
   useReducer,
   useCallback,
+  useMemo,
 } from "react";
-import { useLocation } from "react-router-dom";
 
 import {
   AuthContextType,
@@ -46,7 +46,7 @@ const reducer = (state: AuthState, action: AuthActions): AuthState => {
       return { ...state, isAuthenticated: false, user: null };
     default: {
       const exhaustiveCheck: never = action;
-      void exhaustiveCheck; // mark as intentionally unused
+      void exhaustiveCheck; // TypeScript exhaustiveness check
       return state;
     }
   }
@@ -57,12 +57,12 @@ AuthContext.displayName = "AuthContext";
 
 function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const location = useLocation();
 
-  const fetchUser = async (): Promise<AuthUser> => {
+  // Memoize fetchUser so signIn and initialize can depend on it
+  const fetchUser = useCallback(async (): Promise<AuthUser> => {
     const { data } = await axios.get<{ user: AuthUser }>("/auth/me");
     return data.user;
-  };
+  }, []);
 
   const initialize = useCallback(async () => {
     dispatch({ type: AUTH_ACTIONS.INITIALIZE_START });
@@ -72,11 +72,30 @@ function AuthProvider({ children }: AuthProviderProps) {
     } catch {
       dispatch({ type: AUTH_ACTIONS.INITIALIZE_FAILURE });
     }
-  }, []);
+  }, [fetchUser]);
 
   useEffect(() => {
     initialize();
-  }, [location.pathname, initialize]);
+  }, [initialize]);
+
+  useEffect(() => {
+    // Only run after initial auth check is complete
+    if (!state.isInitialized) return;
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        initialize();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+    };
+  }, [initialize, state.isInitialized]);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -85,34 +104,39 @@ function AuthProvider({ children }: AuthProviderProps) {
         window.location.href = "/sign-in";
       }
     };
-
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  const signIn = async (username: string, password: string) => {
-    await axios.post("/auth/login", { username, password });
-    const user = await fetchUser();
-    dispatch({ type: AUTH_ACTIONS.SIGN_IN, payload: { user } });
-  };
+  // Memoized signIn and signOut
+  const signIn = useCallback(
+    async (username: string, password: string) => {
+      await axios.post("/auth/login", { username, password });
+      const user = await fetchUser();
+      dispatch({ type: AUTH_ACTIONS.SIGN_IN, payload: { user } });
+    },
+    [fetchUser],
+  );
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await axios.get("/auth/logout");
     localStorage.setItem("logout", Date.now().toString()); // Broadcast logout
     dispatch({ type: AUTH_ACTIONS.SIGN_OUT });
-  };
+  }, []);
+
+  // Memoize context value for optimal render performance
+  const contextValue = useMemo(
+    () => ({
+      ...state,
+      method: "session" as const,
+      signIn,
+      signOut,
+    }),
+    [state, signIn, signOut],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        ...state,
-        method: "session",
-        signIn,
-        signOut,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
