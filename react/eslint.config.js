@@ -7,7 +7,6 @@ import prettier from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 import importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
-import youMightNotNeedAnEffect from "eslint-plugin-react-you-might-not-need-an-effect";
 import globals from "globals";
 import { FlatCompat } from "@eslint/eslintrc";
 
@@ -84,8 +83,6 @@ export default [
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react/no-unescaped-entities": "warn",
-
-      "react-you-might-not-need-an-effect/you-might-not-need-an-effect": "warn",
 
       // 🧹 Unused import handling
       "no-unused-vars": "off",

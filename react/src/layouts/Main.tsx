@@ -1,6 +1,6 @@
 import { Box, CssBaseline } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Suspense } from "react"; // Add this import!
+import { Suspense } from "react";
 import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -12,9 +12,11 @@ import dashboardItems from "@/components/sidebar/dashboardItems";
 import Sidebar from "@/components/sidebar/Sidebar";
 import useAppTheme from "@/hooks/useAppTheme";
 import useSidebar from "@/hooks/useSidebar";
+import { useRouteChannelSubscription } from "@/hooks/useWebSocketChannel";
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
+  useRouteChannelSubscription();
   const theme = useTheme();
   const { isLoaded } = useAppTheme();
   const { toggleMobileOpen, setMobileOpen, sidebarWidth } = useSidebar();

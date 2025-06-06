@@ -1,4 +1,4 @@
-package update
+package updates
 
 type UpdateGroup struct {
 	Name     string   `json:"name"`

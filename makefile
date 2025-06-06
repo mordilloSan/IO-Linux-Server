@@ -8,6 +8,14 @@ GO_BIN := $(shell which go)
 AIR_BIN := $(shell which air)
 BRIDGE_BIN := /usr/lib/linuxio/linuxio-bridge
 
+# Colors
+COLOR_RESET  := \033[0m
+COLOR_BLUE   := \033[1;34m
+COLOR_GREEN  := \033[1;32m
+COLOR_YELLOW := \033[1;33m
+COLOR_CYAN   := \033[1;36m
+COLOR_RED    := \033[1;31m
+
 default: help
 
 define check_var
@@ -178,24 +186,25 @@ clean: stop-bridge
 
 help:
 	@echo ""
-	@echo "🛠️  Available commands:"
+	@echo "$(COLOR_BLUE)🛠️  Available commands:$(COLOR_RESET)"
 	@echo ""
-	@echo "  make check-env           Verify .env and required environment variables"
-	@echo "  make setup               Install Node.js, Go and frontend dependencies"
-	@echo "  make lint                Run ESLint linter on frontend"
-	@echo "  make tsc                 Run TypeScript type checks on frontend"
-	@echo "  make test                Run ESLint + TypeScript type checks"
+	@echo "$(COLOR_GREEN)  make check-env       $(COLOR_RESET) Verify .env and required environment variables"
+	@echo "$(COLOR_GREEN)  make setup           $(COLOR_RESET) Install Node.js, Go and frontend dependencies"
+	@echo "$(COLOR_GREEN)  make lint            $(COLOR_RESET) Run ESLint linter on frontend"
+	@echo "$(COLOR_GREEN)  make tsc             $(COLOR_RESET) Run TypeScript type checks on frontend"
+	@echo "$(COLOR_GREEN)  make test            $(COLOR_RESET) Run ESLint + TypeScript type checks"
 	@echo ""
-	@echo "  make dev                 Start frontend (Vite) and backend (Go) in dev mode (hot reload, API on SERVER_PORT)"
-	@echo "  make prod                Build production frontend, start backend (Go) in production mode"
-	@echo "  make run                 Full production build (backend, frontend, bridge), run everything (prod mode)"
+	@echo "$(COLOR_YELLOW)  make dev             $(COLOR_RESET) Start frontend (Vite) and backend (Go) in dev mode (hot reload)"
+	@echo "$(COLOR_YELLOW)  make prod            $(COLOR_RESET) Build production frontend, start backend (Go) in production mode"
+	@echo "$(COLOR_YELLOW)  make run             $(COLOR_RESET) Full production build and start everything"
 	@echo ""
-	@echo "  make build-backend       Build Go backend binary"
-	@echo "  make build-bridge        Build privileged helper bridge binary"
-	@echo "  make build-vite-dev      Build frontend static files (Vite) for development"
-	@echo "  make build-vite-prod     Build frontend static files (Vite) for production"
+	@echo "$(COLOR_CYAN)  make build-backend   $(COLOR_RESET) Build Go backend binary"
+	@echo "$(COLOR_CYAN)  make build-bridge    $(COLOR_RESET) Build privileged helper bridge binary"
+	@echo "$(COLOR_CYAN)  make build-vite-dev  $(COLOR_RESET) Build frontend static files (Vite) for development"
+	@echo "$(COLOR_CYAN)  make build-vite-prod $(COLOR_RESET) Build frontend static files (Vite) for production"
 	@echo ""
-	@echo "  make clean               Remove build artifacts and node_modules"
+	@echo "$(COLOR_RED)  make clean           $(COLOR_RESET) Remove build artifacts and node_modules"
 	@echo ""
+
 
 .PHONY: all ensure-node ensure-go setup test dev dev-prep prod run build-vite-dev build-vite-prod build-backend build-bridge clean help lint tsc check-env stop-bridge

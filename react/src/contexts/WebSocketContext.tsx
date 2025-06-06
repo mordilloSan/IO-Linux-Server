@@ -4,6 +4,7 @@ import React, {
   useRef,
   useEffect,
   useState,
+  useCallback,
 } from "react";
 
 import useAuth from "@/hooks/useAuth";
@@ -30,7 +31,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const { isAuthenticated, isInitialized } = useAuth();
 
   useEffect(() => {
-    if (!isInitialized || !isAuthenticated) return; // Only connect if ready and authed
+    if (!isInitialized || !isAuthenticated) return;
 
     const wsUrl = import.meta.env.DEV
       ? "ws://localhost:8080/ws"
@@ -66,13 +67,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [isAuthenticated, isInitialized]);
 
-  const send = (msg: any) => {
+  // ---- Memoize send! ----
+  const send = useCallback((msg: any) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(msg));
     }
-  };
+  }, []);
 
-  // Optionally: render nothing if not ready or not authed
   if (!isInitialized || !isAuthenticated) return null;
 
   return (

@@ -56,3 +56,19 @@ const routes = [
 ];
 
 export default routes;
+
+function extractChannels(routeList: any[]): string[] {
+  let channels: string[] = [];
+  for (const route of routeList) {
+    if (route.path !== "*") {
+      let channel = route.path === "" ? "dashboard" : route.path;
+      channels.push(channel);
+    }
+    if (route.children) {
+      channels = channels.concat(extractChannels(route.children));
+    }
+  }
+  return channels;
+}
+
+export const ROUTE_CHANNELS = extractChannels(routes);

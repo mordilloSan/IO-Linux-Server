@@ -5,6 +5,7 @@ import (
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
 	"net/http"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -27,6 +28,62 @@ type WSResponse struct {
 	Error     string      `json:"error,omitempty"`
 }
 
+// --- CHANNEL SUBSCRIPTION INFRASTRUCTURE ---
+
+var (
+	channelsMu         sync.Mutex
+	channelSubscribers = make(map[string]map[*websocket.Conn]struct{})
+)
+
+// Subscribe the connection to a channel
+func subscribe(conn *websocket.Conn, channel string) {
+	channelsMu.Lock()
+	defer channelsMu.Unlock()
+	if channelSubscribers[channel] == nil {
+		channelSubscribers[channel] = make(map[*websocket.Conn]struct{})
+	}
+	channelSubscribers[channel][conn] = struct{}{}
+	logger.Info.Printf("WebSocket subscribed to channel: %s", channel)
+}
+
+// Unsubscribe the connection from a channel
+func unsubscribe(conn *websocket.Conn, channel string) {
+	channelsMu.Lock()
+	defer channelsMu.Unlock()
+	subs := channelSubscribers[channel]
+	if subs != nil {
+		delete(subs, conn)
+		if len(subs) == 0 {
+			delete(channelSubscribers, channel)
+		}
+	}
+	logger.Info.Printf("WebSocket unsubscribed from channel: %s", channel)
+}
+
+// Remove a connection from all channels (on disconnect)
+func removeConnFromAllChannels(conn *websocket.Conn) {
+	channelsMu.Lock()
+	defer channelsMu.Unlock()
+	for channel, subs := range channelSubscribers {
+		delete(subs, conn)
+		if len(subs) == 0 {
+			delete(channelSubscribers, channel)
+		}
+	}
+}
+
+// Broadcast a message to all clients subscribed to a channel
+func broadcastToChannel(channel string, msg WSResponse) {
+	channelsMu.Lock()
+	subs := channelSubscribers[channel]
+	channelsMu.Unlock()
+	for conn := range subs {
+		_ = conn.WriteJSON(msg) // optionally handle write errors/log
+	}
+}
+
+// --- MAIN HANDLER ---
+
 func WebSocketHandler(c *gin.Context) {
 	user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
 	if !valid {
@@ -40,7 +97,10 @@ func WebSocketHandler(c *gin.Context) {
 		logger.Error.Printf("WS upgrade failed: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		removeConnFromAllChannels(conn)
+		conn.Close()
+	}()
 
 	logger.Info.Printf("WebSocket connected for user: %s (session: %s, privileged: %v)", user.Name, sessionID, privileged)
 
@@ -53,40 +113,43 @@ func WebSocketHandler(c *gin.Context) {
 		logger.Info.Printf("WS got message: %s", msg)
 		var wsMsg WSMessage
 		if err := json.Unmarshal(msg, &wsMsg); err != nil {
-			_ = conn.WriteJSON(WSResponse{
-				Type:  "error",
-				Error: "Invalid JSON",
-			})
+			_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Invalid JSON"})
 			continue
 		}
 
-		var resp WSResponse
-		resp.Type = wsMsg.Type + "_response"
-		resp.RequestID = wsMsg.RequestID
-
-		// Route by message type
 		switch wsMsg.Type {
 
-		case "getUserInfo":
-			resp.Data = user
+		case "subscribe":
+			var payload struct {
+				Channel string `json:"channel"`
+			}
+			if err := json.Unmarshal(wsMsg.Payload, &payload); err != nil || payload.Channel == "" {
+				_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Missing channel"})
+				continue
+			}
+			subscribe(conn, payload.Channel)
+			_ = conn.WriteJSON(WSResponse{Type: "subscribed", Data: payload.Channel})
 
-		// Example: Add other API routes here
-		// case "getNetworkInterfaces":
-		//     data, err := network.GetInterfaces(user, sessionID, privileged)
-		//     if err != nil {
-		//         resp.Error = err.Error()
-		//     } else {
-		//         resp.Data = data
-		//     }
+		case "unsubscribe":
+			var payload struct {
+				Channel string `json:"channel"`
+			}
+			if err := json.Unmarshal(wsMsg.Payload, &payload); err != nil || payload.Channel == "" {
+				_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Missing channel"})
+				continue
+			}
+			unsubscribe(conn, payload.Channel)
+			_ = conn.WriteJSON(WSResponse{Type: "unsubscribed", Data: payload.Channel})
+
+		case "getUserInfo":
+			_ = conn.WriteJSON(WSResponse{
+				Type:      "getUserInfo_response",
+				RequestID: wsMsg.RequestID,
+				Data:      user,
+			})
 
 		default:
-			resp.Type = "error"
-			resp.Error = "Unknown message type"
-		}
-
-		if err := conn.WriteJSON(resp); err != nil {
-			logger.Warning.Printf("WS write error: %v", err)
-			break
+			_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Unknown message type"})
 		}
 	}
 }

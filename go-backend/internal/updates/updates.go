@@ -1,4 +1,4 @@
-package update
+package updates
 
 import (
 	"encoding/json"
@@ -127,7 +127,7 @@ func updatePackageHandler(c *gin.Context) {
 
 	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageID, output)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Package update triggered",
+		"message": "package updates triggered",
 		"output":  output,
 	})
 }

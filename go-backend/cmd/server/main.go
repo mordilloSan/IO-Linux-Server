@@ -14,7 +14,8 @@ import (
 	"go-backend/internal/session"
 	"go-backend/internal/system"
 	"go-backend/internal/templates"
-	"go-backend/internal/update"
+	"go-backend/internal/updates"
+
 	"go-backend/internal/utils"
 	"go-backend/internal/websocket"
 	"net/http"
@@ -69,7 +70,7 @@ func main() {
 	// Backend routes
 	auth.RegisterAuthRoutes(router)
 	system.RegisterSystemRoutes(router)
-	update.RegisterUpdateRoutes(router)
+	updates.RegisterUpdateRoutes(router)
 	services.RegisterServiceRoutes(router)
 	network.RegisterNetworkRoutes(router)
 	docker.RegisterDockerRoutes(router)
