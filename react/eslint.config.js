@@ -66,7 +66,6 @@ export default [
       "react-hooks": reactHooks,
       import: importPlugin,
       "unused-imports": unusedImports,
-      "react-you-might-not-need-an-effect": youMightNotNeedAnEffect,
     },
     settings: {
       react: {
