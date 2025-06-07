@@ -15,13 +15,13 @@ func RegisterPowerRoutes(r *gin.Engine) {
 	group.Use(auth.AuthMiddleware())
 
 	group.POST("/reboot", func(c *gin.Context) {
-		user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-		if !valid {
+		sess, valid := session.ValidateFromRequest(c.Request)
+		if !valid || sess == nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 			return
 		}
 
-		output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "Reboot", nil)
+		output, err := bridge.CallWithSession(sess, "dbus", "Reboot", nil)
 		if err != nil {
 			logger.Errorf("Reboot failed: %+v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -31,18 +31,18 @@ func RegisterPowerRoutes(r *gin.Engine) {
 			})
 			return
 		}
-		logger.Infof("Reboot triggered successfully")
+		logger.Infof("Reboot triggered successfully for user %s (session: %s)", sess.User.ID, sess.SessionID)
 		c.JSON(http.StatusOK, gin.H{"message": "rebooting...", "output": output})
 	})
 
 	group.POST("/shutdown", func(c *gin.Context) {
-		user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-		if !valid {
+		sess, valid := session.ValidateFromRequest(c.Request)
+		if !valid || sess == nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 			return
 		}
 
-		output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "PowerOff", nil)
+		output, err := bridge.CallWithSession(sess, "dbus", "PowerOff", nil)
 		if err != nil {
 			logger.Errorf("Shutdown failed: %+v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -52,7 +52,7 @@ func RegisterPowerRoutes(r *gin.Engine) {
 			})
 			return
 		}
-		logger.Infof("Shutdown triggered successfully")
+		logger.Infof("Shutdown triggered successfully for user %s (session: %s)", sess.User.ID, sess.SessionID)
 		c.JSON(http.StatusOK, gin.H{"message": "shutting down...", "output": output})
 	})
 }

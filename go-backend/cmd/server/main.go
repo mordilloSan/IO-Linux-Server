@@ -49,7 +49,8 @@ func main() {
 	}
 
 	logger.Infof("🌱 Starting server in %s mode...", env)
-	if env == "production" {
+
+	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
 	}
 

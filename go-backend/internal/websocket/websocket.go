@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"encoding/json"
+	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
 	"net/http"
@@ -35,7 +36,6 @@ var (
 	channelSubscribers = make(map[string]map[*websocket.Conn]struct{})
 )
 
-// Subscribe the connection to a channel
 func subscribe(conn *websocket.Conn, channel string) {
 	channelsMu.Lock()
 	defer channelsMu.Unlock()
@@ -46,12 +46,10 @@ func subscribe(conn *websocket.Conn, channel string) {
 	logger.Infof("WebSocket subscribed to channel: %s", channel)
 }
 
-// Unsubscribe the connection from a channel
 func unsubscribe(conn *websocket.Conn, channel string) {
 	channelsMu.Lock()
 	defer channelsMu.Unlock()
-	subs := channelSubscribers[channel]
-	if subs != nil {
+	if subs, exists := channelSubscribers[channel]; exists && subs != nil {
 		delete(subs, conn)
 		if len(subs) == 0 {
 			delete(channelSubscribers, channel)
@@ -60,7 +58,6 @@ func unsubscribe(conn *websocket.Conn, channel string) {
 	logger.Infof("WebSocket unsubscribed from channel: %s", channel)
 }
 
-// Remove a connection from all channels (on disconnect)
 func removeConnFromAllChannels(conn *websocket.Conn) {
 	channelsMu.Lock()
 	defer channelsMu.Unlock()
@@ -72,7 +69,6 @@ func removeConnFromAllChannels(conn *websocket.Conn) {
 	}
 }
 
-// Broadcast a message to all clients subscribed to a channel
 func broadcastToChannel(channel string, msg WSResponse) {
 	channelsMu.Lock()
 	subs := channelSubscribers[channel]
@@ -85,9 +81,9 @@ func broadcastToChannel(channel string, msg WSResponse) {
 // --- MAIN HANDLER ---
 
 func WebSocketHandler(c *gin.Context) {
-	user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
-	if !valid {
-		logger.Warnf("WebSocket unauthorized: %s", sessionID)
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
+		logger.Warnf("WebSocket unauthorized or missing session")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -102,7 +98,7 @@ func WebSocketHandler(c *gin.Context) {
 		conn.Close()
 	}()
 
-	logger.Infof("WebSocket connected for user: %s (session: %s, privileged: %v)", user.Name, sessionID, privileged)
+	logger.Infof("WebSocket connected for user: %s (session: %s, privileged: %v)", sess.User.Name, sess.SessionID, sess.Privileged)
 
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -145,7 +141,33 @@ func WebSocketHandler(c *gin.Context) {
 			_ = conn.WriteJSON(WSResponse{
 				Type:      "getUserInfo_response",
 				RequestID: wsMsg.RequestID,
-				Data:      user,
+				Data:      sess.User,
+			})
+
+		case "bridgeCall":
+			var payload struct {
+				ReqType string   `json:"reqType"`
+				Command string   `json:"command"`
+				Args    []string `json:"args"`
+			}
+			if err := json.Unmarshal(wsMsg.Payload, &payload); err != nil {
+				_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Invalid bridgeCall payload"})
+				continue
+			}
+			output, err := bridge.CallWithSession(sess, payload.ReqType, payload.Command, payload.Args)
+			if err != nil {
+				_ = conn.WriteJSON(WSResponse{
+					Type:      wsMsg.Type + "_response",
+					RequestID: wsMsg.RequestID,
+					Error:     err.Error(),
+					Data:      output,
+				})
+				continue
+			}
+			_ = conn.WriteJSON(WSResponse{
+				Type:      wsMsg.Type + "_response",
+				RequestID: wsMsg.RequestID,
+				Data:      output,
 			})
 
 		default:

@@ -87,9 +87,16 @@ func loginHandler(c *gin.Context) {
 	sessionID := uuid.New().String()
 	user := utils.User{ID: req.Username, Name: req.Username}
 	session.CreateSession(sessionID, user, sessionDuration, privileged)
+	sess := session.Get(sessionID)
 
 	// 4. Start main socket for this session
-	err := bridge.StartBridgeSocket(sessionID, req.Username)
+	if sess == nil {
+		logger.Errorf("Failed to get session after creation (id=%s)", sessionID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "session creation failed"})
+		return
+	}
+
+	err := bridge.StartBridgeSocket(sess)
 	if err != nil {
 		logger.Errorf("Failed to start main socket: %v", err)
 		session.DeleteSession(sessionID)
@@ -98,22 +105,22 @@ func loginHandler(c *gin.Context) {
 	}
 
 	// 5. Start the bridge process for this session
-	var bridgeErr error
-	if err := bridge.StartBridge(sessionID, req.Username, privileged, req.Password); err != nil {
-		// If privileged failed, try normal (only fallback if you want)
+	if err := bridge.StartBridge(sess, req.Password); err != nil {
 		if privileged {
 			logger.Warnf("Privileged bridge failed, falling back to unprivileged: %v", err)
 			privileged = false
-			bridgeErr = bridge.StartBridge(sessionID, req.Username, privileged, req.Password)
+			if err2 := bridge.StartBridge(sess, req.Password); err2 != nil {
+				logger.Errorf("Unprivileged bridge also failed: %v", err2)
+				session.DeleteSession(sessionID)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start bridge"})
+				return
+			}
 		} else {
-			bridgeErr = err
+			logger.Errorf("Bridge failed to start: %v", err)
+			session.DeleteSession(sessionID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start bridge"})
+			return
 		}
-	}
-	if bridgeErr != nil {
-		logger.Errorf("Failed to start bridge for session %s: %v", sessionID, bridgeErr)
-		session.DeleteSession(sessionID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start backend bridge"})
-		return
 	}
 
 	// 6. Set session cookie
@@ -129,23 +136,26 @@ func loginHandler(c *gin.Context) {
 
 func logoutHandler(c *gin.Context) {
 	sessionID, err := c.Cookie("session_id")
-	if err == nil {
-		s := session.Get(sessionID) // Safe concurrent read
-		var username string
-		if s == nil {
-			logger.Debugf("[auth] No session found for ID: %s (already expired?)", sessionID)
-		}
-		if s != nil {
-			username = s.User.ID
-		}
-		session.DeleteSession(sessionID)
-		if username != "" {
-			bridge.CallWithSession(sessionID, username, "control", "shutdown", nil)
-			bridge.CleanupBridgeSocket(sessionID, username)
-		}
-		c.SetCookie("session_id", "", -1, "/", "", false, true)
-		logger.Infof("👋 Logged out session: %s", sessionID)
+	if err != nil {
+		c.Status(http.StatusOK)
+		return
 	}
+
+	s := session.Get(sessionID)
+	if s == nil {
+		logger.Debugf("[auth] No session found for ID: %s (already expired?)", sessionID)
+		c.SetCookie("session_id", "", -1, "/", "", false, true)
+		c.Status(http.StatusOK)
+		return
+	}
+
+	session.DeleteSession(sessionID)
+	if s.User.ID != "" {
+		bridge.CallWithSession(s, "control", "shutdown", nil)
+		bridge.CleanupBridgeSocket(s)
+	}
+	c.SetCookie("session_id", "", -1, "/", "", false, true)
+	logger.Infof("👋 Logged out session: %s", sessionID)
 	c.Status(http.StatusOK)
 }
 

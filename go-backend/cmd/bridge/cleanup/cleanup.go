@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
+	"go-backend/internal/session"
 	"net"
 	"os"
 	"strconv"
@@ -92,8 +93,8 @@ func killParentTree(pid int) {
 	}
 }
 
-func CheckMainProcessHealth(sessionID string, username string) bool {
-	sock := bridge.MainSocketPath(sessionID, username)
+func CheckMainProcessHealth(sess *session.Session) bool {
+	sock := bridge.MainSocketPath(sess)
 	conn, err := net.DialTimeout("unix", sock, 2*time.Second)
 	if err != nil {
 		logger.Warnf("⚠️ Could not connect to main socket: %v", err)
@@ -103,7 +104,7 @@ func CheckMainProcessHealth(sessionID string, username string) bool {
 
 	req := BridgeHealthRequest{
 		Type:    "validate",
-		Session: sessionID,
+		Session: sess.SessionID,
 	}
 	if err := json.NewEncoder(conn).Encode(req); err != nil {
 		logger.Warnf("⚠️ Failed to send health request: %v", err)

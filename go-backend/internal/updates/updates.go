@@ -36,13 +36,13 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 func getUpdatesHandler(c *gin.Context) {
 	logger.Infof("🔍 Checking for system updates (D-Bus)...")
 
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 
-	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetUpdates", nil)
+	output, err := bridge.CallWithSession(sess, "dbus", "GetUpdates", nil)
 	if err != nil {
 		logger.Errorf("❌ Failed to get updates: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -97,7 +97,6 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
-	// Defensive: Optionally check if this looks like a PackageKit package_id (e.g., contains semicolons)
 	if !strings.Contains(req.PackageID, ";") {
 		logger.Warnf("⚠️ Invalid package_id submitted: %s", req.PackageID)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package_id"})
@@ -106,14 +105,13 @@ func updatePackageHandler(c *gin.Context) {
 
 	logger.Infof("📦 Triggering update for package: %s", req.PackageID)
 
-	// Extract session info
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 
-	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "InstallPackage", []string{req.PackageID})
+	output, err := bridge.CallWithSession(sess, "dbus", "InstallPackage", []string{req.PackageID})
 
 	if err != nil {
 		logger.Errorf("❌ Failed to update %s: %v\nOutput: %s", req.PackageID, err, output)
@@ -151,8 +149,6 @@ func postUpdateSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid settings"})
 		return
 	}
-
 	// Save logic here...
-
 	c.Status(http.StatusNoContent)
 }

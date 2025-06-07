@@ -42,8 +42,8 @@ var validServiceName = regexp.MustCompile(`^[\w.-]+\.service$`)
 
 // Generic handler for service actions
 func serviceAction(c *gin.Context, action string) {
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		logger.Warnf("Unauthorized attempt to %s (missing/invalid session)", action)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
@@ -52,35 +52,35 @@ func serviceAction(c *gin.Context, action string) {
 
 	// --- Validate input service name ---
 	if !validServiceName.MatchString(serviceName) {
-		logger.Warnf("Invalid service name for %s: %q by user: %s", action, serviceName, user.Name)
+		logger.Warnf("Invalid service name for %s: %q by user: %s", action, serviceName, sess.User.Name)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service name"})
 		return
 	}
-	logger.Infof("User %s requested %s on %s (session: %s)", user.Name, action, serviceName, sessionID)
+	logger.Infof("User %s requested %s on %s (session: %s)", sess.User.Name, action, serviceName, sess.SessionID)
 
-	_, err := bridge.CallWithSession(sessionID, user.Name, "dbus", action, []string{serviceName})
+	_, err := bridge.CallWithSession(sess, "dbus", action, []string{serviceName})
 	if err != nil {
-		logger.Errorf("Failed to %s %s via bridge (user: %s, session: %s): %v", action, serviceName, user.Name, sessionID, err)
+		logger.Errorf("Failed to %s %s via bridge (user: %s, session: %s): %v", action, serviceName, sess.User.Name, sess.SessionID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	logger.Infof("%s on %s succeeded for user %s (session: %s)", action, serviceName, user.Name, sessionID)
+	logger.Infof("%s on %s succeeded for user %s (session: %s)", action, serviceName, sess.User.Name, sess.SessionID)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func getServiceStatus(c *gin.Context) {
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		logger.Warnf("Unauthorized service status request (missing/invalid session)")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 
-	logger.Infof("User %s requested service status (session: %s)", user.Name, sessionID)
+	logger.Infof("User %s requested service status (session: %s)", sess.User.Name, sess.SessionID)
 
-	output, err := bridge.CallWithSession(sessionID, user.Name, "dbus", "ListServices", nil)
+	output, err := bridge.CallWithSession(sess, "dbus", "ListServices", nil)
 	if err != nil {
-		logger.Errorf("Failed to list services via bridge (user: %s, session: %s): %v", user.Name, sessionID, err)
+		logger.Errorf("Failed to list services via bridge (user: %s, session: %s): %v", sess.User.Name, sess.SessionID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -91,34 +91,34 @@ func getServiceStatus(c *gin.Context) {
 		Error  string          `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		logger.Errorf("Failed to decode bridge response (user: %s): %v", user.Name, err)
+		logger.Errorf("Failed to decode bridge response (user: %s): %v", sess.User.Name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "decode bridge response"})
 		return
 	}
 
 	if resp.Status != "ok" {
-		logger.Warnf("Bridge returned error for service status (user: %s): %v", user.Name, resp.Error)
+		logger.Warnf("Bridge returned error for service status (user: %s): %v", sess.User.Name, resp.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": resp.Error})
 		return
 	}
 
-	logger.Debugf("Returned service status to user %s", user.Name)
+	logger.Debugf("Returned service status to user %s", sess.User.Name)
 	c.Data(http.StatusOK, "application/json", resp.Output)
 }
 
 func getServiceDetail(c *gin.Context) {
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		logger.Warnf("Unauthorized detail request for %q (missing/invalid session)", c.Param("name"))
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 	serviceName := c.Param("name")
-	logger.Infof("%s requested detail for %s (session: %s)", user.Name, serviceName, sessionID)
+	logger.Infof("%s requested detail for %s (session: %s)", sess.User.Name, serviceName, sess.SessionID)
 
-	output, err := bridge.CallWithSession(sessionID, user.Name, "dbus", "GetServiceInfo", []string{serviceName})
+	output, err := bridge.CallWithSession(sess, "dbus", "GetServiceInfo", []string{serviceName})
 	if err != nil {
-		logger.Errorf("Failed to get info for %s via bridge (user: %s, session: %s): %v", serviceName, user.Name, sessionID, err)
+		logger.Errorf("Failed to get info for %s via bridge (user: %s, session: %s): %v", serviceName, sess.User.Name, sess.SessionID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -128,15 +128,15 @@ func getServiceDetail(c *gin.Context) {
 		Error  string          `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		logger.Errorf("Failed to decode bridge response for %s (user: %s): %v", serviceName, user.Name, err)
+		logger.Errorf("Failed to decode bridge response for %s (user: %s): %v", serviceName, sess.User.Name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "decode bridge response"})
 		return
 	}
 	if resp.Status != "ok" {
-		logger.Warnf("Bridge returned error for %s (user: %s): %v", serviceName, user.Name, resp.Error)
+		logger.Warnf("Bridge returned error for %s (user: %s): %v", serviceName, sess.User.Name, resp.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": resp.Error})
 		return
 	}
-	logger.Debugf("Returned detail for %s to user %s", serviceName, user.Name)
+	logger.Debugf("Returned detail for %s to user %s", serviceName, sess.User.Name)
 	c.Data(http.StatusOK, "application/json", resp.Output)
 }

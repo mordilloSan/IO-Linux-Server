@@ -53,26 +53,26 @@ var (
 )
 
 // MainSocketPath returns the per-session main (healthcheck) socket path for the user.
-func MainSocketPath(sessionID, username string) string {
-	u, err := user.Lookup(username)
+func MainSocketPath(sess *session.Session) string {
+	u, err := user.Lookup(sess.User.ID)
 	if err != nil {
-		panic(fmt.Sprintf("could not find user %s: %v", username, err))
+		panic(fmt.Sprintf("could not find user %s: %v", sess.User.ID, err))
 	}
-	return fmt.Sprintf("/run/user/%s/linuxio-main-%s.sock", u.Uid, sessionID)
+	return fmt.Sprintf("/run/user/%s/linuxio-main-%s.sock", u.Uid, sess.SessionID)
 }
 
 // BridgeSocketPath returns the per-session bridge command socket path for the user.
-func BridgeSocketPath(sessionID, username string) string {
-	u, err := user.Lookup(username)
+func BridgeSocketPath(sess *session.Session) string {
+	u, err := user.Lookup(sess.User.ID)
 	if err != nil {
-		panic(fmt.Sprintf("could not find user %s: %v", username, err))
+		panic(fmt.Sprintf("could not find user %s: %v", sess.User.ID, err))
 	}
-	return fmt.Sprintf("/run/user/%s/linuxio-bridge-%s.sock", u.Uid, sessionID)
+	return fmt.Sprintf("/run/user/%s/linuxio-bridge-%s.sock", u.Uid, sess.SessionID)
 }
 
 // Use everywhere for bridge actions: returns *raw* JSON response string (for HTTP handler to decode output as needed)
-func CallWithSession(sessionID, username, reqType, command string, args []string) (string, error) {
-	socketPath := BridgeSocketPath(sessionID, username)
+func CallWithSession(sess *session.Session, reqType, command string, args []string) (string, error) {
+	socketPath := BridgeSocketPath(sess)
 	return CallViaSocket(socketPath, reqType, command, args)
 }
 
@@ -106,20 +106,20 @@ func CallViaSocket(socketPath, reqType, command string, args []string) (string, 
 	return string(b), nil
 }
 
-// StartBridge starts the bridge process for a given session ID and username.
-func StartBridge(sessionID, username string, privileged bool, sudoPassword string) error {
+// StartBridge starts the bridge process for a given session.
+func StartBridge(sess *session.Session, sudoPassword string) error {
 	processesMu.Lock()
 	defer processesMu.Unlock()
 
-	if _, exists := processes[sessionID]; exists {
+	if _, exists := processes[sess.SessionID]; exists {
 		return errors.New("bridge already running for this session")
 	}
 
 	var cmd *exec.Cmd
-	if privileged {
+	if sess.Privileged {
 		cmd = exec.Command("sudo", "-S", "env",
-			"LINUXIO_SESSION_ID="+sessionID,
-			"LINUXIO_SESSION_USER="+username,
+			"LINUXIO_SESSION_ID="+sess.SessionID,
+			"LINUXIO_SESSION_USER="+sess.User.ID,
 			"GO_ENV="+os.Getenv("GO_ENV"),
 			"VERBOSE="+os.Getenv("VERBOSE"),
 			bridgeBinary,
@@ -127,8 +127,8 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	} else {
 		cmd = exec.Command(bridgeBinary)
 		cmd.Env = append(os.Environ(),
-			"LINUXIO_SESSION_ID="+sessionID,
-			"LINUXIO_SESSION_USER="+username,
+			"LINUXIO_SESSION_ID="+sess.SessionID,
+			"LINUXIO_SESSION_USER="+sess.User.ID,
 			"GO_ENV="+os.Getenv("GO_ENV"),
 			"VERBOSE="+os.Getenv("VERBOSE"),
 		)
@@ -140,7 +140,7 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 
-	if privileged && sudoPassword != "" {
+	if sess.Privileged && sudoPassword != "" {
 		stdin, err := cmd.StdinPipe()
 		if err != nil {
 			logger.Errorf("Failed to get stdin pipe: %v", err)
@@ -153,65 +153,65 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	}
 
 	if err := cmd.Start(); err != nil {
-		logger.Errorf("Failed to start bridge for session %s: %v", sessionID, err)
+		logger.Errorf("Failed to start bridge for session %s: %v", sess.SessionID, err)
 		return err
 	}
 
 	logger.Infof("Started %sbridge for session %s (pid=%d)",
 		func() string {
-			if privileged {
+			if sess.Privileged {
 				return "privileged "
 			}
 			return ""
-		}(), sessionID, cmd.Process.Pid)
+		}(), sess.SessionID, cmd.Process.Pid)
 
-	processes[sessionID] = &BridgeProcess{
+	processes[sess.SessionID] = &BridgeProcess{
 		Cmd:       cmd,
-		SessionID: sessionID,
+		SessionID: sess.SessionID,
 		StartedAt: time.Now(),
 	}
 
 	// Panic guard for process cleanup goroutine
-	go func(sessionID string, cmd *exec.Cmd, stdoutBuf, stderrBuf *bytes.Buffer) {
+	go func(sessID string, cmd *exec.Cmd, stdoutBuf, stderrBuf *bytes.Buffer) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Errorf("Panic in process cleanup goroutine for session %s: %v", sessionID, r)
+				logger.Errorf("Panic in process cleanup goroutine for session %s: %v", sessID, r)
 			}
 		}()
-		logger.Infof("Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessionID, stdoutBuf.Len(), stderrBuf.Len())
+		logger.Infof("Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessID, stdoutBuf.Len(), stderrBuf.Len())
 
 		err := cmd.Wait()
 		processesMu.Lock()
 		defer processesMu.Unlock()
-		delete(processes, sessionID)
+		delete(processes, sessID)
 
 		stdout := strings.TrimSpace(stdoutBuf.String())
 		stderr := strings.TrimSpace(stderrBuf.String())
 
 		if stdout != "" {
-			logger.Infof("STDOUT for session %s:\n%s", sessionID, stdout)
+			logger.Infof("STDOUT for session %s:\n%s", sessID, stdout)
 		}
 		if stderr != "" {
-			logger.Warnf("STDERR for session %s:\n%s", sessionID, stderr)
+			logger.Warnf("STDERR for session %s:\n%s", sessID, stderr)
 		}
 
 		if err != nil {
-			logger.Warnf("Bridge for session %s exited with error: %v", sessionID, err)
+			logger.Warnf("Bridge for session %s exited with error: %v", sessID, err)
 		} else {
-			logger.Infof("Bridge for session %s exited", sessionID)
+			logger.Infof("Bridge for session %s exited", sessID)
 		}
-	}(sessionID, cmd, &stdoutBuf, &stderrBuf)
+	}(sess.SessionID, cmd, &stdoutBuf, &stderrBuf)
 
 	return nil
 }
 
 // StartBridgeSocket starts a Unix socket server for the main process.
-func StartBridgeSocket(sessionID string, username string) error {
-	socketPath := MainSocketPath(sessionID, username)
+func StartBridgeSocket(sess *session.Session) error {
+	socketPath := MainSocketPath(sess)
 	_ = os.Remove(socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
-		logger.Errorf("Failed to listen on main socket for session %s: %v", sessionID, err)
+		logger.Errorf("Failed to listen on main socket for session %s: %v", sess.SessionID, err)
 		return err
 	}
 
@@ -225,20 +225,20 @@ func StartBridgeSocket(sessionID string, username string) error {
 
 	// Store the listener so we can close and remove it on logout
 	mainSocketListenersMu.Lock()
-	mainSocketListeners[sessionID] = ln
+	mainSocketListeners[sess.SessionID] = ln
 	mainSocketListenersMu.Unlock()
 
-	logger.Infof("Main socket for session %s is now listening on %s", sessionID, socketPath)
+	logger.Infof("Main socket for session %s is now listening on %s", sess.SessionID, socketPath)
 
 	go func() {
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				logger.Warnf("Accept failed on main socket for session %s: %v", sessionID, err)
+				logger.Warnf("Accept failed on main socket for session %s: %v", sess.SessionID, err)
 				// Exit the goroutine if the listener is closed
 				break
 			}
-			logger.Infof("Main socket for session %s accepted a connection", sessionID)
+			logger.Infof("Main socket for session %s accepted a connection", sess.SessionID)
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -279,30 +279,30 @@ func handleBridgeRequest(conn net.Conn) {
 	_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "unknown request type"})
 }
 
-func CleanupBridgeSocket(sessionID string, username string) {
+func CleanupBridgeSocket(sess *session.Session) {
 	mainSocketListenersMu.Lock()
-	ln, ok := mainSocketListeners[sessionID]
+	ln, ok := mainSocketListeners[sess.SessionID]
 	if ok {
 		err := ln.Close()
 		if err != nil {
-			logger.Warnf("Error closing main socket listener for session %s: %v", sessionID, err)
+			logger.Warnf("Error closing main socket listener for session %s: %v", sess.SessionID, err)
 		} else {
-			logger.Infof("Closed main socket listener for session %s", sessionID)
+			logger.Infof("Closed main socket listener for session %s", sess.SessionID)
 		}
-		delete(mainSocketListeners, sessionID)
+		delete(mainSocketListeners, sess.SessionID)
 	}
 	mainSocketListenersMu.Unlock()
 	//remove main socket
-	mainSock := MainSocketPath(sessionID, username)
+	mainSock := MainSocketPath(sess)
 	if err := os.Remove(mainSock); err == nil {
-		logger.Infof("Removed main socket file %s for session %s", mainSock, sessionID)
+		logger.Infof("Removed main socket file %s for session %s", mainSock, sess.SessionID)
 	} else if !os.IsNotExist(err) {
 		logger.Warnf("Failed to remove main socket file %s: %v", mainSock, err)
 	}
 	//remove bridge socket
-	bridgeSock := BridgeSocketPath(sessionID, username)
+	bridgeSock := BridgeSocketPath(sess)
 	if err := os.Remove(bridgeSock); err == nil {
-		logger.Infof("Removed bridge socket file %s for session %s", bridgeSock, sessionID)
+		logger.Infof("Removed bridge socket file %s for session %s", bridgeSock, sess.SessionID)
 	} else if !os.IsNotExist(err) {
 		logger.Warnf("Failed to remove bridge socket file %s: %v", bridgeSock, err)
 	}

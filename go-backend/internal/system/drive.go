@@ -12,13 +12,13 @@ import (
 )
 
 func getDiskInfo(c *gin.Context) {
-	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
-	if !valid {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
 		return
 	}
 
-	output, err := bridge.CallWithSession(sessionID, user.Name, "system", "get_drive_info", nil)
+	output, err := bridge.CallWithSession(sess, "system", "get_drive_info", nil)
 	if err != nil {
 		logger.Errorf("Failed to get drive info via bridge: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -41,6 +41,5 @@ func getDiskInfo(c *gin.Context) {
 		return
 	}
 
-	// Output is already a JSON array/object
 	c.Data(http.StatusOK, "application/json", resp.Output)
 }

@@ -9,6 +9,8 @@ import (
 	"go-backend/cmd/bridge/system"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
+	"go-backend/internal/session"
+	"go-backend/internal/utils"
 	"io"
 	"net"
 	"os"
@@ -155,16 +157,18 @@ func main() {
 
 	sessionID := os.Getenv("LINUXIO_SESSION_ID")
 	username := os.Getenv("LINUXIO_SESSION_USER")
-
-	if sessionID == "" || username == "" {
-		logger.Error.Fatalf("❌ LINUXIO_SESSION_ID and LINUXIO_SESSION_USER env vars required")
+	// Build minimal session object
+	sess := &session.Session{
+		SessionID: sessionID,
+		User:      utils.User{ID: username, Name: username},
+		// If you want, also read and set .Privileged from another env var
 	}
-
-	socketPath := bridge.BridgeSocketPath(sessionID, username)
-	listener, uid, gid, err := createAndOwnSocket(socketPath, username)
+	socketPath := bridge.BridgeSocketPath(sess)
+	listener, uid, gid, err := createAndOwnSocket(socketPath, sess.User.ID)
 	if err != nil {
 		logger.Error.Fatalf("❌ %v", err)
 	}
+
 	// Trap SIGTERM and SIGINT for clean shutdown
 	go func() {
 		sigChan := make(chan os.Signal, 1)
@@ -186,13 +190,13 @@ func main() {
 	runSelfTestIfDev(env)
 
 	go func() {
-		logger.Infof("Starting periodic health check (session: %s)", sessionID)
+		logger.Infof("Starting periodic health check (session: %s)", sess.SessionID)
 		for {
-			logger.Debugf("Healthcheck: pinging main process for session %s", sessionID)
-			ok := cleanup.CheckMainProcessHealth(sessionID, username)
+			logger.Debugf("Healthcheck: pinging main process for session %s", sess.SessionID)
+			ok := cleanup.CheckMainProcessHealth(sess)
 			if !ok {
 				logger.Warnf("❌ Main process unreachable or session invalid, bridge exiting...")
-				bridge.CleanupBridgeSocket(sessionID, username)
+				bridge.CleanupBridgeSocket(sess)
 				os.Exit(1)
 			}
 			time.Sleep(time.Minute)
@@ -437,6 +441,23 @@ func runSelfTestIfDev(env string) {
 			}
 		}
 	}()
+}
+func MainSocketPath(sess *session.Session) (string, error) {
+	u, err := user.Lookup(sess.User.ID)
+	if err != nil {
+		logger.Errorf("could not find user %s: %v", sess.User.ID, err)
+		return "", err
+	}
+	return fmt.Sprintf("/run/user/%s/linuxio-main-%s.sock", u.Uid, sess.SessionID), nil
+}
+
+func BridgeSocketPath(sess *session.Session) (string, error) {
+	u, err := user.Lookup(sess.User.ID)
+	if err != nil {
+		logger.Errorf("could not find user %s: %v", sess.User.ID, err)
+		return "", err
+	}
+	return fmt.Sprintf("/run/user/%s/linuxio-bridge-%s.sock", u.Uid, sess.SessionID), nil
 }
 
 /*

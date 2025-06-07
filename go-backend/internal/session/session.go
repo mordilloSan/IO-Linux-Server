@@ -8,6 +8,7 @@ import (
 )
 
 type Session struct {
+	SessionID  string
 	User       utils.User
 	ExpiresAt  time.Time
 	Privileged bool
@@ -58,6 +59,7 @@ func StartSessionGC() {
 // Creates a new session
 func CreateSession(id string, user utils.User, duration time.Duration, privileged bool) {
 	sess := Session{
+		SessionID:  id,
 		User:       user,
 		ExpiresAt:  time.Now().Add(duration),
 		Privileged: privileged,
@@ -93,34 +95,39 @@ func IsPrivileged(sessionID string) bool {
 	return privileged
 }
 
-// Utility to validate session cookie and return user/ID/status
-func ValidateFromRequest(r *http.Request) (utils.User, string, bool, bool) {
+// ValidateFromRequest validates the session cookie and returns the session pointer and validity.
+func ValidateFromRequest(r *http.Request) (*Session, bool) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie.Value == "" {
-		return utils.User{}, "", false, false
+		return nil, false
 	}
 
-	var session Session
+	var sess *Session
 	var exists bool
 	done := make(chan bool)
 
 	SessionMux <- func() {
-		session, exists = Sessions[cookie.Value]
+		s, ok := Sessions[cookie.Value]
+		exists = ok
+		if ok {
+			copy := s // avoid race
+			sess = &copy
+		}
 		done <- true
 	}
 	<-done
 
 	if !exists {
 		logger.Warnf("Access attempt with unknown session_id: %s", cookie.Value)
-		return utils.User{}, "", false, false
+		return nil, false
 	}
 
-	if session.ExpiresAt.Before(time.Now()) {
-		logger.Warnf("Expired session access attempt by user '%s'", session.User.ID)
-		return utils.User{}, "", false, false
+	if sess.ExpiresAt.Before(time.Now()) {
+		logger.Warnf("Expired session access attempt by user '%s'", sess.User.ID)
+		return nil, false
 	}
 
-	return session.User, cookie.Value, true, session.Privileged
+	return sess, true
 }
 
 // Checks if a session is valid

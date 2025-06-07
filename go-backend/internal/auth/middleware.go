@@ -38,15 +38,17 @@ func CorsMiddleware() gin.HandlerFunc {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
-		if !valid {
+		sess, valid := session.ValidateFromRequest(c.Request)
+		if !valid || sess == nil {
 			logger.Warnf("⚠️  Unauthorized request or expired session")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
-		c.Set("user", user)
-		c.Set("session_id", sessionID)
-		c.Set("privileged", privileged)
+		c.Set("session", sess)
+		// For compatibility with older code, you can also set these (optional):
+		c.Set("user", sess.User)
+		c.Set("session_id", sess.SessionID)
+		c.Set("privileged", sess.Privileged)
 		c.Next()
 	}
 }
