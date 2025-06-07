@@ -28,3 +28,4 @@ secret.env
 go-backend/cmd/server/tmp/main
 go-backend/cmd/server/theme.json
 go-backend/cmd/bridge/linuxio-bridge
+go-backend/cmd/server/linuxio-webserver

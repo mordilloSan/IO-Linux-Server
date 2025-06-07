@@ -137,8 +137,8 @@ build-backend: setup
 	echo "📄 Path: go-backend/server" && \
 	echo "🔖 Version: $(VERSION)" && \
 	echo "⏱ Build Time: $$(date -u +%Y-%m-%dT%H:%M:%SZ)" && \
-	echo "📦 Size: $$(du -h server | cut -f1)" && \
-	echo "🔐 SHA256: $$(shasum -a 256 server | awk '{ print $$1 }')"
+	echo "📦 Size: $$(du -h linuxio-webserver | cut -f1)" && \
+	echo "🔐 SHA256: $$(shasum -a 256 linuxio-webserver | awk '{ print $$1 }')"
 
 build-bridge:
 	@echo ""
