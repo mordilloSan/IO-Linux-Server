@@ -25,7 +25,7 @@ type BridgeHealthResponse struct {
 func KillLingeringBridgeStartupProcesses() {
 	procEntries, err := os.ReadDir("/proc")
 	if err != nil {
-		logger.Error.Printf("❌ Failed to read /proc: %v", err)
+		logger.Errorf("❌ Failed to read /proc: %v", err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func KillLingeringBridgeStartupProcesses() {
 			strings.Contains(cmdline, "sudo -S env") &&
 			strings.Contains(cmdline, "LINUXIO_SESSION_USER="+os.Getenv("LINUXIO_SESSION_USER")) {
 			pidInt, _ := strconv.Atoi(pid)
-			logger.Debug.Printf("⚠️ Found lingering bridge process (pid=%d): %s", pidInt, cmdline)
+			logger.Debugf("⚠️ Found lingering bridge process (pid=%d): %s", pidInt, cmdline)
 			killParentTree(pidInt)
 		}
 	}
@@ -56,31 +56,31 @@ func killParentTree(pid int) {
 	for {
 		stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 		if err != nil {
-			logger.Debug.Printf("killParentTree: could not read stat for pid %d: %v", pid, err)
+			logger.Debugf("killParentTree: could not read stat for pid %d: %v", pid, err)
 			break
 		}
 		fields := strings.Fields(string(stat))
 		if len(fields) < 4 {
-			logger.Debug.Printf("killParentTree: stat fields < 4 for pid %d", pid)
+			logger.Debugf("killParentTree: stat fields < 4 for pid %d", pid)
 			break
 		}
 
 		ppid, _ := strconv.Atoi(fields[3])
 		if ppid <= 1 || ppid == pid {
-			logger.Debug.Printf("killParentTree: hit root or self for pid %d (ppid %d)", pid, ppid)
+			logger.Debugf("killParentTree: hit root or self for pid %d (ppid %d)", pid, ppid)
 			break
 		}
 
 		commBytes, err := os.ReadFile(fmt.Sprintf("/proc/%d/comm", ppid))
 		if err != nil {
-			logger.Debug.Printf("killParentTree: could not read comm for ppid %d: %v", ppid, err)
+			logger.Debugf("killParentTree: could not read comm for ppid %d: %v", ppid, err)
 			break
 		}
 
 		comm := strings.TrimSpace(string(commBytes))
-		logger.Debug.Printf("killParentTree: pid=%d, ppid=%d, comm='%s'", pid, ppid, comm)
+		logger.Debugf("killParentTree: pid=%d, ppid=%d, comm='%s'", pid, ppid, comm)
 		if comm == "sudo" || comm == "env" {
-			logger.Debug.Printf("🛑 Killing sudo/env process (pid=%d, ppid=%d, comm=%s)", pid, ppid, comm)
+			logger.Debugf("🛑 Killing sudo/env process (pid=%d, ppid=%d, comm=%s)", pid, ppid, comm)
 			_ = syscall.Kill(ppid, syscall.SIGTERM)
 			_ = syscall.Kill(pid, syscall.SIGTERM)
 			time.Sleep(250 * time.Millisecond) // Give time for defer/logs to flush
@@ -96,7 +96,7 @@ func CheckMainProcessHealth(sessionID string, username string) bool {
 	sock := bridge.MainSocketPath(sessionID, username)
 	conn, err := net.DialTimeout("unix", sock, 2*time.Second)
 	if err != nil {
-		logger.Warning.Printf("⚠️ Could not connect to main socket: %v", err)
+		logger.Warnf("⚠️ Could not connect to main socket: %v", err)
 		return false
 	}
 	defer conn.Close()
@@ -106,16 +106,16 @@ func CheckMainProcessHealth(sessionID string, username string) bool {
 		Session: sessionID,
 	}
 	if err := json.NewEncoder(conn).Encode(req); err != nil {
-		logger.Warning.Printf("⚠️ Failed to send health request: %v", err)
+		logger.Warnf("⚠️ Failed to send health request: %v", err)
 		return false
 	}
 
 	var resp BridgeHealthResponse
 	if err := json.NewDecoder(conn).Decode(&resp); err != nil {
-		logger.Warning.Printf("⚠️ Failed to decode health response: %v", err)
+		logger.Warnf("⚠️ Failed to decode health response: %v", err)
 		return false
 	}
-	logger.Debug.Printf("Healthcheck: got %+v", resp)
+	logger.Debugf("Healthcheck: got %+v", resp)
 	return resp.Status == "ok"
 }
 

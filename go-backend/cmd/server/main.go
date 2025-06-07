@@ -37,7 +37,7 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init("env", verbose)
 
-	logger.Info.Println("📦 Loading configuration...")
+	logger.Infof("📦 Loading configuration...")
 	if err := config.LoadConfig(); err != nil {
 		logger.Error.Fatalf("❌ Failed to load config: %v", err)
 	}
@@ -48,7 +48,7 @@ func main() {
 		logger.Error.Fatalf("❌ Failed to initialize theme file: %v", err)
 	}
 
-	logger.Info.Printf("🌱 Starting server in %s mode...", env)
+	logger.Infof("🌱 Starting server in %s mode...", env)
 	if env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -102,7 +102,7 @@ func main() {
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"
-		logger.Warning.Println("⚠️  SERVER_PORT not set, defaulting to 8080")
+		logger.Warnf("⚠️  SERVER_PORT not set, defaulting to 8080")
 	}
 	os.Setenv("SERVER_PORT", port)
 
@@ -120,10 +120,10 @@ func main() {
 			Handler:   router,
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}},
 		}
-		logger.Info.Printf("🚀 Server running at https://localhost:%s", port)
+		logger.Infof("🚀 Server running at https://localhost:%s", port)
 		logger.Error.Fatal(srv.ListenAndServeTLS("", "")) // Empty filenames = use TLSConfig.Certificates
 	} else {
-		logger.Info.Printf("🚀 Server running at http://localhost:%s", port)
+		logger.Infof("🚀 Server running at http://localhost:%s", port)
 		logger.Error.Fatal(router.Run(addr))
 	}
 

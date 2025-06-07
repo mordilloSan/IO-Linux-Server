@@ -78,7 +78,7 @@ func CallWithSession(sessionID, username, reqType, command string, args []string
 
 // Now returns the full JSON bridge response as string, not just output!
 func CallViaSocket(socketPath, reqType, command string, args []string) (string, error) {
-	req := map[string]interface{}{
+	req := map[string]any{
 		"type":    reqType,
 		"command": command,
 	}
@@ -143,7 +143,7 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	if privileged && sudoPassword != "" {
 		stdin, err := cmd.StdinPipe()
 		if err != nil {
-			logger.Error.Printf("[bridge] Failed to get stdin pipe: %v", err)
+			logger.Errorf("Failed to get stdin pipe: %v", err)
 			return err
 		}
 		go func() {
@@ -153,11 +153,11 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	}
 
 	if err := cmd.Start(); err != nil {
-		logger.Error.Printf("[bridge] Failed to start bridge for session %s: %v", sessionID, err)
+		logger.Errorf("Failed to start bridge for session %s: %v", sessionID, err)
 		return err
 	}
 
-	logger.Info.Printf("[bridge] Started %sbridge for session %s (pid=%d)",
+	logger.Infof("Started %sbridge for session %s (pid=%d)",
 		func() string {
 			if privileged {
 				return "privileged "
@@ -175,10 +175,10 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 	go func(sessionID string, cmd *exec.Cmd, stdoutBuf, stderrBuf *bytes.Buffer) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error.Printf("[bridge] Panic in process cleanup goroutine for session %s: %v", sessionID, r)
+				logger.Errorf("Panic in process cleanup goroutine for session %s: %v", sessionID, r)
 			}
 		}()
-		logger.Info.Printf("[bridge] Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessionID, stdoutBuf.Len(), stderrBuf.Len())
+		logger.Infof("Captured output buffers for session %s: STDOUT=%d bytes, STDERR=%d bytes", sessionID, stdoutBuf.Len(), stderrBuf.Len())
 
 		err := cmd.Wait()
 		processesMu.Lock()
@@ -189,16 +189,16 @@ func StartBridge(sessionID, username string, privileged bool, sudoPassword strin
 		stderr := strings.TrimSpace(stderrBuf.String())
 
 		if stdout != "" {
-			logger.Info.Printf("[bridge] STDOUT for session %s:\n%s", sessionID, stdout)
+			logger.Infof("STDOUT for session %s:\n%s", sessionID, stdout)
 		}
 		if stderr != "" {
-			logger.Warning.Printf("[bridge] STDERR for session %s:\n%s", sessionID, stderr)
+			logger.Warnf("STDERR for session %s:\n%s", sessionID, stderr)
 		}
 
 		if err != nil {
-			logger.Warning.Printf("[bridge] Bridge for session %s exited with error: %v", sessionID, err)
+			logger.Warnf("Bridge for session %s exited with error: %v", sessionID, err)
 		} else {
-			logger.Info.Printf("[bridge] Bridge for session %s exited", sessionID)
+			logger.Infof("Bridge for session %s exited", sessionID)
 		}
 	}(sessionID, cmd, &stdoutBuf, &stderrBuf)
 
@@ -211,7 +211,7 @@ func StartBridgeSocket(sessionID string, username string) error {
 	_ = os.Remove(socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
-		logger.Error.Printf("[bridge] Failed to listen on main socket for session %s: %v", sessionID, err)
+		logger.Errorf("Failed to listen on main socket for session %s: %v", sessionID, err)
 		return err
 	}
 
@@ -219,7 +219,7 @@ func StartBridgeSocket(sessionID string, username string) error {
 	if err := os.Chmod(socketPath, 0600); err != nil {
 		_ = ln.Close()
 		_ = os.Remove(socketPath)
-		logger.Error.Printf("[bridge] Failed to chmod main socket %s: %v", socketPath, err)
+		logger.Errorf("Failed to chmod main socket %s: %v", socketPath, err)
 		return fmt.Errorf("failed to chmod socket: %w", err)
 	}
 
@@ -228,21 +228,21 @@ func StartBridgeSocket(sessionID string, username string) error {
 	mainSocketListeners[sessionID] = ln
 	mainSocketListenersMu.Unlock()
 
-	logger.Info.Printf("[bridge] Main socket for session %s is now listening on %s", sessionID, socketPath)
+	logger.Infof("Main socket for session %s is now listening on %s", sessionID, socketPath)
 
 	go func() {
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				logger.Warning.Printf("[bridge] Accept failed on main socket for session %s: %v", sessionID, err)
+				logger.Warnf("Accept failed on main socket for session %s: %v", sessionID, err)
 				// Exit the goroutine if the listener is closed
 				break
 			}
-			logger.Info.Printf("[bridge] Main socket for session %s accepted a connection", sessionID)
+			logger.Infof("Main socket for session %s accepted a connection", sessionID)
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.Error.Printf("[bridge] Panic in main socket handler: %v", r)
+						logger.Errorf("Panic in main socket handler: %v", r)
 					}
 				}()
 				handleBridgeRequest(conn)
@@ -255,19 +255,19 @@ func StartBridgeSocket(sessionID string, username string) error {
 
 func handleBridgeRequest(conn net.Conn) {
 	defer conn.Close()
-	logger.Info.Printf("[bridge] Main socket accepted a connection")
+	logger.Infof("Main socket accepted a connection")
 	decoder := json.NewDecoder(conn)
 	encoder := json.NewEncoder(conn)
 
 	var req BridgeHealthRequest
 	if err := decoder.Decode(&req); err != nil {
-		logger.Warning.Printf("[bridge] Invalid JSON on main socket: %v", err)
+		logger.Warnf("Invalid JSON on main socket: %v", err)
 		_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "invalid json"})
 		return
 	}
 
 	if req.Type == "validate" {
-		logger.Info.Printf("[bridge] Healthcheck received for session %s", req.Session)
+		logger.Infof("Healthcheck received for session %s", req.Session)
 		if session.IsValid(req.Session) {
 			_ = encoder.Encode(BridgeHealthResponse{Status: "ok"})
 		} else {
@@ -275,7 +275,7 @@ func handleBridgeRequest(conn net.Conn) {
 		}
 		return
 	}
-	logger.Warning.Printf("[bridge] Unknown healthcheck request type: %s (session %s)", req.Type, req.Session)
+	logger.Warnf("Unknown healthcheck request type: %s (session %s)", req.Type, req.Session)
 	_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "unknown request type"})
 }
 
@@ -285,9 +285,9 @@ func CleanupBridgeSocket(sessionID string, username string) {
 	if ok {
 		err := ln.Close()
 		if err != nil {
-			logger.Warning.Printf("[bridge] Error closing main socket listener for session %s: %v", sessionID, err)
+			logger.Warnf("Error closing main socket listener for session %s: %v", sessionID, err)
 		} else {
-			logger.Info.Printf("[bridge] Closed main socket listener for session %s", sessionID)
+			logger.Infof("Closed main socket listener for session %s", sessionID)
 		}
 		delete(mainSocketListeners, sessionID)
 	}
@@ -295,15 +295,15 @@ func CleanupBridgeSocket(sessionID string, username string) {
 	//remove main socket
 	mainSock := MainSocketPath(sessionID, username)
 	if err := os.Remove(mainSock); err == nil {
-		logger.Info.Printf("[bridge] Removed main socket file %s for session %s", mainSock, sessionID)
+		logger.Infof("Removed main socket file %s for session %s", mainSock, sessionID)
 	} else if !os.IsNotExist(err) {
-		logger.Warning.Printf("[bridge] Failed to remove main socket file %s: %v", mainSock, err)
+		logger.Warnf("Failed to remove main socket file %s: %v", mainSock, err)
 	}
 	//remove bridge socket
 	bridgeSock := BridgeSocketPath(sessionID, username)
 	if err := os.Remove(bridgeSock); err == nil {
-		logger.Info.Printf("[bridge] Removed bridge socket file %s for session %s", bridgeSock, sessionID)
+		logger.Infof("Removed bridge socket file %s for session %s", bridgeSock, sessionID)
 	} else if !os.IsNotExist(err) {
-		logger.Warning.Printf("[bridge] Failed to remove bridge socket file %s: %v", bridgeSock, err)
+		logger.Warnf("Failed to remove bridge socket file %s: %v", bridgeSock, err)
 	}
 }

@@ -20,7 +20,7 @@ func getDiskInfo(c *gin.Context) {
 
 	output, err := bridge.CallWithSession(sessionID, user.Name, "system", "get_drive_info", nil)
 	if err != nil {
-		logger.Error.Printf("Failed to get drive info via bridge: %v", err)
+		logger.Errorf("Failed to get drive info via bridge: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -31,7 +31,7 @@ func getDiskInfo(c *gin.Context) {
 		Error  string          `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		logger.Error.Printf("Failed to decode bridge response: %v", err)
+		logger.Errorf("Failed to decode bridge response: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "decode bridge response"})
 		return
 	}

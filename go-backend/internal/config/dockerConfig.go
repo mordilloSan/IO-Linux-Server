@@ -19,7 +19,7 @@ var appConfig AppConfig
 func LoadConfig() error {
 	file, err := os.Open("config/config.yaml")
 	if err != nil {
-		logger.Warning.Println("[config] No config.yaml found, using defaults")
+		logger.Warnf("No config.yaml found, using defaults")
 		appConfig = AppConfig{
 			DockerAppsSubdir: "docker",
 		}
@@ -29,17 +29,17 @@ func LoadConfig() error {
 
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&appConfig); err != nil {
-		logger.Error.Printf("[config] Failed to parse config.yaml: %v", err)
+		logger.Errorf("Failed to parse config.yaml: %v", err)
 		return err
 	}
 
 	// Fallback if value is empty
 	if appConfig.DockerAppsSubdir == "" {
-		logger.Warning.Println("[config] docker_apps_subdir missing, falling back to default: 'docker'")
+		logger.Warnf("docker_apps_subdir missing, falling back to default: 'docker'")
 		appConfig.DockerAppsSubdir = "docker"
 	}
 
-	logger.Info.Printf("[config] Config loaded. DockerAppsSubdir: %s", appConfig.DockerAppsSubdir)
+	logger.Infof("Config loaded. DockerAppsSubdir: %s", appConfig.DockerAppsSubdir)
 	return nil
 }
 
@@ -47,7 +47,7 @@ func LoadConfig() error {
 func GetDockerAppsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		logger.Error.Printf("[config] Failed to get user home directory: %v", err)
+		logger.Errorf("Failed to get user home directory: %v", err)
 		return "", err
 	}
 	return filepath.Join(home, appConfig.DockerAppsSubdir), nil
@@ -60,9 +60,9 @@ func EnsureDockerAppsDirExists() error {
 		return err
 	}
 	if err := os.MkdirAll(dockerDir, 0755); err != nil {
-		logger.Error.Printf("[config] Failed to create docker apps directory: %v", err)
+		logger.Errorf("Failed to create docker apps directory: %v", err)
 		return err
 	}
-	logger.Info.Printf("[config] Docker apps directory ensured at: %s", dockerDir)
+	logger.Infof("Docker apps directory ensured at: %s", dockerDir)
 	return nil
 }

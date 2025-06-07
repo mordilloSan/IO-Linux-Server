@@ -24,7 +24,7 @@ func init() {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.Error.Printf("[session] Panic in session actor: %v", r)
+						logger.Errorf("Panic in session actor: %v", r)
 					}
 				}()
 				f()
@@ -48,7 +48,7 @@ func StartSessionGC() {
 					}
 				}
 				if count > 0 {
-					logger.Info.Printf("[session] Garbage collected %d expired sessions", count)
+					logger.Infof("Garbage collected %d expired sessions", count)
 				}
 			}
 		}
@@ -65,7 +65,8 @@ func CreateSession(id string, user utils.User, duration time.Duration, privilege
 	SessionMux <- func() {
 		Sessions[id] = sess
 	}
-	logger.Info.Printf("[session] Created session for user '%s'", user.ID)
+	logger.Infof("Created session for user '%s'", user.ID)
+
 }
 
 // Deletes a session
@@ -74,7 +75,7 @@ func DeleteSession(id string) {
 		sess, exists := Sessions[id]
 		if exists {
 			delete(Sessions, id)
-			logger.Info.Printf("[session] Deleted session for user '%s'", sess.User.ID)
+			logger.Infof("Deleted session for user '%s'", sess.User.ID)
 		}
 	}
 }
@@ -110,12 +111,12 @@ func ValidateFromRequest(r *http.Request) (utils.User, string, bool, bool) {
 	<-done
 
 	if !exists {
-		logger.Warning.Printf("[session] Access attempt with unknown session_id: %s", cookie.Value)
+		logger.Warnf("Access attempt with unknown session_id: %s", cookie.Value)
 		return utils.User{}, "", false, false
 	}
 
 	if session.ExpiresAt.Before(time.Now()) {
-		logger.Warning.Printf("[session] Expired session access attempt by user '%s'", session.User.ID)
+		logger.Warnf("Expired session access attempt by user '%s'", session.User.ID)
 		return utils.User{}, "", false, false
 	}
 

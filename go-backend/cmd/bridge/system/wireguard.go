@@ -38,7 +38,7 @@ type WGPeer struct {
 func ListAllInterfacesHandler(c *gin.Context) {
 	ifaces, err := ListInterfaces()
 	if err != nil {
-		logger.Error.Printf("Failed to list WireGuard interfaces: %v", err)
+		logger.Errorf("Failed to list WireGuard interfaces: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -48,18 +48,18 @@ func ListAllInterfacesHandler(c *gin.Context) {
 func SetupInterfaceHandler(c *gin.Context) {
 	var input SetupInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		logger.Warning.Printf("Invalid WireGuard setup input: %v", err)
+		logger.Warnf("Invalid WireGuard setup input: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	if err := SetupInterface(input.Name, input.Endpoint, input.ListenPort, input.NumPeers); err != nil {
-		logger.Error.Printf("Failed to setup WireGuard interface %s: %v", input.Name, err)
+		logger.Errorf("Failed to setup WireGuard interface %s: %v", input.Name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	logger.Info.Printf("WireGuard interface %s configured with %d peers", input.Name, input.NumPeers)
+	logger.Infof("WireGuard interface %s configured with %d peers", input.Name, input.NumPeers)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "WireGuard interface setup successfully",
 		"name":    input.Name,
@@ -72,7 +72,7 @@ func GetInterfaceDetails(c *gin.Context) {
 
 	iface, err := GetInterface(name)
 	if err != nil {
-		logger.Warning.Printf("Failed to retrieve WireGuard interface %s: %v", name, err)
+		logger.Warnf("Failed to retrieve WireGuard interface %s: %v", name, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -90,7 +90,7 @@ func GenerateKeyPair() (string, string, error) {
 }
 
 func SetupInterface(name, endpoint string, listenPort, numPeers int) error {
-	logger.Info.Printf("Creating WireGuard interface: %s", name)
+	logger.Infof("Creating WireGuard interface: %s", name)
 
 	if err := CreateInterface(name); err != nil {
 		return err
@@ -112,10 +112,10 @@ func SetupInterface(name, endpoint string, listenPort, numPeers int) error {
 		peerAllowedIPs := fmt.Sprintf("10.0.0.%d/32", i+2)
 
 		if err := AddPeer(name, peerPubKey, []string{peerAllowedIPs}); err != nil {
-			logger.Warning.Printf("Failed to add peer %d to %s: %v", i, name, err)
+			logger.Warnf("Failed to add peer %d to %s: %v", i, name, err)
 			return err
 		}
-		logger.Debug.Printf("Added peer %d to %s with IP %s", i, name, peerAllowedIPs)
+		logger.Debugf("Added peer %d to %s with IP %s", i, name, peerAllowedIPs)
 	}
 
 	return nil

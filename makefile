@@ -130,7 +130,7 @@ build-backend: setup
 		-X 'main.version=$(VERSION)' \
 		-X 'main.env=production' \
 		-X 'main.buildTime=$$(date -u +%Y-%m-%dT%H:%M:%SZ)'" \
-	-o server && \
+	-o linuxio-webserver && \
 	echo "✅ Backend built successfully!" && \
 	echo "" && \
 	echo "Summary:" && \
@@ -172,10 +172,10 @@ prod: check-env build-vite-prod build-bridge
 run: build-vite-prod build-backend build-bridge
 	@sleep 1
 	@echo "🚦 Starting backend server..."
-	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) ./server
+	@cd go-backend/cmd/server && SERVER_PORT=$(SERVER_PORT) ./linuxio-webserver
 
 clean: stop-bridge
-	@rm -f go-backend/cmd/server/server || true
+	@rm -f go-backend/cmd/server/linuxio-webserver || true
 	@rm -f go-backend/cmd/bridge/linuxio-bridge || true
 	@rm -f go-backend/cmd/server/theme.json || true
 	@rm -f go-backend/theme.json || true

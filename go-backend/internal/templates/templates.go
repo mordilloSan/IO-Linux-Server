@@ -28,7 +28,7 @@ func init() {
 }
 
 func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
-	logger.Info.Println("📄 ServeIndex called for:", c.Request.URL.Path)
+	logger.Infof("📄 ServeIndex called for: %s", c.Request.URL.Path)
 
 	var js, css string
 
@@ -52,7 +52,7 @@ func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
 
 	theme, err := config.LoadTheme()
 	if err != nil {
-		logger.Warning.Println("⚠️ Failed to load theme, using defaults:", err)
+		logger.Warnf("⚠️ Failed to load theme, using defaults: %v", err)
 		theme = config.ThemeSettings{
 			Theme:           "DARK",
 			PrimaryColor:    "#1976d2",
@@ -79,6 +79,6 @@ func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
 	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	if err := IndexTemplate.Execute(c.Writer, data); err != nil {
-		logger.Error.Printf("❌ Failed to execute index template: %v", err)
+		logger.Errorf("❌ Failed to execute index template: %v", err)
 	}
 }

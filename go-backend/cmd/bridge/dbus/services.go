@@ -56,7 +56,7 @@ func GetServiceInfo(serviceName string) (map[string]interface{}, error) {
 	serviceName = strings.TrimSpace(serviceName)
 	if serviceName == "" {
 		err := fmt.Errorf("missing service name")
-		logger.Error.Printf("❌ GetServiceInfo failed: %v", err)
+		logger.Errorf("❌ GetServiceInfo failed: %v", err)
 		return nil, err
 	}
 

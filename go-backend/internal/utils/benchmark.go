@@ -1,12 +1,11 @@
 package utils
 
 import (
+	"go-backend/internal/logger"
 	"io"
 	"net/http"
 	"sync"
 	"time"
-
-	"go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +13,7 @@ import (
 // RunBenchmark performs parallel benchmarking of all GET /system/* endpoints
 func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, concurrency int) []BenchmarkResult {
 	endpoints := getBenchmarkableEndpoints(router)
-	logger.Info.Printf("📈 Running benchmark for %d /system/ endpoints...", len(endpoints))
+	logger.Infof("📈 Running benchmark for %d /system/ endpoints...", len(endpoints))
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	var wg sync.WaitGroup
@@ -28,7 +27,7 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 
 			req, err := http.NewRequest("GET", baseURL+endpoint, nil)
 			if err != nil {
-				logger.Error.Printf("❌ Failed to create request for %s: %v", endpoint, err)
+				logger.Errorf("❌ Failed to create request for %s: %v", endpoint, err)
 				resultChan <- BenchmarkResult{Endpoint: endpoint, Error: err}
 				return
 			}
@@ -39,14 +38,14 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 			latency := time.Since(start)
 
 			if err != nil {
-				logger.Warning.Printf("⚠️ Request to %s failed: %v", endpoint, err)
+				logger.Warnf("⚠️ Request to %s failed: %v", endpoint, err)
 				resultChan <- BenchmarkResult{Endpoint: endpoint, Latency: latency, Error: err}
 				return
 			}
 			defer resp.Body.Close()
 			io.Copy(io.Discard, resp.Body)
 
-			logger.Debug.Printf("✅ %s -> %d in %.2fms", endpoint, resp.StatusCode, float64(latency.Microseconds())/1000)
+			logger.Debugf("✅ %s -> %d in %.2fms", endpoint, resp.StatusCode, float64(latency.Microseconds())/1000)
 
 			resultChan <- BenchmarkResult{
 				Endpoint: endpoint,
@@ -65,7 +64,7 @@ func RunBenchmark(baseURL string, sessionCookie string, router *gin.Engine, conc
 		i++
 	}
 
-	logger.Info.Println("✅ Benchmark completed.")
+	logger.Infof("✅ Benchmark completed.")
 	return results
 }
 
@@ -85,6 +84,6 @@ func getBenchmarkableEndpoints(router *gin.Engine) []string {
 		}
 	}
 
-	logger.Debug.Printf("🔍 Found %d GET benchmarkable routes", len(endpoints))
+	logger.Debugf("🔍 Found %d GET benchmarkable routes", len(endpoints))
 	return endpoints
 }

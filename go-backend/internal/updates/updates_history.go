@@ -16,7 +16,7 @@ import (
 func getUpdateHistoryHandler(c *gin.Context) {
 	history := parseUpdateHistory()
 	if len(history) == 0 {
-		logger.Warning.Println("No update history found")
+		logger.Warnf("No update history found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "No update history found"})
 		return
 	}
@@ -25,21 +25,21 @@ func getUpdateHistoryHandler(c *gin.Context) {
 
 func parseUpdateHistory() []UpdateHistoryEntry {
 	if _, err := os.Stat("/var/log/dpkg.log"); err == nil {
-		logger.Info.Println("Parsing dpkg update history")
+		logger.Infof("Parsing dpkg update history")
 		return parseDpkgLog("/var/log/dpkg.log")
 	}
 	if _, err := os.Stat("/var/log/dnf.log"); err == nil {
-		logger.Info.Println("Parsing dnf update history")
+		logger.Infof("Parsing dnf update history")
 		return parseDnfHistory("/var/log/dnf.log")
 	}
-	logger.Warning.Println("No known package manager log found")
+	logger.Warnf("No known package manager log found")
 	return []UpdateHistoryEntry{}
 }
 
 func parseDpkgLog(logPath string) []UpdateHistoryEntry {
 	file, err := os.Open(logPath)
 	if err != nil {
-		logger.Error.Printf("Failed to open dpkg log: %v", err)
+		logger.Errorf("Failed to open dpkg log: %v", err)
 		return nil
 	}
 	defer file.Close()
@@ -86,7 +86,7 @@ func parseDpkgLog(logPath string) []UpdateHistoryEntry {
 func parseDnfHistory(logPath string) []UpdateHistoryEntry {
 	file, err := os.Open(logPath)
 	if err != nil {
-		logger.Error.Printf("Failed to open DNF log: %v", err)
+		logger.Errorf("Failed to open DNF log: %v", err)
 		return nil
 	}
 	defer file.Close()

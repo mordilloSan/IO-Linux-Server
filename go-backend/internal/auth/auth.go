@@ -75,7 +75,7 @@ func loginHandler(c *gin.Context) {
 
 	// 1. Authenticate with PAM
 	if err := pamAuth(req.Username, req.Password); err != nil {
-		logger.Warning.Printf("❌ Authentication failed for user: %s", req.Username)
+		logger.Warnf("❌ Authentication failed for user: %s", req.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
 		return
 	}
@@ -91,7 +91,7 @@ func loginHandler(c *gin.Context) {
 	// 4. Start main socket for this session
 	err := bridge.StartBridgeSocket(sessionID, req.Username)
 	if err != nil {
-		logger.Error.Printf("[login] Failed to start main socket: %v", err)
+		logger.Errorf("Failed to start main socket: %v", err)
 		session.DeleteSession(sessionID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start session socket"})
 		return
@@ -102,7 +102,7 @@ func loginHandler(c *gin.Context) {
 	if err := bridge.StartBridge(sessionID, req.Username, privileged, req.Password); err != nil {
 		// If privileged failed, try normal (only fallback if you want)
 		if privileged {
-			logger.Warning.Printf("[login] Privileged bridge failed, falling back to unprivileged: %v", err)
+			logger.Warnf("Privileged bridge failed, falling back to unprivileged: %v", err)
 			privileged = false
 			bridgeErr = bridge.StartBridge(sessionID, req.Username, privileged, req.Password)
 		} else {
@@ -110,7 +110,7 @@ func loginHandler(c *gin.Context) {
 		}
 	}
 	if bridgeErr != nil {
-		logger.Error.Printf("[login] Failed to start bridge for session %s: %v", sessionID, bridgeErr)
+		logger.Errorf("Failed to start bridge for session %s: %v", sessionID, bridgeErr)
 		session.DeleteSession(sessionID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start backend bridge"})
 		return
@@ -133,7 +133,7 @@ func logoutHandler(c *gin.Context) {
 		s := session.Get(sessionID) // Safe concurrent read
 		var username string
 		if s == nil {
-			logger.Debug.Printf("[auth] No session found for ID: %s (already expired?)", sessionID)
+			logger.Debugf("[auth] No session found for ID: %s (already expired?)", sessionID)
 		}
 		if s != nil {
 			username = s.User.ID
@@ -144,7 +144,7 @@ func logoutHandler(c *gin.Context) {
 			bridge.CleanupBridgeSocket(sessionID, username)
 		}
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
-		logger.Info.Printf("👋 Logged out session: %s", sessionID)
+		logger.Infof("👋 Logged out session: %s", sessionID)
 	}
 	c.Status(http.StatusOK)
 }

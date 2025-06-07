@@ -22,9 +22,9 @@ func CorsMiddleware() gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Headers", "Content-Type")
 			c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
-			logger.Debug.Printf("CORS allowed: %s %s", c.Request.Method, origin)
+			logger.Debugf("CORS allowed: %s %s", c.Request.Method, origin)
 		} else if origin != "" {
-			logger.Debug.Printf("CORS denied: %s %s", c.Request.Method, origin)
+			logger.Debugf("CORS denied: %s %s", c.Request.Method, origin)
 		}
 
 		if c.Request.Method == http.MethodOptions {
@@ -40,7 +40,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
 		if !valid {
-			logger.Warning.Println("⚠️  Unauthorized request or expired session")
+			logger.Warnf("⚠️  Unauthorized request or expired session")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}

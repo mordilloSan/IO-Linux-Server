@@ -27,7 +27,7 @@ var defaultTheme = ThemeSettings{
 
 func InitTheme() error {
 	if _, err := os.Stat(themeFilePath); os.IsNotExist(err) {
-		logger.Info.Println("[theme] No theme file found, creating default...")
+		logger.Infof("No theme file found, creating default...")
 		if err := SaveThemeToFile(defaultTheme); err != nil {
 			return err
 		}
@@ -37,18 +37,17 @@ func InitTheme() error {
 	return nil
 }
 
-
 func LoadTheme() (ThemeSettings, error) {
 	var settings ThemeSettings
 
 	data, err := os.ReadFile(themeFilePath)
 	if err != nil {
-		logger.Error.Printf("[theme] Failed to read theme file: %v", err)
+		logger.Errorf("Failed to read theme file: %v", err)
 		return settings, err
 	}
 
 	if err := json.Unmarshal(data, &settings); err != nil {
-		logger.Error.Printf("[theme] Failed to parse theme file: %v", err)
+		logger.Errorf("Failed to parse theme file: %v", err)
 		return settings, err
 	}
 
@@ -58,25 +57,25 @@ func LoadTheme() (ThemeSettings, error) {
 func SaveThemeToFile(settings ThemeSettings) error {
 	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
-		logger.Error.Printf("[theme] Failed to encode theme settings: %v", err)
+		logger.Errorf("Failed to encode theme settings: %v", err)
 		return err
 	}
 
 	// Open file with group and user write/read permissions
 	file, err := os.OpenFile(themeFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0660)
 	if err != nil {
-		logger.Error.Printf("[theme] Failed to open theme file: %v", err)
+		logger.Errorf("Failed to open theme file: %v", err)
 		return err
 	}
 	defer file.Close()
 
 	_, err = file.Write(data)
 	if err != nil {
-		logger.Error.Printf("[theme] Failed to write theme file: %v", err)
+		logger.Errorf("Failed to write theme file: %v", err)
 		return err
 	}
 
-	logger.Info.Printf("[theme] Theme settings saved to %s", themeFilePath)
+	logger.Infof("Theme settings saved to %s", themeFilePath)
 	return nil
 }
 

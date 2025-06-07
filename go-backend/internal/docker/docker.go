@@ -22,7 +22,7 @@ func getClient() (*client.Client, error) {
 func ListContainers(c *gin.Context) {
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("ListContainers: %v", err)
+		logger.Errorf("ListContainers: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
@@ -30,7 +30,7 @@ func ListContainers(c *gin.Context) {
 
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
-		logger.Error.Printf("ContainerList: %v", err)
+		logger.Errorf("ContainerList: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list containers"})
 		return
 	}
@@ -103,7 +103,7 @@ func ListContainers(c *gin.Context) {
 			}
 			statsResp.Body.Close()
 		} else {
-			logger.Warning.Printf("Failed to get stats for container %s: %v", ctr.ID[:12], err)
+			logger.Warnf("Failed to get stats for container %s: %v", ctr.ID[:12], err)
 		}
 
 		enriched = append(enriched, ContainerWithMetrics{
@@ -119,19 +119,19 @@ func StartContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("StartContainer: %v", err)
+		logger.Errorf("StartContainer: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerStart(context.Background(), id, container.StartOptions{}); err != nil {
-		logger.Error.Printf("StartContainer %s: %v", id, err)
+		logger.Errorf("StartContainer %s: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start container"})
 		return
 	}
 
-	logger.Info.Printf("Started container %s", id)
+	logger.Infof("Started container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -139,19 +139,19 @@ func StopContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("StopContainer: %v", err)
+		logger.Errorf("StopContainer: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerStop(context.Background(), id, container.StopOptions{}); err != nil {
-		logger.Error.Printf("StopContainer %s: %v", id, err)
+		logger.Errorf("StopContainer %s: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop container"})
 		return
 	}
 
-	logger.Info.Printf("Stopped container %s", id)
+	logger.Infof("Stopped container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -159,19 +159,19 @@ func RemoveContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("RemoveContainer: %v", err)
+		logger.Errorf("RemoveContainer: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{Force: true}); err != nil {
-		logger.Error.Printf("RemoveContainer %s: %v", id, err)
+		logger.Errorf("RemoveContainer %s: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove container"})
 		return
 	}
 
-	logger.Info.Printf("Removed container %s", id)
+	logger.Infof("Removed container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
@@ -179,26 +179,26 @@ func RestartContainer(c *gin.Context) {
 	id := c.Param("id")
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("RestartContainer: %v", err)
+		logger.Errorf("RestartContainer: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
 	defer cli.Close()
 
 	if err := cli.ContainerRestart(context.Background(), id, container.StopOptions{}); err != nil {
-		logger.Error.Printf("RestartContainer %s: %v", id, err)
+		logger.Errorf("RestartContainer %s: %v", id, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to restart container"})
 		return
 	}
 
-	logger.Info.Printf("Restarted container %s", id)
+	logger.Infof("Restarted container %s", id)
 	c.Status(http.StatusNoContent)
 }
 
 func ListImages(c *gin.Context) {
 	cli, err := getClient()
 	if err != nil {
-		logger.Error.Printf("ListImages: %v", err)
+		logger.Errorf("ListImages: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
 		return
 	}
@@ -206,7 +206,7 @@ func ListImages(c *gin.Context) {
 
 	images, err := cli.ImageList(context.Background(), image.ListOptions{All: true})
 	if err != nil {
-		logger.Error.Printf("ImageList: %v", err)
+		logger.Errorf("ImageList: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
 		return
 	}

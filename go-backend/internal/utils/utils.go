@@ -11,7 +11,7 @@ import (
 func GetDistroID() (string, error) {
 	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
-		logger.Error.Printf("❌ Failed to read /etc/os-release: %v", err)
+		logger.Errorf("❌ Failed to read /etc/os-release: %v", err)
 		return "", err
 	}
 
@@ -19,12 +19,12 @@ func GetDistroID() (string, error) {
 	for _, line := range lines {
 		if strings.HasPrefix(line, "ID_LIKE=") {
 			idLike := strings.Trim(strings.TrimPrefix(line, "ID_LIKE="), "\"")
-			logger.Debug.Printf("✅ Detected distro ID_LIKE: %s", idLike)
+			logger.Debugf("✅ Detected distro ID_LIKE: %s", idLike)
 			return idLike, nil
 		}
 	}
 
-	logger.Warning.Println("⚠️ ID_LIKE not found in /etc/os-release")
+	logger.Warnf("⚠️ ID_LIKE not found in /etc/os-release")
 	return "", fmt.Errorf("ID_LIKE not found")
 }
 
@@ -33,9 +33,9 @@ func GetDevPort() string {
 	port := os.Getenv("VITE_DEV_PORT")
 	if port == "" {
 		port = "3000"
-		logger.Warning.Println("⚠️ VITE_DEV_PORT not set, defaulting to 3000")
+		logger.Warnf("⚠️ VITE_DEV_PORT not set, defaulting to 3000")
 	} else {
-		logger.Debug.Printf("🔧 VITE_DEV_PORT detected: %s", port)
+		logger.Debugf("🔧 VITE_DEV_PORT detected: %s", port)
 	}
 	return port
 }

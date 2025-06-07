@@ -43,7 +43,7 @@ func subscribe(conn *websocket.Conn, channel string) {
 		channelSubscribers[channel] = make(map[*websocket.Conn]struct{})
 	}
 	channelSubscribers[channel][conn] = struct{}{}
-	logger.Info.Printf("WebSocket subscribed to channel: %s", channel)
+	logger.Infof("WebSocket subscribed to channel: %s", channel)
 }
 
 // Unsubscribe the connection from a channel
@@ -57,7 +57,7 @@ func unsubscribe(conn *websocket.Conn, channel string) {
 			delete(channelSubscribers, channel)
 		}
 	}
-	logger.Info.Printf("WebSocket unsubscribed from channel: %s", channel)
+	logger.Infof("WebSocket unsubscribed from channel: %s", channel)
 }
 
 // Remove a connection from all channels (on disconnect)
@@ -87,14 +87,14 @@ func broadcastToChannel(channel string, msg WSResponse) {
 func WebSocketHandler(c *gin.Context) {
 	user, sessionID, valid, privileged := session.ValidateFromRequest(c.Request)
 	if !valid {
-		logger.Warning.Printf("WebSocket unauthorized: %s", sessionID)
+		logger.Warnf("WebSocket unauthorized: %s", sessionID)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logger.Error.Printf("WS upgrade failed: %v", err)
+		logger.Errorf("WS upgrade failed: %v", err)
 		return
 	}
 	defer func() {
@@ -102,15 +102,15 @@ func WebSocketHandler(c *gin.Context) {
 		conn.Close()
 	}()
 
-	logger.Info.Printf("WebSocket connected for user: %s (session: %s, privileged: %v)", user.Name, sessionID, privileged)
+	logger.Infof("WebSocket connected for user: %s (session: %s, privileged: %v)", user.Name, sessionID, privileged)
 
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			logger.Warning.Printf("WS disconnect: %v", err)
+			logger.Warnf("WS disconnect: %v", err)
 			break
 		}
-		logger.Info.Printf("WS got message: %s", msg)
+		logger.Infof("WS got message: %s", msg)
 		var wsMsg WSMessage
 		if err := json.Unmarshal(msg, &wsMsg); err != nil {
 			_ = conn.WriteJSON(WSResponse{Type: "error", Error: "Invalid JSON"})

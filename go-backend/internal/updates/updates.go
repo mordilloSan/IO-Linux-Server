@@ -34,7 +34,7 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 }
 
 func getUpdatesHandler(c *gin.Context) {
-	logger.Info.Println("🔍 Checking for system updates (D-Bus)...")
+	logger.Infof("🔍 Checking for system updates (D-Bus)...")
 
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
 	if !valid {
@@ -44,7 +44,7 @@ func getUpdatesHandler(c *gin.Context) {
 
 	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "GetUpdates", nil)
 	if err != nil {
-		logger.Error.Printf("❌ Failed to get updates: %v\nOutput: %s", err, output)
+		logger.Errorf("❌ Failed to get updates: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to get updates",
 			"details": err.Error(),
@@ -60,7 +60,7 @@ func getUpdatesHandler(c *gin.Context) {
 		Error  string          `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		logger.Error.Printf("❌ Failed to decode bridge response: %v\nOutput: %s", err, output)
+		logger.Errorf("❌ Failed to decode bridge response: %v\nOutput: %s", err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to decode bridge response",
 			"details": err.Error(),
@@ -73,7 +73,7 @@ func getUpdatesHandler(c *gin.Context) {
 	updates := []Update{}
 	if string(resp.Output) != "null" && len(resp.Output) > 0 {
 		if err := json.Unmarshal(resp.Output, &updates); err != nil {
-			logger.Error.Printf("❌ Failed to decode updates JSON: %v\nOutput: %s", err, string(resp.Output))
+			logger.Errorf("❌ Failed to decode updates JSON: %v\nOutput: %s", err, string(resp.Output))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "failed to decode updates JSON",
 				"details": err.Error(),
@@ -92,19 +92,19 @@ func updatePackageHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.PackageID) == "" {
-		logger.Warning.Println("⚠️ Missing or invalid package id in update request.")
+		logger.Warnf("⚠️ Missing or invalid package id in update request.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. 'package' field is required."})
 		return
 	}
 
 	// Defensive: Optionally check if this looks like a PackageKit package_id (e.g., contains semicolons)
 	if !strings.Contains(req.PackageID, ";") {
-		logger.Warning.Printf("⚠️ Invalid package_id submitted: %s", req.PackageID)
+		logger.Warnf("⚠️ Invalid package_id submitted: %s", req.PackageID)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package_id"})
 		return
 	}
 
-	logger.Info.Printf("📦 Triggering update for package: %s", req.PackageID)
+	logger.Infof("📦 Triggering update for package: %s", req.PackageID)
 
 	// Extract session info
 	user, sessionID, valid, _ := session.ValidateFromRequest(c.Request)
@@ -116,7 +116,7 @@ func updatePackageHandler(c *gin.Context) {
 	output, err := bridge.CallWithSession(sessionID, user.ID, "dbus", "InstallPackage", []string{req.PackageID})
 
 	if err != nil {
-		logger.Error.Printf("❌ Failed to update %s: %v\nOutput: %s", req.PackageID, err, output)
+		logger.Errorf("❌ Failed to update %s: %v\nOutput: %s", req.PackageID, err, output)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to update package",
 			"details": err.Error(),
@@ -125,7 +125,7 @@ func updatePackageHandler(c *gin.Context) {
 		return
 	}
 
-	logger.Info.Printf("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageID, output)
+	logger.Infof("✅ Package %s updated successfully.\nOutput:\n%s", req.PackageID, output)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "package updates triggered",
 		"output":  output,
