@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"go-backend/internal/config"
-	"go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/config"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )

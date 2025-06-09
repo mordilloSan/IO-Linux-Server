@@ -2,9 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"go-backend/internal/logger"
 	"os"
 	"strings"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 )
 
 // GetDistroID reads /etc/os-release and extracts ID_LIKE

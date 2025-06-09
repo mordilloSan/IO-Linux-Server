@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"time"
 
-	"go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vishvananda/netlink"

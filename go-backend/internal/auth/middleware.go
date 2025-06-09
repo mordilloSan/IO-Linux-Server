@@ -3,9 +3,9 @@ package auth
 import (
 	"net/http"
 
-	"go-backend/internal/logger"
-	"go-backend/internal/session"
-	"go-backend/internal/utils"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

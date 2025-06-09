@@ -1,4 +1,4 @@
-module go-backend
+module github.com/mordilloSan/LinuxIO/go-backend
 
 go 1.24.1
 

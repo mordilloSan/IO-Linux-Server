@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"go-backend/internal/logger"
 	"io"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )

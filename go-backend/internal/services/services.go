@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"regexp"
 
-	"go-backend/internal/auth"
-	"go-backend/internal/bridge"
-	"go-backend/internal/logger"
-	"go-backend/internal/session"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/auth"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )

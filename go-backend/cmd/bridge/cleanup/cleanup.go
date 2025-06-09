@@ -3,15 +3,16 @@ package cleanup
 import (
 	"encoding/json"
 	"fmt"
-	"go-backend/internal/bridge"
-	"go-backend/internal/logger"
-	"go-backend/internal/session"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
 )
 
 type BridgeHealthRequest struct {

@@ -7,10 +7,6 @@ import (
 	"go-backend/cmd/bridge/cleanup"
 	"go-backend/cmd/bridge/dbus"
 	"go-backend/cmd/bridge/system"
-	"go-backend/internal/bridge"
-	"go-backend/internal/logger"
-	"go-backend/internal/session"
-	"go-backend/internal/utils"
 	"io"
 	"net"
 	"os"
@@ -22,6 +18,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
 
 	"github.com/google/uuid"
 )

@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"go-backend/internal/logger"
+	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"gopkg.in/yaml.v3"
 )
