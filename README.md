@@ -1,6 +1,7 @@
 # Linux i/O
 
 [![CodeQL Advanced](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml/badge.svg)](https://github.com/mordilloSan/LinuxIO/actions/workflows/codeql.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mordilloSan/LinuxIO/go-backend)](https://goreportcard.com/report/github.com/mordilloSan/LinuxIO/go-backend)
 
 ![Logo](react/public/Logo.png)
 
