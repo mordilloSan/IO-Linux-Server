@@ -26,6 +26,12 @@ type BridgeProcess struct {
 	StartedAt time.Time
 }
 
+type BridgeResponse struct {
+	Status string          `json:"status"`
+	Output json.RawMessage `json:"output"`
+	Error  string          `json:"error"`
+}
+
 type BridgeHealthRequest struct {
 	Type    string `json:"type"`    // e.g., "healthcheck" or "validate"
 	Session string `json:"session"` // sessionID
@@ -33,13 +39,6 @@ type BridgeHealthRequest struct {
 type BridgeHealthResponse struct {
 	Status  string `json:"status"` // "ok" or "invalid"
 	Message string `json:"message,omitempty"`
-}
-
-// Response struct to parse bridge response
-type BridgeResponse struct {
-	Status string          `json:"status"`
-	Output json.RawMessage `json:"output"`
-	Error  string          `json:"error"`
 }
 
 var (
@@ -146,9 +145,17 @@ func StartBridge(sess *session.Session, sudoPassword string) error {
 			logger.Errorf("Failed to get stdin pipe: %v", err)
 			return err
 		}
+
+		// Convert password to a mutable byte slice
+		pwBytes := []byte(sudoPassword + "\n")
 		go func() {
 			defer stdin.Close()
-			io.WriteString(stdin, sudoPassword+"\n")
+			_, _ = stdin.Write(pwBytes)
+
+			// Wipe the password bytes after use
+			for i := range pwBytes {
+				pwBytes[i] = 0
+			}
 		}()
 	}
 

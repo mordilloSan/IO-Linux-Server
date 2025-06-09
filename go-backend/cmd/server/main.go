@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	embed "go-backend"
 	"go-backend/internal/auth"
 	"go-backend/internal/benchmark"
@@ -15,9 +14,10 @@ import (
 	"go-backend/internal/system"
 	"go-backend/internal/templates"
 	"go-backend/internal/updates"
-
 	"go-backend/internal/utils"
 	"go-backend/internal/websocket"
+
+	"crypto/tls"
 	"net/http"
 	"os"
 
