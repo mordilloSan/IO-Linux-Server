@@ -3,10 +3,9 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"go-backend/internal/auth"
+	"go-backend/internal/logger"
 	"net/http"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/auth"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"

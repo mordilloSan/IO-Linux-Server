@@ -1,11 +1,10 @@
 package session
 
 import (
+	"go-backend/internal/logger"
+	"go-backend/internal/utils"
 	"net/http"
 	"time"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
 )
 
 type Session struct {

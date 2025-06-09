@@ -3,11 +3,10 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"go-backend/internal/auth"
+	"go-backend/internal/logger"
 	"net/http"
 	"os"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/auth"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/gin-gonic/gin"
 )

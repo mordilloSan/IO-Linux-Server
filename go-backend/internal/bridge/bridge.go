@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go-backend/internal/logger"
+	"go-backend/internal/session"
 	"io"
 	"net"
 	"os"
@@ -14,9 +16,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
 )
 
 var bridgeBinary = os.ExpandEnv("/usr/lib/linuxio/linuxio-bridge")

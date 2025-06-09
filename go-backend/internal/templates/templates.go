@@ -3,14 +3,13 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"go-backend/internal/config"
+	"go-backend/internal/logger"
+	"go-backend/internal/utils"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/config"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

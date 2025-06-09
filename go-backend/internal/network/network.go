@@ -2,13 +2,11 @@ package network
 
 import (
 	"encoding/json"
+	"go-backend/cmd/bridge/dbus"
+	"go-backend/internal/bridge"
+	"go-backend/internal/logger"
+	"go-backend/internal/session"
 	"net/http"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/cmd/bridge/dbus"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )

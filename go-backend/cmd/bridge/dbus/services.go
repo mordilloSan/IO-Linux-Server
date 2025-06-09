@@ -2,9 +2,8 @@ package dbus
 
 import (
 	"fmt"
+	"go-backend/internal/logger"
 	"strings"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
 
 	"github.com/godbus/dbus/v5"
 )

@@ -2,8 +2,7 @@ package benchmark
 
 import (
 	"fmt"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
+	"go-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )

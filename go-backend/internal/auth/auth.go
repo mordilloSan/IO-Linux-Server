@@ -2,16 +2,15 @@ package auth
 
 import (
 	"bytes"
+	"go-backend/internal/bridge"
+	"go-backend/internal/logger"
+	"go-backend/internal/session"
+	"go-backend/internal/utils"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"time"
-
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

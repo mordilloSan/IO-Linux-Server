@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
-	"github.com/mordilloSan/LinuxIO/go-backend/internal/session"
+	"go-backend/internal/bridge"
+	"go-backend/internal/logger"
+	"go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )
