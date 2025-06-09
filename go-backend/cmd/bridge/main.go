@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go-backend/cmd/bridge/cleanup"
-	"go-backend/cmd/bridge/dbus"
-	"go-backend/cmd/bridge/system"
 	"io"
 	"net"
 	"os"
@@ -18,6 +15,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/cmd/bridge/cleanup"
+	"github.com/mordilloSan/LinuxIO/go-backend/cmd/bridge/dbus"
+	"github.com/mordilloSan/LinuxIO/go-backend/cmd/bridge/system"
 
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"

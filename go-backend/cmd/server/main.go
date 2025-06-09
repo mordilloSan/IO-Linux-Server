@@ -1,7 +1,7 @@
 package main
 
 import (
-	embed "go-backend"
+	embed "github.com/mordilloSan/LinuxIO/go-backend"
 
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/auth"
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/benchmark"

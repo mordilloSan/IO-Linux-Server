@@ -2,8 +2,9 @@ package network
 
 import (
 	"encoding/json"
-	"go-backend/cmd/bridge/dbus"
 	"net/http"
+
+	"github.com/mordilloSan/LinuxIO/go-backend/cmd/bridge/dbus"
 
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/bridge"
 	"github.com/mordilloSan/LinuxIO/go-backend/internal/logger"
