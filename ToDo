@@ -1,0 +1,5 @@
+separate the bridge and server code
+move all code for api and executions to the bridge.
+
+implement wireguard
+docker compose
