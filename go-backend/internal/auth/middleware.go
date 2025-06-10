@@ -52,3 +52,15 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// Helper to validate session and handle unauthorized
+func GetSessionOrAbort(c *gin.Context) *session.Session {
+	sess, valid := session.ValidateFromRequest(c.Request)
+	if !valid || sess == nil {
+		logger.Warnf("Unauthorized docker access")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		c.Abort()
+		return nil
+	}
+	return sess
+}

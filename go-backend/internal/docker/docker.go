@@ -1,217 +1,100 @@
 package docker
 
 import (
-	"context"
-	"encoding/json"
 	"go-backend/internal/auth"
+	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 	"net/http"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 )
 
-// Helper to get a docker client
-func getClient() (*client.Client, error) {
-	return client.NewClientWithOpts(client.FromEnv)
-}
-
 func ListContainers(c *gin.Context) {
-	cli, err := getClient()
-	if err != nil {
-		logger.Errorf("ListContainers: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
-	defer cli.Close()
-
-	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
+	data, err := bridge.CallWithSession(sess, "docker", "list_containers", nil)
 	if err != nil {
-		logger.Errorf("ContainerList: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list containers"})
+		logger.Errorf("Bridge ListContainers: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	type Metrics struct {
-		CPUPercent float64 `json:"cpu_percent"`
-		MemUsage   uint64  `json:"mem_usage"`
-		NetInput   uint64  `json:"net_input"`
-		NetOutput  uint64  `json:"net_output"`
-		BlockRead  uint64  `json:"block_read"`
-		BlockWrite uint64  `json:"block_write"`
-	}
-
-	type ContainerWithMetrics struct {
-		types.Container
-		Metrics *Metrics `json:"metrics,omitempty"`
-	}
-
-	var enriched []ContainerWithMetrics
-
-	for _, ctr := range containers {
-		metrics := &Metrics{}
-		statsResp, err := cli.ContainerStatsOneShot(context.Background(), ctr.ID)
-		if err == nil {
-			var stats struct {
-				CPUStats struct {
-					CPUUsage struct {
-						TotalUsage  uint64   `json:"total_usage"`
-						PercpuUsage []uint64 `json:"percpu_usage"`
-					} `json:"cpu_usage"`
-					SystemCPUUsage uint64 `json:"system_cpu_usage"`
-				} `json:"cpu_stats"`
-				MemoryStats struct {
-					Usage uint64 `json:"usage"`
-				} `json:"memory_stats"`
-				Networks map[string]struct {
-					RxBytes uint64 `json:"rx_bytes"`
-					TxBytes uint64 `json:"tx_bytes"`
-				} `json:"networks"`
-				BlkioStats struct {
-					IoServiceBytesRecursive []struct {
-						Op    string `json:"op"`
-						Value uint64 `json:"value"`
-					} `json:"io_service_bytes_recursive"`
-				} `json:"blkio_stats"`
-			}
-
-			if err := json.NewDecoder(statsResp.Body).Decode(&stats); err == nil {
-				cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage)
-				systemDelta := float64(stats.CPUStats.SystemCPUUsage)
-				if systemDelta > 0 && len(stats.CPUStats.CPUUsage.PercpuUsage) > 0 {
-					metrics.CPUPercent = (cpuDelta / systemDelta) * float64(len(stats.CPUStats.CPUUsage.PercpuUsage)) * 100.0
-				}
-
-				metrics.MemUsage = stats.MemoryStats.Usage
-
-				for _, net := range stats.Networks {
-					metrics.NetInput += net.RxBytes
-					metrics.NetOutput += net.TxBytes
-				}
-
-				for _, entry := range stats.BlkioStats.IoServiceBytesRecursive {
-					switch entry.Op {
-					case "Read":
-						metrics.BlockRead += entry.Value
-					case "Write":
-						metrics.BlockWrite += entry.Value
-					}
-				}
-			}
-			statsResp.Body.Close()
-		} else {
-			logger.Warnf("Failed to get stats for container %s: %v", ctr.ID[:12], err)
-		}
-
-		enriched = append(enriched, ContainerWithMetrics{
-			Container: ctr,
-			Metrics:   metrics,
-		})
-	}
-
-	c.JSON(http.StatusOK, enriched)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func StartContainer(c *gin.Context) {
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
+		return
+	}
 	id := c.Param("id")
-	cli, err := getClient()
+	data, err := bridge.CallWithSession(sess, "docker", "start_container", []string{id})
 	if err != nil {
-		logger.Errorf("StartContainer: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+		logger.Errorf("Bridge StartContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer cli.Close()
-
-	if err := cli.ContainerStart(context.Background(), id, container.StartOptions{}); err != nil {
-		logger.Errorf("StartContainer %s: %v", id, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start container"})
-		return
-	}
-
-	logger.Infof("Started container %s", id)
-	c.Status(http.StatusNoContent)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func StopContainer(c *gin.Context) {
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
+		return
+	}
 	id := c.Param("id")
-	cli, err := getClient()
+	data, err := bridge.CallWithSession(sess, "docker", "stop_container", []string{id})
 	if err != nil {
-		logger.Errorf("StopContainer: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+		logger.Errorf("Bridge StopContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer cli.Close()
-
-	if err := cli.ContainerStop(context.Background(), id, container.StopOptions{}); err != nil {
-		logger.Errorf("StopContainer %s: %v", id, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop container"})
-		return
-	}
-
-	logger.Infof("Stopped container %s", id)
-	c.Status(http.StatusNoContent)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func RemoveContainer(c *gin.Context) {
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
+		return
+	}
 	id := c.Param("id")
-	cli, err := getClient()
+	data, err := bridge.CallWithSession(sess, "docker", "remove_container", []string{id})
 	if err != nil {
-		logger.Errorf("RemoveContainer: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+		logger.Errorf("Bridge RemoveContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer cli.Close()
-
-	if err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{Force: true}); err != nil {
-		logger.Errorf("RemoveContainer %s: %v", id, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove container"})
-		return
-	}
-
-	logger.Infof("Removed container %s", id)
-	c.Status(http.StatusNoContent)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func RestartContainer(c *gin.Context) {
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
+		return
+	}
 	id := c.Param("id")
-	cli, err := getClient()
+	data, err := bridge.CallWithSession(sess, "docker", "restart_container", []string{id})
 	if err != nil {
-		logger.Errorf("RestartContainer: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+		logger.Errorf("Bridge RestartContainer: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer cli.Close()
-
-	if err := cli.ContainerRestart(context.Background(), id, container.StopOptions{}); err != nil {
-		logger.Errorf("RestartContainer %s: %v", id, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to restart container"})
-		return
-	}
-
-	logger.Infof("Restarted container %s", id)
-	c.Status(http.StatusNoContent)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func ListImages(c *gin.Context) {
-	cli, err := getClient()
-	if err != nil {
-		logger.Errorf("ListImages: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Docker client error"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
-	defer cli.Close()
-
-	images, err := cli.ImageList(context.Background(), image.ListOptions{All: true})
+	data, err := bridge.CallWithSession(sess, "docker", "list_images", nil)
 	if err != nil {
-		logger.Errorf("ImageList: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
+		logger.Errorf("Bridge ListImages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, images)
+	c.Data(http.StatusOK, "application/json", data)
 }
 
 func RegisterDockerRoutes(router *gin.Engine) {

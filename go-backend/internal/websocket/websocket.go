@@ -2,9 +2,9 @@ package websocket
 
 import (
 	"encoding/json"
+	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/session"
 	"net/http"
 	"sync"
 
@@ -71,20 +71,21 @@ func removeConnFromAllChannels(conn *websocket.Conn) {
 
 func broadcastToChannel(channel string, msg WSResponse) {
 	channelsMu.Lock()
-	subs := channelSubscribers[channel]
+	conns := make([]*websocket.Conn, 0, len(channelSubscribers[channel]))
+	for conn := range channelSubscribers[channel] {
+		conns = append(conns, conn)
+	}
 	channelsMu.Unlock()
-	for conn := range subs {
-		_ = conn.WriteJSON(msg) // optionally handle write errors/log
+	for _, conn := range conns {
+		_ = conn.WriteJSON(msg) // Optionally handle errors
 	}
 }
 
 // --- MAIN HANDLER ---
 
 func WebSocketHandler(c *gin.Context) {
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("WebSocket unauthorized or missing session")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 

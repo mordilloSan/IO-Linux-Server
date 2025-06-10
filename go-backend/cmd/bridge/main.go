@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go-backend/cmd/bridge/cleanup"
 	"go-backend/cmd/bridge/dbus"
+	"go-backend/cmd/bridge/docker"
 	"go-backend/cmd/bridge/system"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
@@ -131,11 +132,22 @@ var systemHandlers = map[string]HandlerFunc{
 	},
 }
 
+// -- Docker Handlers --
+var dockerHandlers = map[string]HandlerFunc{
+	"list_containers":   func(args []string) (any, error) { return docker.ListContainers() },
+	"start_container":   func(args []string) (any, error) { return docker.StartContainer(args[0]) },
+	"stop_container":    func(args []string) (any, error) { return docker.StopContainer(args[0]) },
+	"remove_container":  func(args []string) (any, error) { return docker.RemoveContainer(args[0]) },
+	"restart_container": func(args []string) (any, error) { return docker.RestartContainer(args[0]) },
+	"list_images":       func(args []string) (any, error) { return docker.ListImages() },
+}
+
 // -- Handler groups by type (built-in, for backwards compatibility) --
 var handlersByType = map[string]map[string]HandlerFunc{
 	"dbus":    dbusHandlers,
 	"control": controlHandlers,
 	"system":  systemHandlers,
+	"docker":  dockerHandlers,
 	"modules": {}, // Placeholder for external helpers
 }
 

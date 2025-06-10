@@ -9,7 +9,6 @@ import (
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,9 +35,8 @@ func RegisterUpdateRoutes(router *gin.Engine) {
 func getUpdatesHandler(c *gin.Context) {
 	logger.Infof("🔍 Checking for system updates (D-Bus)...")
 
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 
@@ -105,9 +103,8 @@ func updatePackageHandler(c *gin.Context) {
 
 	logger.Infof("📦 Triggering update for package: %s", req.PackageID)
 
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 

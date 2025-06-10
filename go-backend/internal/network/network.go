@@ -3,9 +3,9 @@ package network
 import (
 	"encoding/json"
 	"go-backend/cmd/bridge/dbus"
+	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/session"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,13 +26,10 @@ func RegisterNetworkRoutes(router *gin.Engine) {
 }
 
 func getNetworkInfo(c *gin.Context) {
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized getNetworkInfo")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
-
 	logger.Infof("%s requested network info (session: %s)", sess.User.ID, sess.SessionID)
 
 	rawResp, err := bridge.CallWithSession(sess, "dbus", "GetNetworkInfo", nil)
@@ -48,7 +45,6 @@ func getNetworkInfo(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid bridge response", "detail": err.Error(), "output": rawResp})
 		return
 	}
-
 	if resp.Status != "ok" {
 		logger.Warnf("Bridge returned error: %v", resp.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": resp.Error, "output": string(resp.Output)})
@@ -61,7 +57,6 @@ func getNetworkInfo(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid output structure", "detail": err.Error(), "output": string(resp.Output)})
 		return
 	}
-
 	logger.Debugf("Successfully returned %d interfaces to %s", len(data), sess.User.ID)
 	c.JSON(http.StatusOK, data)
 }
@@ -71,10 +66,8 @@ func postSetDNS(c *gin.Context) {
 		Interface string   `json:"interface"`
 		DNS       []string `json:"dns"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" || len(req.DNS) == 0 {
@@ -98,10 +91,8 @@ func postSetGateway(c *gin.Context) {
 		Interface string `json:"interface"`
 		Gateway   string `json:"gateway"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" || req.Gateway == "" {
@@ -125,10 +116,8 @@ func postSetMTU(c *gin.Context) {
 		Interface string `json:"interface"`
 		MTU       string `json:"mtu"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" || req.MTU == "" {
@@ -151,10 +140,8 @@ func postSetIPv4DHCP(c *gin.Context) {
 	var req struct {
 		Interface string `json:"interface"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" {
@@ -178,10 +165,8 @@ func postSetIPv4Static(c *gin.Context) {
 		Interface   string `json:"interface"`
 		AddressCIDR string `json:"address_cidr"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" || req.AddressCIDR == "" {
@@ -204,10 +189,8 @@ func postSetIPv6DHCP(c *gin.Context) {
 	var req struct {
 		Interface string `json:"interface"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" {
@@ -231,10 +214,8 @@ func postSetIPv6Static(c *gin.Context) {
 		Interface   string `json:"interface"`
 		AddressCIDR string `json:"address_cidr"`
 	}
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized ...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	if err := c.BindJSON(&req); err != nil || req.Interface == "" || req.AddressCIDR == "" {

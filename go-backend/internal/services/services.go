@@ -8,7 +8,6 @@ import (
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,15 +41,12 @@ var validServiceName = regexp.MustCompile(`^[\w.-]+\.service$`)
 
 // Generic handler for service actions
 func serviceAction(c *gin.Context, action string) {
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized attempt to %s (missing/invalid session)", action)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	serviceName := c.Param("name")
 
-	// --- Validate input service name ---
 	if !validServiceName.MatchString(serviceName) {
 		logger.Warnf("Invalid service name for %s: %q by user: %s", action, serviceName, sess.User.Name)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service name"})
@@ -69,13 +65,10 @@ func serviceAction(c *gin.Context, action string) {
 }
 
 func getServiceStatus(c *gin.Context) {
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized service status request (missing/invalid session)")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
-
 	logger.Infof("User %s requested service status (session: %s)", sess.User.Name, sess.SessionID)
 
 	output, err := bridge.CallWithSession(sess, "dbus", "ListServices", nil)
@@ -107,10 +100,8 @@ func getServiceStatus(c *gin.Context) {
 }
 
 func getServiceDetail(c *gin.Context) {
-	sess, valid := session.ValidateFromRequest(c.Request)
-	if !valid || sess == nil {
-		logger.Warnf("Unauthorized detail request for %q (missing/invalid session)", c.Param("name"))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+	sess := auth.GetSessionOrAbort(c)
+	if sess == nil {
 		return
 	}
 	serviceName := c.Param("name")

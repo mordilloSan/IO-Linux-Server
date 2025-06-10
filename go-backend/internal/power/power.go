@@ -4,7 +4,6 @@ import (
 	"go-backend/internal/auth"
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
-	"go-backend/internal/session"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +14,10 @@ func RegisterPowerRoutes(r *gin.Engine) {
 	group.Use(auth.AuthMiddleware())
 
 	group.POST("/reboot", func(c *gin.Context) {
-		sess, valid := session.ValidateFromRequest(c.Request)
-		if !valid || sess == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		sess := auth.GetSessionOrAbort(c)
+		if sess == nil {
 			return
 		}
-
 		output, err := bridge.CallWithSession(sess, "dbus", "Reboot", nil)
 		if err != nil {
 			logger.Errorf("Reboot failed: %+v", err)
@@ -36,12 +33,10 @@ func RegisterPowerRoutes(r *gin.Engine) {
 	})
 
 	group.POST("/shutdown", func(c *gin.Context) {
-		sess, valid := session.ValidateFromRequest(c.Request)
-		if !valid || sess == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		sess := auth.GetSessionOrAbort(c)
+		if sess == nil {
 			return
 		}
-
 		output, err := bridge.CallWithSession(sess, "dbus", "PowerOff", nil)
 		if err != nil {
 			logger.Errorf("Shutdown failed: %+v", err)

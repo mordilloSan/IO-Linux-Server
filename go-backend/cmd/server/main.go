@@ -37,13 +37,19 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init("env", verbose)
 
-	logger.Infof("📦 Loading configuration...")
-	if err := config.LoadConfig(); err != nil {
+	logger.Infof("📦 Checking docker installation...")
+	if err := config.EnsureDockerAvailable(); err != nil {
+		logger.Warning.Printf("❌ Docker not available: %v", err)
+	}
+
+	logger.Infof("📦 Loading docker configuration...")
+	if err := config.LoadDockerConfig(); err != nil {
 		logger.Error.Fatalf("❌ Failed to load config: %v", err)
 	}
 	if err := config.EnsureDockerAppsDirExists(); err != nil {
 		logger.Error.Fatalf("❌ Failed to create docker apps directory: %v", err)
 	}
+	logger.Infof("📦 Loading theme config...")
 	if err := config.InitTheme(); err != nil {
 		logger.Error.Fatalf("❌ Failed to initialize theme file: %v", err)
 	}

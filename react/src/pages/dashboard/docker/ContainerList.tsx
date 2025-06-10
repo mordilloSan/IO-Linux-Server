@@ -12,7 +12,7 @@ const ContainerList: React.FC = () => {
     queryKey: ["containers"],
     queryFn: async () => {
       const res = await axios.get("/docker/containers");
-      return res.data;
+      return res.data.output;
     },
     refetchInterval: 5000,
   });

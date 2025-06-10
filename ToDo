@@ -3,3 +3,7 @@ move all code for api and executions to the bridge.
 
 implement wireguard
 docker compose
+
+bridge socket and bridge binary should not have the sessionid written 
+
+use quantom filebrowser as our main navigator

@@ -1,8 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"go-backend/internal/logger"
 
@@ -15,8 +18,8 @@ type AppConfig struct {
 
 var appConfig AppConfig
 
-// LoadConfig reads config.yaml or applies default values
-func LoadConfig() error {
+// LoadDockerConfig reads config.yaml or applies default values
+func LoadDockerConfig() error {
 	file, err := os.Open("config/config.yaml")
 	if err != nil {
 		logger.Warnf("No config.yaml found, using defaults")
@@ -64,5 +67,36 @@ func EnsureDockerAppsDirExists() error {
 		return err
 	}
 	logger.Infof("Docker apps directory ensured at: %s", dockerDir)
+	return nil
+}
+
+// IsDockerInstalled returns true if 'docker' is available in PATH
+func IsDockerInstalled() bool {
+	_, err := exec.LookPath("docker")
+	return err == nil
+}
+
+// IsDockerDaemonRunning returns true if 'docker info' runs without error
+func IsDockerDaemonRunning() bool {
+	cmd := exec.Command("docker", "info")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logger.Warnf("Docker daemon check failed: %v (output: %s)", err, strings.TrimSpace(string(output)))
+		return false
+	}
+	return true
+}
+
+// EnsureDockerAvailable logs warnings or errors if Docker is not usable
+func EnsureDockerAvailable() error {
+	if !IsDockerInstalled() {
+		logger.Errorf("Docker is not installed or not in PATH")
+		return fmt.Errorf("docker not installed")
+	}
+	if !IsDockerDaemonRunning() {
+		logger.Errorf("Docker daemon is not running or permission denied")
+		return fmt.Errorf("docker daemon not running")
+	}
+	logger.Infof("Docker is installed and running")
 	return nil
 }

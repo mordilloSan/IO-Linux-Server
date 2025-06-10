@@ -70,13 +70,12 @@ func BridgeSocketPath(sess *session.Session) string {
 }
 
 // Use everywhere for bridge actions: returns *raw* JSON response string (for HTTP handler to decode output as needed)
-func CallWithSession(sess *session.Session, reqType, command string, args []string) (string, error) {
+func CallWithSession(sess *session.Session, reqType, command string, args []string) ([]byte, error) {
 	socketPath := BridgeSocketPath(sess)
 	return CallViaSocket(socketPath, reqType, command, args)
 }
 
-// Now returns the full JSON bridge response as string, not just output!
-func CallViaSocket(socketPath, reqType, command string, args []string) (string, error) {
+func CallViaSocket(socketPath, reqType, command string, args []string) ([]byte, error) {
 	req := map[string]any{
 		"type":    reqType,
 		"command": command,
@@ -86,23 +85,23 @@ func CallViaSocket(socketPath, reqType, command string, args []string) (string, 
 	}
 	conn, err := net.DialTimeout("unix", socketPath, 2*time.Second)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to bridge: %w", err)
+		return nil, fmt.Errorf("failed to connect to bridge: %w", err)
 	}
 	defer conn.Close()
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
 	if err := enc.Encode(req); err != nil {
-		return "", fmt.Errorf("failed to send request to bridge: %w", err)
+		return nil, fmt.Errorf("failed to send request to bridge: %w", err)
 	}
 	var resp BridgeResponse
 	if err := dec.Decode(&resp); err != nil {
-		return "", fmt.Errorf("failed to decode response from bridge: %w", err)
+		return nil, fmt.Errorf("failed to decode response from bridge: %w", err)
 	}
 	b, err := json.Marshal(resp)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal bridge response: %w", err)
+		return nil, fmt.Errorf("failed to marshal bridge response: %w", err)
 	}
-	return string(b), nil
+	return b, nil
 }
 
 // StartBridge starts the bridge process for a given session.
