@@ -11,21 +11,27 @@ import (
 	"go-backend/internal/bridge"
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
+	"go-backend/internal/theme"
 	"go-backend/internal/utils"
 	"io"
 	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// Build minimal session object
+var Sess = &session.Session{
+	SessionID: os.Getenv("LINUXIO_SESSION_ID"),
+	User:      utils.User{ID: os.Getenv("LINUXIO_SESSION_USER"), Name: os.Getenv("LINUXIO_SESSION_USER")},
+	// If you want, also read and set .Privileged from another env var
+}
 
 // Request represents the standard JSON request format sent to both built-in handlers and external helpers.
 type Request struct {
@@ -43,6 +49,8 @@ type Response struct {
 
 // HandlerFunc is the function signature for all built-in command handlers.
 type HandlerFunc func(args []string) (any, error)
+
+var shutdownChan = make(chan string, 1) // buffered, avoid blocking
 
 // ---- Built-in Handler Registration ----
 // -- D-Bus Handlers --
@@ -105,10 +113,12 @@ var dbusHandlers = map[string]HandlerFunc{
 var controlHandlers = map[string]HandlerFunc{
 	"shutdown": func(args []string) (any, error) {
 		logger.Infof("Received shutdown command, exiting bridge")
-		go func() {
-			time.Sleep(200 * time.Millisecond)
-			os.Exit(0)
-		}()
+		select {
+		case shutdownChan <- "Bridge received shutdown command":
+			// signaled
+		default:
+			// already shutting down
+		}
 		return "Bridge shutting down", nil
 	},
 }
@@ -167,69 +177,101 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init(env, verbose)
 
-	sessionID := os.Getenv("LINUXIO_SESSION_ID")
-	username := os.Getenv("LINUXIO_SESSION_USER")
-	// Build minimal session object
-	sess := &session.Session{
-		SessionID: sessionID,
-		User:      utils.User{ID: username, Name: username},
-		// If you want, also read and set .Privileged from another env var
+	logger.Infof("📦 Checking for default configuration...")
+	if err := utils.EnsureStartupDefaults(); err != nil {
+		logger.Errorf("❌ Error setting config files: %v", err)
 	}
-	socketPath := bridge.BridgeSocketPath(sess)
-	listener, uid, gid, err := createAndOwnSocket(socketPath, sess.User.ID)
+
+	logger.Infof("📦 Loading theme config...")
+	if err := theme.InitTheme(); err != nil {
+		logger.Errorf("❌ Failed to initialize theme file: %v", err)
+	}
+
+	socketPath := bridge.BridgeSocketPath(Sess)
+	listener, _, _, err := createAndOwnSocket(socketPath, Sess.User.ID)
 	if err != nil {
 		logger.Error.Fatalf("❌ %v", err)
 	}
 
-	// Trap SIGTERM and SIGINT for clean shutdown
+	// HEALTHCHECK: just signal shutdownChan
 	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
-		sig := <-sigChan
-		logger.Infof("🛑 Caught signal: %s — shutting down bridge", sig)
-		listener.Close()
-		_ = os.Remove(socketPath)
-		os.Exit(0)
-	}()
-
-	defer listener.Close()
-	defer func() {
-		logger.Infof("🔐 linuxio-bridge shut down.")
-		_ = os.Remove(socketPath)
-	}()
-	logger.Debugf("🔑 Socket ownership set to %s (%d:%d)", username, uid, gid)
-	logger.Infof("🔐 linuxio-bridge listening: %s", socketPath)
-	runSelfTestIfDev(env)
-
-	go func() {
-		logger.Infof("Starting periodic health check (session: %s)", sess.SessionID)
-		for {
-			logger.Debugf("Healthcheck: pinging main process for session %s", sess.SessionID)
-			ok := cleanup.CheckMainProcessHealth(sess)
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			logToFile("Healthcheck: pinging main process")
+			ok := cleanup.CheckMainProcessHealth(Sess)
+			logToFile(fmt.Sprintf("Healthcheck result: %v", ok))
 			if !ok {
-				logger.Warnf("❌ Main process unreachable or session invalid, bridge exiting...")
-				bridge.CleanupBridgeSocket(sess)
-				os.Exit(1)
+				select {
+				case shutdownChan <- "Healthcheck failed (main process unreachable or session invalid)":
+				default:
+				}
+				return
 			}
-			time.Sleep(time.Minute)
 		}
 	}()
 
-	// When in production, clean up any lingering bridge startup processes.
-	if env == "production" {
-		cleanup.KillLingeringBridgeStartupProcesses()
-	}
+	// Clean up any lingering bridge startup processes
+	//if env == "production" {
+	cleanup.KillLingeringBridgeStartupProcesses()
+	//}
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Warnf("⚠️ Accept failed: %v", err)
-			continue
+	// Accept loop: runs in goroutine
+	acceptDone := make(chan struct{})
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				select {
+				case <-acceptDone:
+					return
+				default:
+					logger.Warnf("⚠️ Accept failed: %v", err)
+				}
+				continue
+			}
+			id := uuid.NewString()
+			logger.Debugf("MAIN: spawning handler %s", id)
+			go handleConnection(conn, id)
 		}
-		id := uuid.NewString()
-		logger.Debugf("MAIN: spawning handler %s", id)
-		go handleConnection(conn, id)
+	}()
+
+	// Wait for shutdown signal (from handler or healthcheck)
+	shutdownReason := <-shutdownChan
+	close(acceptDone)
+	listener.Close()
+
+	// Final cleanup
+	logger.Infof("🔻 Shutdown initiated: %s", shutdownReason)
+	logToFile(fmt.Sprintf("Shutdown initiated: %s", shutdownReason))
+
+	if err := bridge.CleanupFilebrowserContainer(); err != nil {
+		logToFile(fmt.Sprintf("CleanupFilebrowserContainer failed: %v", err))
+		logger.Warnf("CleanupFilebrowserContainer failed: %v", err)
+	} else {
+		logToFile("CleanupFilebrowserContainer finished OK")
 	}
+	logToFile("Cleaning up bridge socket")
+	bridge.CleanupBridgeSocket(Sess)
+	logToFile("Removing unix socket file")
+	_ = os.Remove(socketPath)
+	logToFile("Listener closed")
+	logToFile("Exiting bridge process")
+	logger.Infof("✅ Bridge cleanup complete, exiting.")
+	time.Sleep(300 * time.Millisecond)
+	os.Exit(0)
+}
+
+func logToFile(msg string) {
+	f, err := os.OpenFile("/tmp/bridge-healthcheck.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		// Don't panic in a signal/exit context; just print to stderr as fallback.
+		fmt.Fprintf(os.Stderr, "LOG ERROR: %v\n", err)
+		return
+	}
+	_, _ = f.WriteString(fmt.Sprintf("%s %s\n", time.Now().Format(time.RFC3339), msg))
+	_ = f.Sync() // Flush to disk immediately!
+	_ = f.Close()
 }
 
 // createAndOwnSocket creates a unix socket at socketPath, ensures only the target user can access it.
@@ -415,45 +457,6 @@ func runHelper(path string, req Request, encoder *json.Encoder) {
 	_ = encoder.Encode(resp)
 }
 
-func runSelfTestIfDev(env string) {
-	if env != "development" {
-		return
-	}
-	go func() {
-		logger.Infof("🔍 Running bridge self-test for system_teste helper...")
-
-		req := Request{Type: "system", Command: "teste"}
-		var buf bytes.Buffer
-		encoder := json.NewEncoder(&buf)
-
-		runHelper(filepath.Join(modulesDir(), "system_teste"), req, encoder)
-
-		rawJSON := buf.String()
-		logger.Debugf("🧪 Self-test raw JSON output:\n%s", rawJSON)
-
-		var resp Response
-		if err := json.Unmarshal([]byte(rawJSON), &resp); err != nil {
-			logger.Warnf("⚠️  Self-test: failed to decode response from system_teste helper: %v", err)
-			return
-		}
-
-		if resp.Status != "ok" {
-			logger.Warnf("⚠️  Self-test: system_teste returned error: %s", resp.Error)
-		} else {
-			// (4) Pretty-print Output
-			pretty, err := json.MarshalIndent(resp.Output, "", "  ")
-			if err != nil {
-				logger.Infof("✅ Self-test succeeded, but failed to pretty-print output:")
-				logger.Infof("%v", resp.Output)
-
-			} else {
-				logger.Infof("✅ Self-test succeeded. Output:")
-				logger.Infof("%s", pretty)
-
-			}
-		}
-	}()
-}
 func MainSocketPath(sess *session.Session) (string, error) {
 	u, err := user.Lookup(sess.User.ID)
 	if err != nil {

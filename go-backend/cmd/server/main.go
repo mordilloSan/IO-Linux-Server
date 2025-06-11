@@ -3,17 +3,18 @@ package main
 import (
 	"crypto/tls"
 	embed "go-backend"
+	"go-backend/cmd/server/docker"
 	"go-backend/internal/auth"
 	"go-backend/internal/benchmark"
-	"go-backend/internal/config"
-	"go-backend/internal/docker"
+	"go-backend/internal/dockers"
 	"go-backend/internal/logger"
-	"go-backend/internal/network"
+	"go-backend/internal/networks"
 	"go-backend/internal/power"
 	"go-backend/internal/services"
 	"go-backend/internal/session"
 	"go-backend/internal/system"
 	"go-backend/internal/templates"
+	"go-backend/internal/theme"
 	"go-backend/internal/updates"
 
 	"go-backend/internal/utils"
@@ -37,24 +38,9 @@ func main() {
 	verbose := os.Getenv("VERBOSE") == "true"
 	logger.Init("env", verbose)
 
-	logger.Infof("📦 Checking docker installation...")
-	if err := config.EnsureDockerAvailable(); err != nil {
-		logger.Warning.Printf("❌ Docker not available: %v", err)
-	}
-
-	logger.Infof("📦 Loading docker configuration...")
-	if err := config.LoadDockerConfig(); err != nil {
-		logger.Error.Fatalf("❌ Failed to load config: %v", err)
-	}
-	if err := config.EnsureDockerAppsDirExists(); err != nil {
-		logger.Error.Fatalf("❌ Failed to create docker apps directory: %v", err)
-	}
-	logger.Infof("📦 Loading theme config...")
-	if err := config.InitTheme(); err != nil {
-		logger.Error.Fatalf("❌ Failed to initialize theme file: %v", err)
-	}
-
 	logger.Infof("🌱 Starting server in %s mode...", env)
+
+	go docker.StartServices()
 
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -79,10 +65,10 @@ func main() {
 	system.RegisterSystemRoutes(router)
 	updates.RegisterUpdateRoutes(router)
 	services.RegisterServiceRoutes(router)
-	network.RegisterNetworkRoutes(router)
-	docker.RegisterDockerRoutes(router)
-	docker.RegisterDockerComposeRoutes(router)
-	config.RegisterThemeRoutes(router)
+	networks.RegisterNetworkRoutes(router)
+	dockers.RegisterDockerRoutes(router)
+	dockers.RegisterDockerComposeRoutes(router)
+	theme.RegisterThemeRoutes(router)
 	power.RegisterPowerRoutes(router)
 	// API Benchmark route
 	if env != "production" {

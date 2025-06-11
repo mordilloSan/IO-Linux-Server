@@ -1,4 +1,4 @@
-package docker
+package dockers
 
 import (
 	"go-backend/internal/auth"

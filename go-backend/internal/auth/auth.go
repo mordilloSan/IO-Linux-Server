@@ -2,7 +2,9 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"go-backend/internal/bridge"
+	"go-backend/internal/config"
 	"go-backend/internal/logger"
 	"go-backend/internal/session"
 	"go-backend/internal/utils"
@@ -12,6 +14,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/msteinert/pam"
@@ -23,6 +26,16 @@ type LoginRequest struct {
 }
 
 const sessionDuration = 6 * time.Hour
+
+var (
+	dockerCli *client.Client
+	dockerCtx context.Context
+)
+
+func SetDockerClient(cli *client.Client, ctx context.Context) {
+	dockerCli = cli
+	dockerCtx = ctx
+}
 
 func RegisterAuthRoutes(router *gin.Engine) {
 	auth := router.Group("/auth")
@@ -44,11 +57,8 @@ func pamAuth(username, password string) error {
 }
 
 func trySudo(password string) bool {
-	// Try to run 'sudo -S -l' to check if we can get privileged access
 	cmd := exec.Command("sudo", "-S", "-l")
-	cmd.Env = append(cmd.Env, "LANG=C") // force English output for easier parsing
-
-	// Sudo will read password from stdin
+	cmd.Env = append(cmd.Env, "LANG=C")
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
@@ -61,12 +71,10 @@ func trySudo(password string) bool {
 		io.WriteString(stdin, password+"\n")
 	}()
 	err = cmd.Run()
-	// If sudo exits 0 and "may run" is in the output, we have sudo
 	return err == nil && (bytes.Contains(out.Bytes(), []byte("may run")) || bytes.Contains(stderr.Bytes(), []byte("may run")))
 }
 
 func loginHandler(c *gin.Context) {
-
 	var req LoginRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -89,15 +97,24 @@ func loginHandler(c *gin.Context) {
 	session.CreateSession(sessionID, user, sessionDuration, privileged)
 	sess := session.Get(sessionID)
 
-	// 4. Start main socket for this session
 	if sess == nil {
 		logger.Errorf("Failed to get session after creation (id=%s)", sessionID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "session creation failed"})
 		return
 	}
 
-	err := bridge.StartBridgeSocket(sess)
-	if err != nil {
+	// 4. Creating user specific config files
+
+	logger.Infof("📦 Loading docker configuration...")
+	if err := config.LoadDockerConfig(); err != nil {
+		logger.Errorf("❌ Failed to load config: %v", err)
+	}
+	if err := config.EnsureDockerAppsDirExists(); err != nil {
+		logger.Errorf("❌ Failed to create docker apps directory: %v", err)
+	}
+
+	// 4. Start main socket for this session
+	if err := bridge.StartBridgeSocket(sess); err != nil {
 		logger.Errorf("Failed to start main socket: %v", err)
 		session.DeleteSession(sessionID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start session socket"})
@@ -123,14 +140,14 @@ func loginHandler(c *gin.Context) {
 		}
 	}
 
-	// 6. Set session cookie
+	// 8. Set session cookie
 	env := os.Getenv("GO_ENV")
 	isHTTPS := c.Request.TLS != nil
 	secureCookie := env == "production" && isHTTPS
 
 	c.SetCookie("session_id", sessionID, int(sessionDuration.Seconds()), "/", "", secureCookie, true)
 
-	// 7. Send response
+	// 9. Send response
 	c.JSON(http.StatusOK, gin.H{"success": true, "privileged": privileged})
 }
 
@@ -152,6 +169,7 @@ func logoutHandler(c *gin.Context) {
 	session.DeleteSession(sessionID)
 	if s.User.ID != "" {
 		bridge.CallWithSession(s, "control", "shutdown", nil)
+		bridge.CleanupFilebrowserContainer()
 		bridge.CleanupBridgeSocket(s)
 	}
 	c.SetCookie("session_id", "", -1, "/", "", false, true)
@@ -160,6 +178,6 @@ func logoutHandler(c *gin.Context) {
 }
 
 func meHandler(c *gin.Context) {
-	user := c.MustGet("user").(utils.User)
-	c.JSON(http.StatusOK, gin.H{"user": user})
+	sess := c.MustGet("session").(*session.Session)
+	c.JSON(http.StatusOK, gin.H{"user": sess.User})
 }

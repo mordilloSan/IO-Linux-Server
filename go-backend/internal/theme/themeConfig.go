@@ -1,8 +1,9 @@
-package config
+package theme
 
 import (
 	"encoding/json"
 	"errors"
+	embed "go-backend"
 	"go-backend/internal/auth"
 	"go-backend/internal/logger"
 	"net/http"
@@ -17,22 +18,16 @@ type ThemeSettings struct {
 	SidebarColapsed bool   `json:"sidebarColapsed"`
 }
 
-const themeFilePath = "./theme.json"
-
-var defaultTheme = ThemeSettings{
-	Theme:           "DARK",
-	PrimaryColor:    "#1976d2",
-	SidebarColapsed: false,
-}
+const themeFilePath = "/etc/linuxio/themeConfig.json"
 
 func InitTheme() error {
 	if _, err := os.Stat(themeFilePath); os.IsNotExist(err) {
-		logger.Infof("No theme file found, creating default...")
-		if err := SaveThemeToFile(defaultTheme); err != nil {
+		logger.Infof("No theme file found, creating from embedded default...")
+		if err := os.WriteFile(themeFilePath, embed.DefaultThemeConfig, 0660); err != nil {
+			logger.Errorf("Failed to write embedded theme config: %v", err)
 			return err
 		}
-		// Ensure the file has user/group rw access
-		return os.Chmod(themeFilePath, 0660)
+		return nil
 	}
 	return nil
 }

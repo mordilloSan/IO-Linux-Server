@@ -2,8 +2,8 @@ package embed
 
 import "embed"
 
-// Everything in frontend/assets
-//
+// Frontend Embeding //
+
 //go:embed all:frontend/assets/*
 var StaticFS embed.FS
 
@@ -16,3 +16,14 @@ var ViteManifest []byte
 //
 //go:embed all:frontend/manifest.json all:frontend/favicon-*.png
 var PWAManifest embed.FS
+
+// Backend Default Config Embeding //
+
+//go:embed internal/config/filebrowserConfig.yaml
+var DefaultFilebrowserConfig []byte
+
+//go:embed internal/config/themeConfig.json
+var DefaultThemeConfig []byte
+
+//go:embed internal/config/dockerConfig.yaml
+var DefaultDockerConfig []byte

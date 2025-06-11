@@ -1,0 +1,40 @@
+server:
+  port: 80
+  baseURL: "/"
+  logging:
+    - levels: "info|warning|error|debug"
+      output: stdout
+      utc: true
+  sources:
+    - path: /server
+frontend:
+  disableDefaultLinks: true
+  disableUsedPercentage: false
+userDefaults:
+  preview:
+    image: true
+    popup: true
+    video: false
+    office: false
+    highQuality: false
+  stickySidebar: false
+  darkMode: true
+  disableSettings: true
+  lockPassword: true
+  singleClick: false
+  showHidden: true
+  permissions:
+    api: false
+    admin: false
+    modify: true
+    share: false
+    realtime: true
+  loginMethod: proxy
+auth:
+  methods:
+    proxy:
+      enabled: true
+      header: "X-Proxy-User"
+      createUser: true
+    password:
+      enabled: false

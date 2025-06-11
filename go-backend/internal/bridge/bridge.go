@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/containerd/containerd/errdefs"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 )
 
 var bridgeBinary = os.ExpandEnv("/usr/lib/linuxio/linuxio-bridge")
@@ -285,31 +290,112 @@ func handleBridgeRequest(conn net.Conn) {
 	_ = encoder.Encode(BridgeHealthResponse{Status: "error", Message: "unknown request type"})
 }
 
-func CleanupBridgeSocket(sess *session.Session) {
+func CleanupBridgeSocket(sess *session.Session) error {
+	var firstErr error
+
+	logShutdownf("Starting CleanupBridgeSocket for session: %s", sess.SessionID)
+
 	mainSocketListenersMu.Lock()
 	ln, ok := mainSocketListeners[sess.SessionID]
 	if ok {
-		err := ln.Close()
-		if err != nil {
+		if err := ln.Close(); err != nil {
+			logShutdownf("Error closing main socket listener for session %s: %v", sess.SessionID, err)
 			logger.Warnf("Error closing main socket listener for session %s: %v", sess.SessionID, err)
+			firstErr = err
 		} else {
+			logShutdownf("Closed main socket listener for session %s", sess.SessionID)
 			logger.Infof("Closed main socket listener for session %s", sess.SessionID)
 		}
 		delete(mainSocketListeners, sess.SessionID)
 	}
 	mainSocketListenersMu.Unlock()
-	//remove main socket
+
 	mainSock := MainSocketPath(sess)
 	if err := os.Remove(mainSock); err == nil {
+		logShutdownf("Removed main socket file %s for session %s", mainSock, sess.SessionID)
 		logger.Infof("Removed main socket file %s for session %s", mainSock, sess.SessionID)
 	} else if !os.IsNotExist(err) {
+		logShutdownf("Failed to remove main socket file %s: %v", mainSock, err)
 		logger.Warnf("Failed to remove main socket file %s: %v", mainSock, err)
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
-	//remove bridge socket
+
 	bridgeSock := BridgeSocketPath(sess)
 	if err := os.Remove(bridgeSock); err == nil {
+		logShutdownf("Removed bridge socket file %s for session %s", bridgeSock, sess.SessionID)
 		logger.Infof("Removed bridge socket file %s for session %s", bridgeSock, sess.SessionID)
 	} else if !os.IsNotExist(err) {
+		logShutdownf("Failed to remove bridge socket file %s: %v", bridgeSock, err)
 		logger.Warnf("Failed to remove bridge socket file %s: %v", bridgeSock, err)
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
+
+	logShutdownf("CleanupBridgeSocket for session %s finished (success or error above).", sess.SessionID)
+	return firstErr
+}
+
+func CleanupFilebrowserContainer() error {
+	containerName := "/filebrowser"
+	timeout := 0 // seconds
+
+	logShutdownf("Attempting to stop FileBrowser container: %s", containerName)
+	logger.Infof("Stopping FileBrowser container: %s", containerName)
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		logShutdownf("Failed to create Docker client: %v", err)
+		logger.Warnf("Failed to create Docker client: %v", err)
+		return err
+	}
+	defer cli.Close()
+
+	err = cli.ContainerStop(context.Background(), containerName, container.StopOptions{Timeout: &timeout})
+	if err != nil {
+		if !errdefs.IsNotFound(err) {
+			logShutdownf("Failed to stop container %s: %v", containerName, err)
+			logger.Warnf("Failed to stop container %s: %v", containerName, err)
+		} else {
+			logShutdownf("Container %s was not running (already stopped).", containerName)
+			logger.Infof("Container %s was not running.", containerName)
+		}
+	} else {
+		logShutdownf("Successfully stopped FileBrowser container: %s", containerName)
+		logger.Infof("Stopped FileBrowser container: %s", containerName)
+	}
+
+	logShutdownf("Attempting to remove FileBrowser container: %s", containerName)
+	logger.Infof("Removing FileBrowser container: %s", containerName)
+	err = cli.ContainerRemove(context.Background(), containerName, container.RemoveOptions{Force: true})
+	if err != nil {
+		if !errdefs.IsNotFound(err) {
+			logShutdownf("Failed to remove container %s: %v", containerName, err)
+			logger.Warnf("Failed to remove container %s: %v", containerName, err)
+			return err
+		} else {
+			logShutdownf("Container %s already removed (not found).", containerName)
+			logger.Infof("Container %s already removed.", containerName)
+		}
+	} else {
+		logShutdownf("Successfully removed FileBrowser container: %s", containerName)
+		logger.Infof("Removed FileBrowser container: %s", containerName)
+	}
+	logShutdownf("FileBrowser cleanup for %s finished (success or error above).", containerName)
+	return nil
+}
+
+// for testing
+
+func logShutdownf(format string, args ...any) {
+	f, err := os.OpenFile("/tmp/linuxio-bridge-shutdown.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "shutdown log write error: %v\n", err)
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "[%s] ", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(f, format+"\n", args...)
 }

@@ -3,8 +3,8 @@ package templates
 import (
 	"embed"
 	"fmt"
-	"go-backend/internal/config"
 	"go-backend/internal/logger"
+	"go-backend/internal/theme"
 	"go-backend/internal/utils"
 	"html/template"
 	"log"
@@ -50,10 +50,10 @@ func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
 		}
 	}
 
-	theme, err := config.LoadTheme()
+	themeSettings, err := theme.LoadTheme()
 	if err != nil {
 		logger.Warnf("⚠️ Failed to load theme, using defaults: %v", err)
-		theme = config.ThemeSettings{
+		themeSettings = theme.ThemeSettings{
 			Theme:           "DARK",
 			PrimaryColor:    "#1976d2",
 			SidebarColapsed: false,
@@ -62,7 +62,7 @@ func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
 
 	background := "#ffffff"
 	shimmer := "#eeeeee"
-	if theme.Theme == "DARK" {
+	if themeSettings.Theme == "DARK" {
 		background = "#1B2635"
 		shimmer = "#233044"
 	}
@@ -70,8 +70,8 @@ func ServeIndex(c *gin.Context, env string, viteManifest []byte) {
 	data := map[string]string{
 		"JSBundle":          js,
 		"CSSBundle":         css,
-		"PrimaryColor":      theme.PrimaryColor,
-		"ThemeColor":        theme.PrimaryColor,
+		"PrimaryColor":      themeSettings.PrimaryColor,
+		"ThemeColor":        themeSettings.PrimaryColor,
 		"Background":        background,
 		"ShimmerBackground": shimmer,
 	}

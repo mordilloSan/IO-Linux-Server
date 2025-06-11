@@ -20,7 +20,7 @@ var appConfig AppConfig
 
 // LoadDockerConfig reads config.yaml or applies default values
 func LoadDockerConfig() error {
-	file, err := os.Open("config/config.yaml")
+	file, err := os.Open("/etc/linuxio/dockerConfig.yaml")
 	if err != nil {
 		logger.Warnf("No config.yaml found, using defaults")
 		appConfig = AppConfig{
